@@ -16,7 +16,7 @@ export const getAll = query({
 
         const notifications = await ctx.db
             .query("notifications")
-            .withIndex("by_user_time", (q) => q.eq("userId", user.id))
+            .withIndex("by_user_time", (q) => q.eq("userId", user._id))
             .order("desc")
             .take(50);
 
@@ -34,7 +34,7 @@ export const getUnreadCount = query({
 
         const unread = await ctx.db
             .query("notifications")
-            .withIndex("by_user_read", (q) => q.eq("userId", user.id).eq("read", false))
+            .withIndex("by_user_read", (q) => q.eq("userId", user._id).eq("read", false))
             .collect();
 
         return unread.length;
@@ -57,7 +57,7 @@ export const markAsRead = mutation({
         const notification = await ctx.db.get(args.notificationId);
         if (!notification) throw new Error("Notification not found");
 
-        if (notification.userId !== user.id) {
+        if (notification.userId !== user._id) {
             throw new Error("Access denied");
         }
 
@@ -77,7 +77,7 @@ export const markAllAsRead = mutation({
 
         const unread = await ctx.db
             .query("notifications")
-            .withIndex("by_user_read", (q) => q.eq("userId", user.id).eq("read", false))
+            .withIndex("by_user_read", (q) => q.eq("userId", user._id).eq("read", false))
             .collect();
 
         for (const notification of unread) {
@@ -100,7 +100,7 @@ export const deleteNotification = mutation({
         const notification = await ctx.db.get(args.notificationId);
         if (!notification) throw new Error("Notification not found");
 
-        if (notification.userId !== user.id) {
+        if (notification.userId !== user._id) {
             throw new Error("Access denied");
         }
 

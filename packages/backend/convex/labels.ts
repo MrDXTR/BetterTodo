@@ -19,7 +19,7 @@ export const getByBoard = query({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -53,7 +53,7 @@ export const create = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -91,7 +91,7 @@ export const update = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", label.boardId).eq("userId", user.id)
+                q.eq("boardId", label.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -125,7 +125,7 @@ export const deleteLabel = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", label.boardId).eq("userId", user.id)
+                q.eq("boardId", label.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -168,7 +168,7 @@ export const addToCard = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user.id)
+                q.eq("boardId", card.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -196,7 +196,7 @@ export const addToCard = mutation({
         await ctx.db.insert("activityLogs", {
             boardId: card.boardId,
             cardId: args.cardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "label_added",
             details: { labelId: args.labelId },
             createdAt: Date.now(),
@@ -225,7 +225,7 @@ export const removeFromCard = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user.id)
+                q.eq("boardId", card.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -249,7 +249,7 @@ export const removeFromCard = mutation({
         await ctx.db.insert("activityLogs", {
             boardId: card.boardId,
             cardId: args.cardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "label_removed",
             details: { labelId: args.labelId },
             createdAt: Date.now(),

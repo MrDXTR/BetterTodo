@@ -17,7 +17,7 @@ export const getAll = query({
         // Get boards where user is a member
         const memberships = await ctx.db
             .query("boardMembers")
-            .withIndex("by_user", (q) => q.eq("userId", user.id))
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
             .collect();
 
         const boardIds = memberships.map((m) => m.boardId);
@@ -51,7 +51,7 @@ export const getById = query({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -110,7 +110,7 @@ export const getMembers = query({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -141,7 +141,7 @@ export const getActivity = query({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -184,26 +184,26 @@ export const create = mutation({
             title: args.title,
             description: args.description,
             color: args.color,
-            visibility: args.visibility ?? "private",
-            createdBy: user.id,
+            visibility: args.visibility || "private",
+            createdBy: user._id,
             archived: false,
             createdAt: now,
             updatedAt: now,
         });
 
-        // Add creator as owner
+        // Add the creator as an owner
         await ctx.db.insert("boardMembers", {
             boardId,
-            userId: user.id,
+            userId: user._id,
             role: "owner",
+            addedBy: user._id,
             addedAt: now,
-            addedBy: user.id,
         });
 
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "board_created",
             details: { title: args.title },
             createdAt: now,
@@ -234,7 +234,7 @@ export const update = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -253,7 +253,7 @@ export const update = mutation({
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId: args.boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "board_updated",
             details: updates,
             createdAt: Date.now(),
@@ -276,7 +276,7 @@ export const archive = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -292,7 +292,7 @@ export const archive = mutation({
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId: args.boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "board_archived",
             details: {},
             createdAt: Date.now(),
@@ -315,7 +315,7 @@ export const restore = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -331,7 +331,7 @@ export const restore = mutation({
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId: args.boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "board_restored",
             details: {},
             createdAt: Date.now(),
@@ -354,7 +354,7 @@ export const deleteBoard = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -421,7 +421,7 @@ export const addMember = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -447,13 +447,13 @@ export const addMember = mutation({
             userId: args.userId,
             role: args.role,
             addedAt: now,
-            addedBy: user.id,
+            addedBy: user._id,
         });
 
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId: args.boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "member_added",
             details: { addedUserId: args.userId, role: args.role },
             createdAt: now,
@@ -484,7 +484,7 @@ export const updateMemberRole = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -513,7 +513,7 @@ export const updateMemberRole = mutation({
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId: args.boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "member_role_updated",
             details: { targetUserId: args.userId, newRole: args.role },
             createdAt: Date.now(),
@@ -539,7 +539,7 @@ export const removeMember = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user.id)
+                q.eq("boardId", args.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -568,7 +568,7 @@ export const removeMember = mutation({
         // Log activity
         await ctx.db.insert("activityLogs", {
             boardId: args.boardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "member_removed",
             details: { removedUserId: args.userId },
             createdAt: Date.now(),
