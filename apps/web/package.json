@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.0.0",
     "@convex-dev/agent": "catalog:",
     "@convex-dev/better-auth": "catalog:",
+    "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.1.1",
     "@my-better-t-app/backend": "workspace:*",
     "@my-better-t-app/env": "workspace:*",
