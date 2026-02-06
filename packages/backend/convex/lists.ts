@@ -1,0 +1,267 @@
+import { v } from "convex/values";
+import { mutation } from "./_generated/server";
+import { authComponent } from "./auth";
+
+// ============================================
+// MUTATIONS
+// ============================================
+
+/**
+ * Create a new list
+ */
+export const create = mutation({
+    args: {
+        boardId: v.id("boards"),
+        title: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        // Check if user has access to this board
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", args.boardId).eq("userId", user.id)
+            )
+            .first();
+
+        if (!membership || membership.role === "viewer") {
+            throw new Error("Insufficient permissions");
+        }
+
+        // Get the current max position
+        const existingLists = await ctx.db
+            .query("lists")
+            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+            .collect();
+
+        const maxPosition = existingLists.reduce(
+            (max, list) => Math.max(max, list.position),
+            -1
+        );
+
+        const now = Date.now();
+        const listId = await ctx.db.insert("lists", {
+            boardId: args.boardId,
+            title: args.title,
+            position: maxPosition + 1,
+            archived: false,
+            createdAt: now,
+        });
+
+        // Log activity
+        await ctx.db.insert("activityLogs", {
+            boardId: args.boardId,
+            userId: user.id,
+            actionType: "list_created",
+            details: { listId, title: args.title },
+            createdAt: now,
+        });
+
+        return await ctx.db.get(listId);
+    },
+});
+
+/**
+ * Update list title or settings
+ */
+export const update = mutation({
+    args: {
+        listId: v.id("lists"),
+        title: v.optional(v.string()),
+        cardLimit: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const list = await ctx.db.get(args.listId);
+        if (!list) throw new Error("List not found");
+
+        // Check if user has access to this board
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", list.boardId).eq("userId", user.id)
+            )
+            .first();
+
+        if (!membership || membership.role === "viewer") {
+            throw new Error("Insufficient permissions");
+        }
+
+        const updates: any = {};
+        if (args.title !== undefined) updates.title = args.title;
+        if (args.cardLimit !== undefined) updates.cardLimit = args.cardLimit;
+
+        await ctx.db.patch(args.listId, updates);
+
+        // Log activity
+        await ctx.db.insert("activityLogs", {
+            boardId: list.boardId,
+            userId: user.id,
+            actionType: "list_updated",
+            details: { listId: args.listId, ...updates },
+            createdAt: Date.now(),
+        });
+
+        return await ctx.db.get(args.listId);
+    },
+});
+
+/**
+ * Update list position (for drag and drop reordering)
+ */
+export const updatePosition = mutation({
+    args: {
+        listId: v.id("lists"),
+        newPosition: v.number(),
+    },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const list = await ctx.db.get(args.listId);
+        if (!list) throw new Error("List not found");
+
+        // Check if user has access to this board
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", list.boardId).eq("userId", user.id)
+            )
+            .first();
+
+        if (!membership || membership.role === "viewer") {
+            throw new Error("Insufficient permissions");
+        }
+
+        const oldPosition = list.position;
+
+        // Get all lists in the board
+        const allLists = await ctx.db
+            .query("lists")
+            .withIndex("by_board", (q) => q.eq("boardId", list.boardId))
+            .filter((q) => q.eq(q.field("archived"), false))
+            .collect();
+
+        // Update positions
+        for (const l of allLists) {
+            if (l._id === args.listId) {
+                // Update the moved list
+                await ctx.db.patch(l._id, { position: args.newPosition });
+            } else if (oldPosition < args.newPosition) {
+                // Moving right: shift lists between old and new position left
+                if (l.position > oldPosition && l.position <= args.newPosition) {
+                    await ctx.db.patch(l._id, { position: l.position - 1 });
+                }
+            } else if (oldPosition > args.newPosition) {
+                // Moving left: shift lists between new and old position right
+                if (l.position >= args.newPosition && l.position < oldPosition) {
+                    await ctx.db.patch(l._id, { position: l.position + 1 });
+                }
+            }
+        }
+
+        // Log activity
+        await ctx.db.insert("activityLogs", {
+            boardId: list.boardId,
+            userId: user.id,
+            actionType: "list_moved",
+            details: { listId: args.listId, oldPosition, newPosition: args.newPosition },
+            createdAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
+/**
+ * Archive a list
+ */
+export const archive = mutation({
+    args: { listId: v.id("lists") },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const list = await ctx.db.get(args.listId);
+        if (!list) throw new Error("List not found");
+
+        // Check if user has access to this board
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", list.boardId).eq("userId", user.id)
+            )
+            .first();
+
+        if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
+            throw new Error("Insufficient permissions");
+        }
+
+        await ctx.db.patch(args.listId, { archived: true });
+
+        // Log activity
+        await ctx.db.insert("activityLogs", {
+            boardId: list.boardId,
+            userId: user.id,
+            actionType: "list_archived",
+            details: { listId: args.listId, title: list.title },
+            createdAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
+/**
+ * Delete a list and all its cards
+ */
+export const deleteList = mutation({
+    args: { listId: v.id("lists") },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const list = await ctx.db.get(args.listId);
+        if (!list) throw new Error("List not found");
+
+        // Check if user has admin or owner role
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", list.boardId).eq("userId", user.id)
+            )
+            .first();
+
+        if (!membership || !["owner", "admin"].includes(membership.role)) {
+            throw new Error("Insufficient permissions");
+        }
+
+        // Delete all cards in this list
+        const cards = await ctx.db
+            .query("cards")
+            .withIndex("by_list", (q) => q.eq("listId", args.listId))
+            .collect();
+
+        for (const card of cards) {
+            await ctx.db.delete(card._id);
+        }
+
+        // Delete the list
+        await ctx.db.delete(args.listId);
+
+        // Log activity
+        await ctx.db.insert("activityLogs", {
+            boardId: list.boardId,
+            userId: user.id,
+            actionType: "list_deleted",
+            details: { listId: args.listId, title: list.title, cardsDeleted: cards.length },
+            createdAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
