@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Authenticated, Unauthenticated } from "convex/react";
 import { LayoutDashboard, LayoutList, Menu } from "lucide-react";
 import { useState } from "react";
 
@@ -63,7 +64,7 @@ export default function AppNav() {
       <div className="flex h-12 items-center justify-between gap-4 px-4">
         {/* Logo */}
         <Link
-          to="/dashboard"
+          to="/"
           className="flex items-center gap-2 shrink-0 font-semibold text-lg tracking-tight"
         >
           <img
@@ -82,8 +83,17 @@ export default function AppNav() {
         {/* Right: theme + user (desktop) / hamburger (mobile) */}
         <div className="flex items-center gap-2">
           <ModeToggle />
-          <div className="hidden md:block">
-            <UserMenu />
+          <div className="hidden md:flex md:items-center md:gap-2">
+            <Authenticated>
+              <UserMenu />
+            </Authenticated>
+            <Unauthenticated>
+              <Link to="/sign-in">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+            </Unauthenticated>
           </div>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -106,7 +116,16 @@ export default function AppNav() {
                   onNavigate={() => setMobileOpen(false)}
                 />
                 <div className="mt-4 pt-4 border-t">
-                  <UserMenu />
+                  <Authenticated>
+                    <UserMenu />
+                  </Authenticated>
+                  <Unauthenticated>
+                    <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" className="w-full">
+                        Sign In
+                      </Button>
+                    </Link>
+                  </Unauthenticated>
                 </div>
               </div>
             </SheetContent>

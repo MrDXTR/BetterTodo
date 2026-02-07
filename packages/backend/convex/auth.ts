@@ -9,16 +9,24 @@ import { query } from "./_generated/server";
 import authConfig from "./auth.config";
 
 const siteUrl = process.env.SITE_URL!;
+const convexSiteUrl = process.env.CONVEX_SITE_URL!;
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
 function createAuth(ctx: GenericCtx<DataModel>) {
   return betterAuth({
+    baseURL: convexSiteUrl,
     trustedOrigins: [siteUrl],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+    },
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      },
     },
     plugins: [
       crossDomain({ siteUrl }),
