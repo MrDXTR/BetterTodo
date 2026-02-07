@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { CardLabels } from "./CardLabels";
 import { CardMembers } from "./CardMembers";
 import { CardChecklists } from "./CardChecklists";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CardModalProps {
     cardId: Id<"cards"> | null;
@@ -65,14 +66,17 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     const [description, setDescription] = useState("");
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    if (!card) return null;
+    const isLoading = cardId != null && card === undefined;
+    const notFound = cardId != null && card === null;
 
     const handleTitleEdit = () => {
+        if (!card) return;
         setTitle(card.title);
         setIsEditingTitle(true);
     };
 
     const handleTitleSave = async () => {
+        if (!card) return;
         if (title.trim() && title !== card.title) {
             await updateCard({ cardId: card._id, title: title.trim() });
         }
@@ -80,11 +84,13 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     };
 
     const handleDescriptionEdit = () => {
+        if (!card) return;
         setDescription(card.description || "");
         setIsEditingDescription(true);
     };
 
     const handleDescriptionSave = async () => {
+        if (!card) return;
         if (description !== card.description) {
             await updateCard({ cardId: card._id, description });
         }
@@ -92,36 +98,94 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     };
 
     const handlePriorityChange = async (priority: "low" | "medium" | "high" | "urgent") => {
+        if (!card) return;
         await updateCard({ cardId: card._id, priority });
     };
 
     const handleDueDateChange = async (date: Date | undefined) => {
+        if (!card) return;
         await updateCard({ cardId: card._id, dueDate: date ? date.getTime() : undefined });
     };
 
     const handleArchive = async () => {
+        if (!card) return;
         await archiveCard({ cardId: card._id });
         onClose();
     };
 
     const handleDuplicate = async () => {
+        if (!card) return;
         await duplicateCard({ cardId: card._id });
     };
 
     const handleDelete = async () => {
+        if (!card) return;
         await deleteCard({ cardId: card._id });
         onClose();
     };
 
-    const dueDate = card.dueDate ? new Date(card.dueDate) : undefined;
-    const isOverdue = dueDate && dueDate < new Date() && !card.completed;
-    const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority as keyof typeof PRIORITY_CONFIG] : null;
+    const dueDate = card?.dueDate ? new Date(card.dueDate) : undefined;
+    const isOverdue = dueDate && dueDate < new Date() && !card?.completed;
+    const priorityConfig = card?.priority ? PRIORITY_CONFIG[card.priority as keyof typeof PRIORITY_CONFIG] : null;
 
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="max-w-3xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto p-0">
                     <div className="p-4 md:p-6">
+                        {isLoading && (
+                            <>
+                                <DialogHeader className="mb-6">
+                                    <div className="flex items-start gap-3">
+                                        <Skeleton className="w-6 h-6 mt-1 rounded" />
+                                        <div className="flex-1 space-y-2">
+                                            <Skeleton className="h-7 w-3/4" />
+                                            <Skeleton className="h-4 w-32" />
+                                        </div>
+                                    </div>
+                                </DialogHeader>
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_250px] gap-6">
+                                    <div className="space-y-6">
+                                        <div className="flex gap-3">
+                                            <Skeleton className="w-5 h-5 mt-1 rounded" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-16" />
+                                                <Skeleton className="h-8 w-full" />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <Skeleton className="w-5 h-5 mt-1 rounded" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-20" />
+                                                <Skeleton className="h-20 w-full rounded" />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <Skeleton className="w-5 h-5 mt-1 rounded" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-24" />
+                                                <Skeleton className="h-16 w-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <Skeleton className="h-4 w-24" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-8 w-full" />
+                                            <Skeleton className="h-8 w-full" />
+                                            <Skeleton className="h-8 w-full" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {notFound && (
+                            <div className="py-8 text-center text-muted-foreground">
+                                <p>Card not found or you don&apos;t have access to it.</p>
+                            </div>
+                        )}
+                        {card && (
+                            <>
                         {/* Header */}
                         <DialogHeader className="mb-6">
                             <div className="flex items-start gap-3">
@@ -372,6 +436,8 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                 )}
                             </div>
                         </div>
+                            </>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>

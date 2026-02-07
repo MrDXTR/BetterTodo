@@ -1,11 +1,12 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Settings, Star, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import type { Board } from "@/types/board";
+import { BoardSettingsModal } from "@/components/Board/BoardSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,6 +17,11 @@ interface BoardHeaderProps {
 export function BoardHeader({ board }: BoardHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(board.title);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
+    useEffect(() => {
+        setTitle(board.title);
+    }, [board.title]);
 
     const updateBoard = useMutation(api.boards.update);
 
@@ -108,10 +114,16 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                     variant="ghost"
                     size="sm"
                     className="text-white hover:bg-white/20 h-8 w-8 p-0"
+                    onClick={() => setSettingsOpen(true)}
                 >
                     <Settings className="h-4 w-4" />
                 </Button>
             </div>
+            <BoardSettingsModal
+                open={settingsOpen}
+                onOpenChange={setSettingsOpen}
+                board={board}
+            />
         </header>
     );
 }

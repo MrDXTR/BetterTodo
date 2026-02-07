@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { BoardView } from "@/components/Board/BoardView";
+import { BoardSkeleton } from "@/components/Board/BoardSkeleton";
 
 export const Route = createFileRoute("/boards/$boardId")({
     component: BoardRoute,
@@ -15,11 +16,9 @@ function BoardRoute() {
 
     if (board === undefined) {
         return (
-            <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                    <p className="mt-4 text-sm text-muted-foreground">Loading board...</p>
-                </div>
+            <div className="flex h-full flex-col overflow-hidden bg-background">
+                <div className="h-12 shrink-0 border-b bg-muted/30" />
+                <BoardSkeleton />
             </div>
         );
     }
