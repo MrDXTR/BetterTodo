@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { LayoutDashboard, LayoutList, Menu, Home, MessageSquare } from "lucide-react";
+import { LayoutDashboard, LayoutList, Menu } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,8 @@ import UserMenu from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { to: "/", label: "Home", icon: Home },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/boards", label: "Boards", icon: LayoutList },
-  { to: "/ai", label: "AI Chat", icon: MessageSquare },
 ] as const;
 
 function NavLinks({
@@ -40,7 +38,7 @@ function NavLinks({
           key={to}
           to={to}
           onClick={onNavigate}
-          activeOptions={{ exact: to === "/" }}
+          activeOptions={{ exact: to === "/dashboard" }}
           activeProps={{
             className: "bg-accent text-accent-foreground font-medium",
           }}
@@ -65,7 +63,7 @@ export default function AppNav() {
       <div className="flex h-12 items-center justify-between gap-4 px-4">
         {/* Logo */}
         <Link
-          to="/"
+          to="/dashboard"
           className="flex items-center gap-2 shrink-0 font-semibold text-lg tracking-tight"
         >
           <img
