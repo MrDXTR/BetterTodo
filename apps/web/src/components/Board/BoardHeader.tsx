@@ -83,12 +83,12 @@ export function BoardHeader({ board }: BoardHeaderProps) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
                 {/* Star/Favorite */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 h-8 w-8 p-0"
                 >
                     <Star className="h-4 w-4" />
                 </Button>
@@ -97,17 +97,17 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 h-8 px-2 md:px-3"
                 >
-                    <Users className="mr-2 h-4 w-4" />
-                    Members
+                    <Users className="md:mr-2 h-4 w-4" />
+                    <span className="hidden md:inline">Members</span>
                 </Button>
 
                 {/* Settings */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 h-8 w-8 p-0"
                 >
                     <Settings className="h-4 w-4" />
                 </Button>

@@ -119,8 +119,8 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="min-w-[90vw] max-w-[90vw] max-h-[90vh] overflow-y-auto p-0">
-                <div className="p-6">
+            <DialogContent className="max-w-3xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto p-0">
+                <div className="p-4 md:p-6">
                     {/* Header */}
                     <DialogHeader className="mb-6">
                         <div className="flex items-start gap-3">
@@ -268,11 +268,11 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                         <label className="text-xs text-muted-foreground">Members</label>
                                         <CardMembers cardId={card._id} boardId={card.boardId} />
                                     </div>
-                                    <Button variant="secondary" size="sm" className="w-full justify-start">
+                                    <Button variant="secondary" size="sm" className="w-full justify-start h-8">
                                         <Tag className="w-4 h-4 mr-2" />
                                         Labels
                                     </Button>
-                                    <Button variant="secondary" size="sm" className="w-full justify-start">
+                                    <Button variant="secondary" size="sm" className="w-full justify-start h-8">
                                         <CheckSquare className="w-4 h-4 mr-2" />
                                         Checklist
                                     </Button>
@@ -294,7 +294,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 }
                                             }}
                                         >
-                                            <SelectTrigger className="w-full">
+                                            <SelectTrigger className="w-full h-8">
                                                 <SelectValue placeholder="Set priority" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -305,7 +305,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <Button variant="secondary" size="sm" className="w-full justify-start">
+                                    <Button variant="secondary" size="sm" className="w-full justify-start h-8">
                                         <ImageIcon className="w-4 h-4 mr-2" />
                                         Cover
                                     </Button>
@@ -320,7 +320,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                     <Button
                                         variant="secondary"
                                         size="sm"
-                                        className="w-full justify-start"
+                                        className="w-full justify-start h-8"
                                         onClick={handleDuplicate}
                                     >
                                         <Copy className="w-4 h-4 mr-2" />
@@ -329,7 +329,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                     <Button
                                         variant="secondary"
                                         size="sm"
-                                        className="w-full justify-start"
+                                        className="w-full justify-start h-8"
                                         onClick={handleArchive}
                                     >
                                         <Archive className="w-4 h-4 mr-2" />
@@ -338,7 +338,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                     <Button
                                         variant="destructive"
                                         size="sm"
-                                        className="w-full justify-start"
+                                        className="w-full justify-start h-8"
                                         onClick={handleDelete}
                                     >
                                         <Trash2 className="w-4 h-4 mr-2" />
