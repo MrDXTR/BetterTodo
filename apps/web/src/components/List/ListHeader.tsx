@@ -13,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 
 interface ListHeaderProps {
     list: List;
@@ -21,6 +22,7 @@ interface ListHeaderProps {
 export function ListHeader({ list }: ListHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(list.title);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const updateList = useMutation(api.lists.update);
     const archiveList = useMutation(api.lists.archive);
@@ -58,10 +60,6 @@ export function ListHeader({ list }: ListHeaderProps) {
     };
 
     const handleDelete = async () => {
-        if (!confirm("Are you sure? This will delete all cards in this list.")) {
-            return;
-        }
-
         try {
             await deleteList({ listId: list._id });
             toast.success("List deleted!");
@@ -116,12 +114,20 @@ export function ListHeader({ list }: ListHeaderProps) {
                         <Archive className="mr-2 h-4 w-4" />
                         Archive List
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete List
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            <DeleteConfirmationDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                onConfirm={handleDelete}
+                title="Delete List"
+                description="Are you sure? This will delete all cards in this list. This action cannot be undone."
+            />
         </div>
     );
 }

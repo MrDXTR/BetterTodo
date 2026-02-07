@@ -1,11 +1,9 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
-import { useState } from "react";
 import { Trello, ListTodo, CheckCircle2 } from "lucide-react";
+import { useEffect } from "react";
 
-import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
 import UserMenu from "@/components/user-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +13,6 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function RouteComponent() {
-  const [showSignIn, setShowSignIn] = useState(false);
   const privateData = useQuery(api.privateData.get);
   const boards = useQuery(api.boards.getAll);
 
@@ -88,12 +85,6 @@ function RouteComponent() {
                     View All Boards
                   </Button>
                 </Link>
-                <Link to="/todos">
-                  <Button className="w-full justify-start" variant="outline">
-                    <ListTodo className="mr-2 h-4 w-4" />
-                    View Todos (Example)
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
 
@@ -111,11 +102,7 @@ function RouteComponent() {
         </div>
       </Authenticated>
       <Unauthenticated>
-        {showSignIn ? (
-          <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-        ) : (
-          <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
-        )}
+        <RedirectToSignIn />
       </Unauthenticated>
       <AuthLoading>
         <div className="flex h-full items-center justify-center">
@@ -126,5 +113,17 @@ function RouteComponent() {
         </div>
       </AuthLoading>
     </>
+  );
+}
+
+function RedirectToSignIn() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate({ to: "/sign-in" });
+  }, [navigate]);
+  return (
+    <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center">
+      <p className="text-muted-foreground">Redirecting to sign in...</p>
+    </div>
   );
 }

@@ -212,9 +212,4 @@ export default defineSchema({
   // ============================================
   // LEGACY (Keep for now, can remove later)
   // ============================================
-
-  todos: defineTable({
-    text: v.string(),
-    completed: v.boolean(),
-  }),
 });

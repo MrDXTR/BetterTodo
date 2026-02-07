@@ -115,15 +115,15 @@ export function CreateBoardModal({ open, onOpenChange }: CreateBoardModalProps) 
                         {/* Color */}
                         <div className="grid gap-2">
                             <Label>Board Color</Label>
-                            <div className="grid grid-cols-9 gap-2">
+                            <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
                                 {BOARD_COLORS.map((boardColor) => (
                                     <button
                                         key={boardColor.value}
                                         type="button"
-                                        onClick={() => setColor(boardColor.value)}
+                                        onClick={() => setColor(boardColor.value as any)}
                                         className={`h-10 w-full rounded-md transition-all hover:scale-110 ${color === boardColor.value
-                                                ? "ring-2 ring-primary ring-offset-2"
-                                                : ""
+                                            ? "ring-2 ring-primary ring-offset-2"
+                                            : ""
                                             }`}
                                         style={{ backgroundColor: boardColor.value }}
                                         title={boardColor.name}
@@ -137,7 +137,7 @@ export function CreateBoardModal({ open, onOpenChange }: CreateBoardModalProps) 
                             <Label htmlFor="visibility">Visibility</Label>
                             <Select
                                 value={visibility}
-                                onValueChange={(value: "private" | "team" | "public") =>
+                                onValueChange={(value: any) =>
                                     setVisibility(value)
                                 }
                             >
