@@ -41,7 +41,12 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     };
 
     return (
-        <header className="flex items-center gap-4 border-b border-white/20 bg-black/10 px-4 py-3 backdrop-blur-sm">
+        <header
+            className="flex items-center gap-4 border-b border-white/20 px-4 py-3 backdrop-blur-sm"
+            style={{
+                background: `linear-gradient(135deg, ${board.color || '#0079BF'}dd 0%, ${board.color || '#0079BF'}99 100%)`,
+            }}
+        >
             {/* Back Button */}
             <Link to="/boards">
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">

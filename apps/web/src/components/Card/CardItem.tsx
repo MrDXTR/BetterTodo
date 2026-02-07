@@ -27,7 +27,7 @@ export function CardItem({ card, index }: CardItemProps) {
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                         onClick={() => setIsModalOpen(true)}
-                        className={`group cursor-pointer rounded-md border bg-card p-3 shadow-sm transition-all hover:shadow-md ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
+                        className={`group cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
                             }`}
                     >
                         {/* Cover Image */}

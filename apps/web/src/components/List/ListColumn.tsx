@@ -9,9 +9,10 @@ import { AddCardButton } from "../Card/AddCardButton";
 interface ListColumnProps {
     list: ListWithCards;
     index: number;
+    boardColor: string;
 }
 
-export function ListColumn({ list, index }: ListColumnProps) {
+export function ListColumn({ list, index, boardColor }: ListColumnProps) {
     return (
         <Draggable draggableId={list._id} index={index}>
             {(provided, snapshot) => (
@@ -21,8 +22,11 @@ export function ListColumn({ list, index }: ListColumnProps) {
                     className="flex-shrink-0 w-72"
                 >
                     <div
-                        className={`flex h-full max-h-full flex-col rounded-lg bg-background shadow-sm ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
+                        className={`flex h-full max-h-full flex-col rounded-lg bg-background shadow-sm border-2 ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
                             }`}
+                        style={{
+                            borderColor: boardColor,
+                        }}
                     >
                         {/* List Header */}
                         <div {...provided.dragHandleProps}>

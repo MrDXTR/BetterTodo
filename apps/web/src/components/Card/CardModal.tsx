@@ -120,17 +120,6 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="min-w-[90vw] max-w-[90vw] max-h-[90vh] overflow-y-auto p-0">
-                {/* Cover Image */}
-                {card.coverImage && (
-                    <div className="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600 relative">
-                        <img
-                            src={card.coverImage}
-                            alt="Cover"
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                )}
-
                 <div className="p-6">
                     {/* Header */}
                     <DialogHeader className="mb-6">

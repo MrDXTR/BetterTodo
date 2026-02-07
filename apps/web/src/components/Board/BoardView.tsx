@@ -93,12 +93,7 @@ export function BoardView({ board }: BoardViewProps) {
     const backgroundColor = board.color || "#0079BF";
 
     return (
-        <div
-            className="flex h-full flex-col overflow-hidden"
-            style={{
-                background: `linear-gradient(135deg, ${backgroundColor}dd 0%, ${backgroundColor}99 100%)`,
-            }}
-        >
+        <div className="flex h-full flex-col overflow-hidden bg-background">
             <BoardHeader board={board} />
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
@@ -111,7 +106,7 @@ export function BoardView({ board }: BoardViewProps) {
                                 className="flex gap-3 h-full items-start"
                             >
                                 {board.lists.map((list, index) => (
-                                    <ListColumn key={list._id} list={list} index={index} />
+                                    <ListColumn key={list._id} list={list} index={index} boardColor={backgroundColor} />
                                 ))}
                                 {provided.placeholder}
 
@@ -160,6 +155,10 @@ export function BoardView({ board }: BoardViewProps) {
                                             variant="secondary"
                                             className="w-full justify-start bg-background/50 hover:bg-background/70"
                                             onClick={() => setIsAddingList(true)}
+                                            style={{
+                                                borderColor: backgroundColor,
+                                                borderWidth: '2px',
+                                            }}
                                         >
                                             <Plus className="mr-2 h-4 w-4" />
                                             Add List
