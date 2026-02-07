@@ -88,12 +88,6 @@ function RouteComponent() {
                     View All Boards
                   </Button>
                 </Link>
-                <Link to="/todos">
-                  <Button className="w-full justify-start" variant="outline">
-                    <ListTodo className="mr-2 h-4 w-4" />
-                    View Todos (Example)
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
 
