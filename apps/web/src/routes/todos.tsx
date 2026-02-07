@@ -1,6 +1,6 @@
-import type { Id } from "@my-better-t-app/backend/convex/_generated/dataModel";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 
-import { api } from "@my-better-t-app/backend/convex/_generated/api";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2, Trash2 } from "lucide-react";

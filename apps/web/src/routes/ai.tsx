@@ -1,5 +1,5 @@
 import { useUIMessages, useSmoothText, type UIMessage } from "@convex-dev/agent/react";
-import { api } from "@my-better-t-app/backend/convex/_generated/api";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Send, Loader2 } from "lucide-react";

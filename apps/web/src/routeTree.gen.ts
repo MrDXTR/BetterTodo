@@ -13,6 +13,8 @@ import { Route as TodosRouteImport } from './routes/todos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BoardsIndexRouteImport } from './routes/boards/index'
+import { Route as BoardsBoardIdRouteImport } from './routes/boards/$boardId'
 
 const TodosRoute = TodosRouteImport.update({
   id: '/todos',
@@ -34,18 +36,32 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoardsIndexRoute = BoardsIndexRouteImport.update({
+  id: '/boards/',
+  path: '/boards/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardsBoardIdRoute = BoardsBoardIdRouteImport.update({
+  id: '/boards/$boardId',
+  path: '/boards/$boardId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
   '/todos': typeof TodosRoute
+  '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/boards/': typeof BoardsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
   '/todos': typeof TodosRoute
+  '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/boards': typeof BoardsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +69,28 @@ export interface FileRoutesById {
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
   '/todos': typeof TodosRoute
+  '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/boards/': typeof BoardsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ai' | '/dashboard' | '/todos'
+  fullPaths:
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/todos'
+    | '/boards/$boardId'
+    | '/boards/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai' | '/dashboard' | '/todos'
-  id: '__root__' | '/' | '/ai' | '/dashboard' | '/todos'
+  to: '/' | '/ai' | '/dashboard' | '/todos' | '/boards/$boardId' | '/boards'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/todos'
+    | '/boards/$boardId'
+    | '/boards/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +98,8 @@ export interface RootRouteChildren {
   AiRoute: typeof AiRoute
   DashboardRoute: typeof DashboardRoute
   TodosRoute: typeof TodosRoute
+  BoardsBoardIdRoute: typeof BoardsBoardIdRoute
+  BoardsIndexRoute: typeof BoardsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +132,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/boards/': {
+      id: '/boards/'
+      path: '/boards'
+      fullPath: '/boards/'
+      preLoaderRoute: typeof BoardsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boards/$boardId': {
+      id: '/boards/$boardId'
+      path: '/boards/$boardId'
+      fullPath: '/boards/$boardId'
+      preLoaderRoute: typeof BoardsBoardIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +154,8 @@ const rootRouteChildren: RootRouteChildren = {
   AiRoute: AiRoute,
   DashboardRoute: DashboardRoute,
   TodosRoute: TodosRoute,
+  BoardsBoardIdRoute: BoardsBoardIdRoute,
+  BoardsIndexRoute: BoardsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

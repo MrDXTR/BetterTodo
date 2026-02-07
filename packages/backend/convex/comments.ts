@@ -22,7 +22,7 @@ export const getByCard = query({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user.id)
+                q.eq("boardId", card.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -64,7 +64,7 @@ export const create = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user.id)
+                q.eq("boardId", card.boardId).eq("userId", user._id)
             )
             .first();
 
@@ -73,7 +73,7 @@ export const create = mutation({
         const now = Date.now();
         const commentId = await ctx.db.insert("comments", {
             cardId: args.cardId,
-            userId: user.id,
+            userId: user._id,
             content: args.content,
             parentCommentId: args.parentCommentId,
             edited: false,
@@ -85,7 +85,7 @@ export const create = mutation({
         await ctx.db.insert("activityLogs", {
             boardId: card.boardId,
             cardId: args.cardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "comment_added",
             details: { commentId },
             createdAt: now,
@@ -113,7 +113,7 @@ export const update = mutation({
         if (!comment) throw new Error("Comment not found");
 
         // Only the comment author can edit it
-        if (comment.userId !== user.id) {
+        if (comment.userId !== user._id) {
             throw new Error("You can only edit your own comments");
         }
 
@@ -146,12 +146,12 @@ export const deleteComment = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user.id)
+                q.eq("boardId", card.boardId).eq("userId", user._id)
             )
             .first();
 
         const canDelete =
-            comment.userId === user.id ||
+            comment.userId === user._id ||
             (membership && ["owner", "admin"].includes(membership.role));
 
         if (!canDelete) {
@@ -164,7 +164,7 @@ export const deleteComment = mutation({
         await ctx.db.insert("activityLogs", {
             boardId: card.boardId,
             cardId: comment.cardId,
-            userId: user.id,
+            userId: user._id,
             actionType: "comment_deleted",
             details: { commentId: args.commentId },
             createdAt: Date.now(),
