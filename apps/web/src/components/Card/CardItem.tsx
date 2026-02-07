@@ -61,8 +61,8 @@ export function CardItem({ card, index }: CardItemProps) {
                             {hasDueDate && (
                                 <div
                                     className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${isPastDue
-                                            ? "bg-destructive/10 text-destructive"
-                                            : "bg-muted"
+                                        ? "bg-destructive/10 text-destructive"
+                                        : "bg-muted"
                                         }`}
                                 >
                                     <Calendar className="h-3 w-3" />
@@ -114,8 +114,8 @@ export function CardItem({ card, index }: CardItemProps) {
 
             <CardModal
                 cardId={card._id}
-                open={isModalOpen}
-                onOpenChange={setIsModalOpen}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
             />
         </>
     );
