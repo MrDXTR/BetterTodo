@@ -1,45 +1,43 @@
-# fumadocs
+# BetterTodo Documentation
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+Documentation for [BetterTodo](../README.md), built with [Fumadocs](https://fumadocs.dev) and Next.js.
 
-Run development server:
+## Run Locally
 
 ```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+bun install
+bun run dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open [http://localhost:4000](http://localhost:4000) in your browser.
 
-## Explore
+## Content Structure
 
-In the project, you can see:
+| Path | Description |
+| ---- | ----------- |
+| `content/docs/index.mdx` | Introduction |
+| `content/docs/getting-started.mdx` | Setup, install, run |
+| `content/docs/authentication.mdx` | Auth (email + Google OAuth) |
+| `content/docs/boards-and-cards.mdx` | Boards, lists, cards |
 
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
+## Add a New Page
 
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
+1. Create an `.mdx` file in `content/docs/` (e.g. `content/docs/my-page.mdx`).
+2. Add frontmatter:
 
-### Fumadocs MDX
+```mdx
+---
+title: My Page
+description: Brief description
+---
 
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
+# My Page
+Content...
+```
 
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
+The sidebar is auto-generated from the file structure.
 
 ## Learn More
 
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+- [Fumadocs Documentation](https://fumadocs.dev)
+- [Next.js Documentation](https://nextjs.org/docs)
