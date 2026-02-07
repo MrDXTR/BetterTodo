@@ -14,11 +14,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "my-better-t-app",
+        title: "BetterTodo",
       },
       {
         name: "description",
-        content: "my-better-t-app is a web application",
+        content: "BetterTodo is a web application",
       },
     ],
     links: [

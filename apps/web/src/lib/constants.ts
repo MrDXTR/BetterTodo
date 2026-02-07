@@ -10,6 +10,8 @@ export const BOARD_COLORS = [
     { name: "Grey", value: "#838C91", light: "#F4F5F7" },
 ];
 
+export const DEFAULT_BOARD_COLOR = BOARD_COLORS[0].value; // Blue
+
 export const LABEL_COLORS = [
     { name: "Green", value: "#61BD4F", light: "#E3F6DB" },
     { name: "Yellow", value: "#F2D600", light: "#FEF9E5" },

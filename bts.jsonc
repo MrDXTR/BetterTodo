@@ -8,19 +8,28 @@
 //
 // Add new addons with: bun create better-t-stack add
 // This file is safe to delete
-
 {
   "$schema": "https://r2.better-t-stack.dev/schema.json",
   "version": "3.19.4",
   "createdAt": "2026-02-06T14:08:33.463Z",
-  "reproducibleCommand": "bun create better-t-stack@latest my-better-t-app --frontend tanstack-router --backend convex --runtime none --database none --orm none --api none --auth better-auth --payments none --addons fumadocs pwa skills turborepo --examples ai todo --db-setup none --web-deploy none --server-deploy none --git --package-manager bun --install",
+  "reproducibleCommand": "bun create better-t-stack@latest BetterTodo --frontend tanstack-router --backend convex --runtime none --database none --orm none --api none --auth better-auth --payments none --addons fumadocs pwa skills turborepo --examples ai todo --db-setup none --web-deploy none --server-deploy none --git --package-manager bun --install",
   "database": "none",
   "orm": "none",
   "backend": "convex",
   "runtime": "none",
-  "frontend": ["tanstack-router"],
-  "addons": ["fumadocs", "pwa", "skills", "turborepo"],
-  "examples": ["ai", "todo"],
+  "frontend": [
+    "tanstack-router"
+  ],
+  "addons": [
+    "fumadocs",
+    "pwa",
+    "skills",
+    "turborepo"
+  ],
+  "examples": [
+    "ai",
+    "todo"
+  ],
   "auth": "better-auth",
   "payments": "none",
   "packageManager": "bun",

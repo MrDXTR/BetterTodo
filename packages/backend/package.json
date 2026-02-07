@@ -1,5 +1,5 @@
 {
-  "name": "@my-better-t-app/backend",
+  "name": "@BetterTodo/backend",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
@@ -19,7 +19,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@my-better-t-app/config": "workspace:*",
+    "@BetterTodo/config": "workspace:*",
     "@types/node": "^24.3.0",
     "typescript": "catalog:"
   }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@my-better-t-app/backend/convex/_generated/api";
-import type { Id } from "@my-better-t-app/backend/convex/_generated/dataModel";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { Users, X, Plus, Check } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,8 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
     const card = useQuery(api.cards.getById, { cardId });
     const boardMembers = useQuery(api.boards.getMembers, { boardId });
     const cardAssignments = useQuery(api.cards.getAssignments, { cardId });
-    const assignMember = useMutation(api.cards.assignMember);
-    const unassignMember = useMutation(api.cards.unassignMember);
+    const assignMember = useMutation(api.cards.assignUser);
+    const unassignMember = useMutation(api.cards.unassignUser);
 
     const [searchQuery, setSearchQuery] = useState("");
 

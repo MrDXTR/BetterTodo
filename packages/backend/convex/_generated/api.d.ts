@@ -13,6 +13,7 @@ import type * as auth from "../auth.js";
 import type * as boards from "../boards.js";
 import type * as cards from "../cards.js";
 import type * as chat from "../chat.js";
+import type * as checklists from "../checklists.js";
 import type * as comments from "../comments.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   boards: typeof boards;
   cards: typeof cards;
   chat: typeof chat;
+  checklists: typeof checklists;
   comments: typeof comments;
   healthCheck: typeof healthCheck;
   http: typeof http;

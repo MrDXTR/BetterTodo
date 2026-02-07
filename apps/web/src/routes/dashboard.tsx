@@ -1,4 +1,4 @@
-import { api } from "@my-better-t-app/backend/convex/_generated/api";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
 import { useState } from "react";

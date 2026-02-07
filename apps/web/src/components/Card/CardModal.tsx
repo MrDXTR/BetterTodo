@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "@my-better-t-app/backend/convex/_generated/api";
-import type { Id } from "@my-better-t-app/backend/convex/_generated/dataModel";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import {
     Dialog,
     DialogContent,
@@ -39,6 +39,8 @@ import { PRIORITY_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 import { CardLabels } from "./CardLabels";
+import { CardMembers } from "./CardMembers";
+import { CardChecklists } from "./CardChecklists";
 
 interface CardModalProps {
     cardId: Id<"cards"> | null;
@@ -117,7 +119,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+            <DialogContent className="min-w-[90vw] max-w-[90vw] max-h-[90vh] overflow-y-auto p-0">
                 {/* Cover Image */}
                 {card.coverImage && (
                     <div className="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600 relative">
@@ -159,14 +161,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                     in list <span className="underline">List Name</span>
                                 </p>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={onClose}
-                                className="rounded-full"
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
+
                         </div>
                     </DialogHeader>
 
@@ -257,9 +252,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                 <CheckSquare className="w-5 h-5 mt-1 text-muted-foreground" />
                                 <div className="flex-1">
                                     <h3 className="text-sm font-semibold mb-2">Checklists</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        No checklists yet. Add one from the sidebar.
-                                    </p>
+                                    <CardChecklists cardId={card._id} />
                                 </div>
                             </div>
 
@@ -282,10 +275,10 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                     ADD TO CARD
                                 </h3>
                                 <div className="space-y-2">
-                                    <Button variant="secondary" size="sm" className="w-full justify-start">
-                                        <Users className="w-4 h-4 mr-2" />
-                                        Members
-                                    </Button>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-muted-foreground">Members</label>
+                                        <CardMembers cardId={card._id} boardId={card.boardId} />
+                                    </div>
                                     <Button variant="secondary" size="sm" className="w-full justify-start">
                                         <Tag className="w-4 h-4 mr-2" />
                                         Labels

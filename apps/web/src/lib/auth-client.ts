@@ -1,5 +1,5 @@
 import { convexClient, crossDomainClient } from "@convex-dev/better-auth/client/plugins";
-import { env } from "@my-better-t-app/env/web";
+import { env } from "@BetterTodo/env/web";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({

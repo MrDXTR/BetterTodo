@@ -17,8 +17,8 @@
     "@convex-dev/better-auth": "catalog:",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.1.1",
-    "@my-better-t-app/backend": "workspace:*",
-    "@my-better-t-app/env": "workspace:*",
+    "@BetterTodo/backend": "workspace:*",
+    "@BetterTodo/env": "workspace:*",
     "@tailwindcss/vite": "^4.0.15",
     "@tanstack/react-form": "^1.12.3",
     "@tanstack/react-router": "^1.141.1",
@@ -42,7 +42,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@my-better-t-app/config": "workspace:*",
+    "@BetterTodo/config": "workspace:*",
     "@tanstack/react-router-devtools": "^1.141.1",
     "@tanstack/router-plugin": "^1.141.1",
     "@types/node": "^22.13.14",

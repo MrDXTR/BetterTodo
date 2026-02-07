@@ -1,5 +1,5 @@
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import { env } from "@my-better-t-app/env/web";
+import { env } from "@BetterTodo/env/web";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import ReactDOM from "react-dom/client";

@@ -13,9 +13,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "my-better-t-app",
-        short_name: "my-better-t-app",
-        description: "my-better-t-app - PWA Application",
+        name: "BetterTodo",
+        short_name: "BetterTodo",
+        description: "BetterTodo - PWA Application",
         theme_color: "#0c0c0c",
       },
       pwaAssets: { disabled: false, config: true },

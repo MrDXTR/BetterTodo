@@ -70,6 +70,35 @@ export const getById = query({
     },
 });
 
+/**
+ * Get all assignments for a card
+ */
+export const getAssignments = query({
+    args: { cardId: v.id("cards") },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const card = await ctx.db.get(args.cardId);
+        if (!card) throw new Error("Card not found");
+
+        // Check if user has access to this board
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", card.boardId).eq("userId", user._id)
+            )
+            .first();
+
+        if (!membership) throw new Error("Access denied");
+
+        return await ctx.db
+            .query("cardAssignments")
+            .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
+            .collect();
+    },
+});
+
 // ============================================
 // MUTATIONS
 // ============================================
