@@ -1,0 +1,62 @@
+---
+title: Getting Started
+description: Setup, install, and run BetterTodo locally.
+---
+
+# Getting Started
+
+## Prerequisites
+
+- [Bun](https://bun.sh/) (or Node.js 18+)
+
+## Installation
+
+1. **Install dependencies**
+
+```bash
+bun install
+```
+
+2. **Setup Convex**
+
+Run the setup script to create and connect a Convex project:
+
+```bash
+bun run dev:setup
+```
+
+3. **Environment variables**
+
+Copy environment variables from `packages/backend/.env.local` to `apps/web/.env` if needed. The Convex CLI typically populates these during setup.
+
+4. **Run the development server**
+
+```bash
+bun run dev
+```
+
+Open [http://localhost:3001](http://localhost:3001) in your browser.
+
+## Project Structure
+
+```
+BetterTodo/
+├── apps/
+│   ├── web/           # React frontend (Vite + TanStack Router)
+│   └── fumadocs/      # Documentation (this site)
+├── packages/
+│   ├── backend/       # Convex backend (boards, cards, auth, etc.)
+│   ├── config/        # Shared TypeScript config
+│   └── env/           # Environment schema
+└── task.md            # Development task tracker
+```
+
+## Available Scripts
+
+| Script | Description |
+| ------ | ----------- |
+| `bun run dev` | Start web app and Convex dev server |
+| `bun run build` | Build all applications |
+| `bun run dev:web` | Start only the web app |
+| `bun run dev:setup` | Setup Convex project |
+| `bun run check-types` | Type-check all packages |

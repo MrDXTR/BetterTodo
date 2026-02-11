@@ -1,0 +1,47 @@
+---
+title: Authentication
+description: Email/password and Google OAuth with Better Auth.
+---
+
+# Authentication
+
+BetterTodo uses [Better Auth](https://www.better-auth.com/) with [@convex-dev/better-auth](https://github.com/get-convex/better-auth) for authentication.
+
+## Supported Methods
+
+- **Email & Password** – Sign up and sign in with email/password
+- **Google OAuth** – Sign in with a Google account
+
+## Environment Variables
+
+Set these via Convex Dashboard or CLI (`npx convex env set`):
+
+| Variable | Description | Example |
+| -------- | ----------- | ------- |
+| `SITE_URL` | Frontend URL (used for trusted origins) | `http://localhost:3001` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | From Google Cloud Console |
+
+## Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Create an OAuth 2.0 Client ID (Web application)
+3. Add **Authorized redirect URIs**:
+   - `https://<your-deployment>.convex.site/api/auth/callback/google`
+
+Use your Convex deployment URL (same as `VITE_CONVEX_SITE_URL` in `.env`).
+
+## Auth Flow
+
+- **Sign-in page**: `/sign-in` – Email/password form and "Continue with Google"
+- **Landing page**: `/` – Public landing with CTAs to sign in
+- **Dashboard**: `/dashboard` – Protected; redirects unauthenticated users to `/sign-in`
+- **Boards**: `/boards` – Protected; requires authentication
+
+## Auth Configuration
+
+Auth is configured in `packages/backend/convex/auth.ts`:
+
+- `baseURL` – Convex site URL (where OAuth callbacks are received)
+- `trustedOrigins` – Frontend URL(s) for cross-domain cookies
+- `socialProviders.google` – Google OAuth client credentials

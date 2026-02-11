@@ -1,0 +1,51 @@
+---
+title: Boards & Cards
+description: Kanban boards, lists, and cards in BetterTodo.
+---
+
+# Boards & Cards
+
+BetterTodo organizes work with Kanban-style boards, lists, and cards.
+
+## Structure
+
+- **Board** – Top-level container. Has a title, description, color, and visibility (private/team/public).
+- **List** – Column within a board (e.g., To Do, In Progress, Done). Ordered by position.
+- **Card** – Task item within a list. Can have title, description, due date, priority, labels, checklists, and assigned members.
+
+## Features
+
+### Boards
+
+- Create, edit, archive, and delete boards
+- Board settings modal: title, description, color, visibility
+- Member management (owner, admin, member, viewer)
+
+### Lists
+
+- Create, rename, and delete lists
+- Reorder lists via drag and drop
+- Add cards to lists
+
+### Cards
+
+- Title and description (markdown)
+- Due date and priority (low, medium, high, urgent)
+- Labels (board-level, assignable to cards)
+- Checklists with progress tracking
+- Member assignments
+- Move between lists via drag and drop
+- Archive, copy, and delete
+
+## Drag & Drop
+
+Uses [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (react-beautiful-dnd successor):
+
+- **Cards** – Drag within a list or between lists
+- **Lists** – Drag to reorder columns
+
+## Convex Schema
+
+Core tables: `boards`, `lists`, `cards`, `labels`, `cardLabels`, `boardMembers`, `cardAssignments`, `checklists`, `checklistItems`, `comments`, `activityLogs`, `notifications`.
+
+See `packages/backend/convex/schema.ts` for the full schema.
