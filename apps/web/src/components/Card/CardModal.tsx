@@ -212,7 +212,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     return (
         <>
             <Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
-                <DialogContent className="max-w-3xl w-[95vw] md:w-full h-[90vh] flex flex-col p-0">
+                <DialogContent className="max-w-3xl w-[95vw] md:min-w-[50vw] h-[90vh] flex flex-col p-0">
                     <div className="flex-1 overflow-y-auto p-4 md:p-6">
                         {isLoading && (
                             <>
@@ -384,7 +384,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     </div>
                                                 ) : (
                                                     <div
-                                                        className="text-sm text-muted-foreground cursor-pointer hover:bg-muted p-3 rounded min-h-[60px] break-words whitespace-pre-wrap"
+                                                        className="text-sm text-muted-foreground cursor-pointer [word-break:break-word] hover:bg-muted p-3 rounded min-h-[60px] break-words whitespace-pre-wrap"
                                                         onClick={handleDescriptionEdit}
                                                     >
                                                         {currentDescription || "Add a more detailed description..."}
@@ -396,7 +396,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                         {/* Checklists */}
                                         <div className="flex items-start gap-3">
                                             <CheckSquare className="w-5 h-5 mt-1 text-muted-foreground" />
-                                            <div className="flex-1 max-h-[300px] overflow-y-auto">
+                                            <div className="flex-1">
                                                 <h3 className="text-sm font-semibold mb-2">Checklists</h3>
                                                 <CardChecklists cardId={card._id} />
                                             </div>
@@ -405,7 +405,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                         {/* Comments */}
                                         <div className="flex items-start gap-3">
                                             <MessageSquare className="w-5 h-5 mt-1 text-muted-foreground" />
-                                            <div className="flex-1 max-h-[400px] overflow-y-auto">
+                                            <div className="flex-1">
                                                 <h3 className="text-sm font-semibold mb-2">Comments</h3>
                                                 <CardComments cardId={card._id} />
                                             </div>

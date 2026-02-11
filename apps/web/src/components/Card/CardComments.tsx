@@ -30,9 +30,11 @@ export function CardComments({ cardId }: CardCommentsProps) {
 
   const isLoading = comments === undefined;
 
+  // Group comments by root parent (Instagram-style single branch)
   const commentsByParent = useMemo(() => {
     const byParent = new Map<string, Comment[]>();
     if (!comments) return byParent;
+
     for (const c of comments as Comment[]) {
       const key = c.parentCommentId ? c.parentCommentId : "root";
       const arr = byParent.get(key as string) ?? [];
@@ -106,9 +108,9 @@ export function CardComments({ cardId }: CardCommentsProps) {
         </p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {rootComments.map((comment) => (
-          <CommentItem
+          <CommentThread
             key={comment._id}
             comment={comment}
             getReplies={getReplies}
@@ -159,110 +161,79 @@ export function CardComments({ cardId }: CardCommentsProps) {
   );
 }
 
-interface CommentItemProps {
+interface CommentThreadProps {
   comment: Comment;
   getReplies: (commentId: Id<"comments">) => Comment[];
   onReply: (commentId: Id<"comments">) => void;
   onDelete: (commentId: Id<"comments">) => void;
   resolveAuthor: (userId: string) => { name: string; role?: string };
   currentUserId?: string;
-  depth?: number;
-  parentAuthorName?: string;
 }
 
-function CommentItem({
+function CommentThread({
   comment,
   getReplies,
   onReply,
   onDelete,
   resolveAuthor,
   currentUserId,
-  depth = 0,
-  parentAuthorName,
-}: CommentItemProps) {
+}: CommentThreadProps) {
   const replies = getReplies(comment._id);
-  const { name, role } = resolveAuthor(comment.userId);
-  const isOwn = currentUserId && currentUserId === comment.userId;
   const [showAllReplies, setShowAllReplies] = useState(false);
 
-  const createdAt = new Date(comment.createdAt).toLocaleString();
+  // Recursively collect all nested replies
+  const collectAllNestedReplies = (parentId: Id<"comments">): Comment[] => {
+    const directReplies = getReplies(parentId);
+    const allReplies: Comment[] = [];
 
-  // Show first 2 replies by default
-  const visibleReplies = showAllReplies ? replies : replies.slice(0, 2);
-  const hiddenRepliesCount = replies.length - 2;
+    for (const reply of directReplies) {
+      allReplies.push(reply);
+      // Recursively get replies to this reply
+      const nestedReplies = collectAllNestedReplies(reply._id);
+      allReplies.push(...nestedReplies);
+    }
+
+    return allReplies;
+  };
+
+  const allNestedReplies = collectAllNestedReplies(comment._id);
+
+  // Show first 1 reply by default
+  const visibleReplies = showAllReplies ? allNestedReplies : allNestedReplies.slice(0, 1);
+  const hiddenRepliesCount = allNestedReplies.length - 1;
 
   return (
-    <div className={cn("space-y-2", depth > 0 && "ml-8")}>
-      <div className="rounded-md bg-muted/50 p-2 text-sm">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">
-                {isOwn ? "You" : name}
-              </span>
-              {role && (
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {role}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground">{createdAt}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onReply(comment._id)}
-              className="text-[11px] text-muted-foreground hover:underline"
-            >
-              Reply
-            </button>
-            {isOwn && (
-              <button
-                type="button"
-                onClick={() => onDelete(comment._id)}
-                className="text-[11px] text-destructive hover:underline inline-flex items-center gap-1"
-              >
-                <Trash2 className="h-3 w-3" />
-                Delete
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="text-sm whitespace-pre-wrap break-words">
-          {parentAuthorName && depth > 0 && (
-            <span className="text-primary font-medium">@{parentAuthorName} </span>
-          )}
-          {comment.content}
-        </div>
-        {comment.edited && (
-          <p className="mt-1 text-[10px] text-muted-foreground italic">
-            Edited
-          </p>
-        )}
-      </div>
+    <div className="space-y-2">
+      {/* Main comment */}
+      <CommentItem
+        comment={comment}
+        onReply={onReply}
+        onDelete={onDelete}
+        resolveAuthor={resolveAuthor}
+        currentUserId={currentUserId}
+      />
 
-      {replies.length > 0 && (
-        <div className="space-y-2">
+      {/* Replies - Instagram style: all in single branch with consistent spacing */}
+      {allNestedReplies.length > 0 && (
+        <div className="ml-8 space-y-2">
           {visibleReplies.map((reply) => (
             <CommentItem
               key={reply._id}
               comment={reply}
-              getReplies={getReplies}
               onReply={onReply}
               onDelete={onDelete}
               resolveAuthor={resolveAuthor}
               currentUserId={currentUserId}
-              depth={depth + 1}
-              parentAuthorName={name}
+              isReply
             />
           ))}
 
           {/* View all replies / Hide replies button */}
-          {replies.length > 2 && (
+          {allNestedReplies.length > 1 && (
             <button
               type="button"
               onClick={() => setShowAllReplies(!showAllReplies)}
-              className="ml-8 text-xs text-primary hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 py-1"
             >
               {showAllReplies ? (
                 <>
@@ -283,3 +254,72 @@ function CommentItem({
   );
 }
 
+interface CommentItemProps {
+  comment: Comment;
+  onReply: (commentId: Id<"comments">) => void;
+  onDelete: (commentId: Id<"comments">) => void;
+  resolveAuthor: (userId: string) => { name: string; role?: string };
+  currentUserId?: string;
+  isReply?: boolean;
+}
+
+function CommentItem({
+  comment,
+  onReply,
+  onDelete,
+  resolveAuthor,
+  currentUserId,
+  isReply = false,
+}: CommentItemProps) {
+  const { name, role } = resolveAuthor(comment.userId);
+  const isOwn = currentUserId && currentUserId === comment.userId;
+
+  const createdAt = new Date(comment.createdAt).toLocaleString();
+
+  return (
+    <div className="rounded-md bg-muted/50 p-2 text-sm">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">
+              {isOwn ? "You" : name}
+            </span>
+            {role && (
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {role}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">{createdAt}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onReply(comment._id)}
+            className="text-[11px] text-muted-foreground hover:underline"
+          >
+            Reply
+          </button>
+          {isOwn && (
+            <button
+              type="button"
+              onClick={() => onDelete(comment._id)}
+              className="text-[11px] text-destructive hover:underline inline-flex items-center gap-1"
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="text-sm whitespace-pre-wrap break-words">
+        {comment.content}
+      </div>
+      {comment.edited && (
+        <p className="mt-1 text-[10px] text-muted-foreground italic">
+          Edited
+        </p>
+      )}
+    </div>
+  );
+}

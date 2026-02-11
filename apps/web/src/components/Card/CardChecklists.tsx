@@ -78,7 +78,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <CheckSquare className="w-4 h-4" />
-                                <h4 className="font-semibold text-sm">{checklist.title}</h4>
+                                <h4 className="font-semibold text-sm [word-break:break-word]">{checklist.title}</h4>
                             </div>
                             <Button
                                 variant="ghost"
@@ -100,7 +100,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                             {checklist.items?.map((item: any) => (
                                 <div
                                     key={item._id}
-                                    className="flex items-center gap-2 group p-1 rounded hover:bg-muted"
+                                    className="flex items-center gap-2 group p-1 [word-break:break-word] rounded hover:bg-muted"
                                 >
                                     <GripVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
                                     <Checkbox
