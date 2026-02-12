@@ -22,9 +22,9 @@ export function ListColumn({ list, index, boardColor }: ListColumnProps) {
                     className="flex-shrink-0 w-72"
                 >
                     <div
-                        className={`flex h-full max-h-full flex-col rounded-xl backdrop-blur-md border transition-all ${snapshot.isDragging
-                                ? "shadow-2xl scale-105 rotate-2"
-                                : "shadow-lg hover:shadow-xl hover:-translate-y-1"
+                        className={`flex h-full max-h-full flex-col rounded-xl border transition-all ${snapshot.isDragging
+                            ? "shadow-2xl"
+                            : "shadow-lg hover:shadow-xl"
                             }`}
                         style={{
                             background: snapshot.isDragging
@@ -57,7 +57,7 @@ export function ListColumn({ list, index, boardColor }: ListColumnProps) {
                                     }}
                                 >
                                     {list.cards.map((card, cardIndex) => (
-                                        <CardItem key={card._id} card={card} index={cardIndex} boardColor={boardColor} />
+                                        <CardItem key={card._id} card={card} index={cardIndex} />
                                     ))}
                                     {provided.placeholder}
                                 </div>

@@ -2,7 +2,7 @@ import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import type { BoardWithLists } from "@/types/board";
@@ -18,6 +18,14 @@ interface BoardViewProps {
 export function BoardView({ board }: BoardViewProps) {
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState("");
+
+    // Optimistic state for drag-and-drop
+    const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
+
+    // Sync optimistic state with actual board data when it changes
+    useEffect(() => {
+        setOptimisticBoard(board);
+    }, [board]);
 
     const createList = useMutation(api.lists.create);
     const moveCard = useMutation(api.cards.move);
@@ -59,6 +67,17 @@ export function BoardView({ board }: BoardViewProps) {
 
         // Handle list reordering
         if (type === "list") {
+            // Optimistically update the UI
+            const newLists = Array.from(optimisticBoard.lists);
+            const [movedList] = newLists.splice(source.index, 1);
+            newLists.splice(destination.index, 0, movedList);
+
+            setOptimisticBoard({
+                ...optimisticBoard,
+                lists: newLists
+            });
+
+            // Then update the server
             try {
                 const listId = result.draggableId;
                 await updateListPosition({
@@ -68,12 +87,44 @@ export function BoardView({ board }: BoardViewProps) {
             } catch (error) {
                 console.error("Error moving list:", error);
                 toast.error("Failed to move list");
+                // Revert on error
+                setOptimisticBoard(board);
             }
             return;
         }
 
         // Handle card movement
         if (type === "card") {
+            // Optimistically update the UI
+            const sourceListIndex = optimisticBoard.lists.findIndex(
+                list => list._id === source.droppableId
+            );
+            const destListIndex = optimisticBoard.lists.findIndex(
+                list => list._id === destination.droppableId
+            );
+
+            if (sourceListIndex === -1 || destListIndex === -1) return;
+
+            const newLists = optimisticBoard.lists.map(list => ({
+                ...list,
+                cards: [...list.cards]
+            }));
+
+            // Remove card from source list
+            const [movedCard] = newLists[sourceListIndex].cards.splice(source.index, 1);
+
+            // Add card to destination list
+            newLists[destListIndex].cards.splice(destination.index, 0, {
+                ...movedCard,
+                listId: destination.droppableId as any
+            });
+
+            setOptimisticBoard({
+                ...optimisticBoard,
+                lists: newLists
+            });
+
+            // Then update the server
             try {
                 const cardId = result.draggableId;
                 const targetListId = destination.droppableId;
@@ -86,11 +137,13 @@ export function BoardView({ board }: BoardViewProps) {
             } catch (error) {
                 console.error("Error moving card:", error);
                 toast.error("Failed to move card");
+                // Revert on error
+                setOptimisticBoard(board);
             }
         }
     };
 
-    const backgroundColor = board.color || "#0079BF";
+    const backgroundColor = optimisticBoard.color || "#0079BF";
 
     return (
         <div
@@ -141,7 +194,7 @@ export function BoardView({ board }: BoardViewProps) {
                                 {...provided.droppableProps}
                                 className="flex gap-4 h-full items-start"
                             >
-                                {board.lists.map((list, index) => (
+                                {optimisticBoard.lists.map((list, index) => (
                                     <ListColumn key={list._id} list={list} index={index} boardColor={backgroundColor} />
                                 ))}
                                 {provided.placeholder}

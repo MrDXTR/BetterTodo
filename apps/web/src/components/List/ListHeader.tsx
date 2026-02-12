@@ -120,7 +120,7 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 hover:bg-muted/50 transition-all hover:scale-110"
+                        className="h-8 w-8 p-0 hover:bg-muted/50 transition-all"
                     >
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
