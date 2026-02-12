@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
-import { MoreHorizontal, Trash2, Archive } from "lucide-react";
+import { MoreHorizontal, Trash2, Archive, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -14,6 +14,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 interface ListHeaderProps {
     list: List;
@@ -24,6 +25,8 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(list.title);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
 
     const updateList = useMutation(api.lists.update);
     const archiveList = useMutation(api.lists.archive);
@@ -51,12 +54,16 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
     };
 
     const handleArchive = async () => {
+        setIsArchiving(true);
         try {
             await archiveList({ listId: list._id });
+            setShowArchiveDialog(false);
             toast.success("List archived!");
         } catch (error) {
             console.error("Error archiving list:", error);
             toast.error("Failed to archive list");
+        } finally {
+            setIsArchiving(false);
         }
     };
 
@@ -126,8 +133,12 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="backdrop-blur-md">
-                    <DropdownMenuItem onClick={handleArchive} className="cursor-pointer">
-                        <Archive className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem onClick={() => setShowArchiveDialog(true)} className="cursor-pointer" disabled={isArchiving}>
+                        {isArchiving ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Archive className="mr-2 h-4 w-4" />
+                        )}
                         Archive List
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive cursor-pointer">
@@ -143,6 +154,16 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                 onConfirm={handleDelete}
                 title="Delete List"
                 description="Are you sure? This will delete all cards in this list. This action cannot be undone."
+            />
+
+            <ConfirmationDialog
+                open={showArchiveDialog}
+                onOpenChange={setShowArchiveDialog}
+                onConfirm={handleArchive}
+                title="Archive List"
+                description="Are you sure you want to archive this list? You can restore it later from archived items."
+                confirmText="Archive"
+                isLoading={isArchiving}
             />
         </div>
     );

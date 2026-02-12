@@ -1,5 +1,4 @@
 import { Draggable, Droppable } from "@hello-pangea/dnd";
-import { useState } from "react";
 
 import type { ListWithCards } from "@/types/board";
 import { ListHeader } from "./ListHeader";
@@ -10,9 +9,11 @@ interface ListColumnProps {
     list: ListWithCards;
     index: number;
     boardColor: string;
+    /** True for the very first render cycle after this list was created */
+    isFresh?: boolean;
 }
 
-export function ListColumn({ list, index, boardColor }: ListColumnProps) {
+export function ListColumn({ list, index, boardColor, isFresh = false }: ListColumnProps) {
     return (
         <Draggable draggableId={list._id} index={index}>
             {(provided, snapshot) => (
@@ -22,22 +23,25 @@ export function ListColumn({ list, index, boardColor }: ListColumnProps) {
                     className="flex-shrink-0 w-72"
                 >
                     <div
-                        className={`flex h-full max-h-full flex-col rounded-xl border transition-all ${snapshot.isDragging
-                            ? "shadow-2xl"
-                            : "shadow-lg hover:shadow-xl"
-                            }`}
+                        className={`flex h-full max-h-full flex-col rounded-xl border transition-all ${snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
+                            } ${isFresh ? "list-fresh-enter" : ""}`}
                         style={{
                             background: snapshot.isDragging
                                 ? `linear-gradient(135deg, hsl(var(--background)) 0%, ${boardColor}15 100%)`
                                 : `linear-gradient(135deg, hsl(var(--background)) 0%, ${boardColor}08 100%)`,
-                            borderColor: snapshot.isDragging ? `${boardColor}60` : `${boardColor}30`,
+                            borderColor: snapshot.isDragging
+                                ? `${boardColor}60`
+                                : `${boardColor}30`,
                             boxShadow: snapshot.isDragging
                                 ? `0 20px 40px ${boardColor}40, 0 0 0 2px ${boardColor}60`
                                 : `0 4px 12px ${boardColor}20`,
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                            // Don't override transition when the fresh animation is running
+                            transition: isFresh
+                                ? undefined
+                                : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         }}
                     >
-                        {/* List Header */}
+                        {/* Drag handle wraps only the header */}
                         <div {...provided.dragHandleProps}>
                             <ListHeader list={list} boardColor={boardColor} />
                         </div>
@@ -53,7 +57,7 @@ export function ListColumn({ list, index, boardColor }: ListColumnProps) {
                                     style={{
                                         minHeight: "100px",
                                         scrollbarWidth: 'thin',
-                                        scrollbarColor: `${boardColor}40 transparent`
+                                        scrollbarColor: `${boardColor}40 transparent`,
                                     }}
                                 >
                                     {list.cards.map((card, cardIndex) => (
@@ -64,7 +68,7 @@ export function ListColumn({ list, index, boardColor }: ListColumnProps) {
                             )}
                         </Droppable>
 
-                        {/* Add Card Button */}
+                        {/* Add Card */}
                         <div className="p-3 pt-0">
                             <AddCardButton listId={list._id} boardColor={boardColor} />
                         </div>

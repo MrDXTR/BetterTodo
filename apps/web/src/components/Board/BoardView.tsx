@@ -1,8 +1,8 @@
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
-import { Plus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Plus, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import type { BoardWithLists } from "@/types/board";
@@ -15,15 +15,38 @@ interface BoardViewProps {
     board: BoardWithLists;
 }
 
+// IDs of lists that should play the "just born" entrance animation
+type NewListId = string;
+
 export function BoardView({ board }: BoardViewProps) {
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState("");
+    const [isCreatingList, setIsCreatingList] = useState(false);
+
+    // Track which list was just created so ListColumn can animate it
+    const [freshListId, setFreshListId] = useState<NewListId | null>(null);
+
+    // Used to detect the newly-added list after the board updates
+    const prevListIdsRef = useRef<Set<string>>(new Set(board.lists.map(l => l._id)));
 
     // Optimistic state for drag-and-drop
     const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
 
     // Sync optimistic state with actual board data when it changes
     useEffect(() => {
+        const prevIds = prevListIdsRef.current;
+        const newList = board.lists.find(l => !prevIds.has(l._id));
+
+        if (newList) {
+            setFreshListId(newList._id);
+            // Clear the "fresh" flag after the animation finishes (~700ms)
+            const timer = setTimeout(() => setFreshListId(null), 700);
+            prevListIdsRef.current = new Set(board.lists.map(l => l._id));
+            setOptimisticBoard(board);
+            return () => clearTimeout(timer);
+        }
+
+        prevListIdsRef.current = new Set(board.lists.map(l => l._id));
         setOptimisticBoard(board);
     }, [board]);
 
@@ -33,111 +56,75 @@ export function BoardView({ board }: BoardViewProps) {
 
     const handleCreateList = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!newListTitle.trim()) return;
 
+        setIsCreatingList(true);
         try {
             await createList({
                 boardId: board._id,
                 title: newListTitle.trim(),
             });
-
             setNewListTitle("");
             setIsAddingList(false);
             toast.success("List created!");
         } catch (error) {
             console.error("Error creating list:", error);
             toast.error("Failed to create list");
+        } finally {
+            setIsCreatingList(false);
         }
     };
 
     const handleDragEnd = async (result: DropResult) => {
         const { destination, source, type } = result;
 
-        // Dropped outside the list
         if (!destination) return;
-
-        // No movement
         if (
             destination.droppableId === source.droppableId &&
             destination.index === source.index
-        ) {
-            return;
-        }
+        ) return;
 
-        // Handle list reordering
         if (type === "list") {
-            // Optimistically update the UI
             const newLists = Array.from(optimisticBoard.lists);
             const [movedList] = newLists.splice(source.index, 1);
             newLists.splice(destination.index, 0, movedList);
+            setOptimisticBoard({ ...optimisticBoard, lists: newLists });
 
-            setOptimisticBoard({
-                ...optimisticBoard,
-                lists: newLists
-            });
-
-            // Then update the server
             try {
-                const listId = result.draggableId;
                 await updateListPosition({
-                    listId: listId as any,
+                    listId: result.draggableId as any,
                     newPosition: destination.index,
                 });
             } catch (error) {
                 console.error("Error moving list:", error);
                 toast.error("Failed to move list");
-                // Revert on error
                 setOptimisticBoard(board);
             }
             return;
         }
 
-        // Handle card movement
         if (type === "card") {
-            // Optimistically update the UI
-            const sourceListIndex = optimisticBoard.lists.findIndex(
-                list => list._id === source.droppableId
-            );
-            const destListIndex = optimisticBoard.lists.findIndex(
-                list => list._id === destination.droppableId
-            );
-
+            const sourceListIndex = optimisticBoard.lists.findIndex(l => l._id === source.droppableId);
+            const destListIndex = optimisticBoard.lists.findIndex(l => l._id === destination.droppableId);
             if (sourceListIndex === -1 || destListIndex === -1) return;
 
-            const newLists = optimisticBoard.lists.map(list => ({
-                ...list,
-                cards: [...list.cards]
-            }));
-
-            // Remove card from source list
+            const newLists = optimisticBoard.lists.map(list => ({ ...list, cards: [...list.cards] }));
             const [movedCard] = newLists[sourceListIndex].cards.splice(source.index, 1);
-
-            // Add card to destination list
             newLists[destListIndex].cards.splice(destination.index, 0, {
                 ...movedCard,
-                listId: destination.droppableId as any
+                listId: destination.droppableId as any,
             });
+            setOptimisticBoard({ ...optimisticBoard, lists: newLists });
 
-            setOptimisticBoard({
-                ...optimisticBoard,
-                lists: newLists
-            });
-
-            // Then update the server
             try {
-                const cardId = result.draggableId;
-                const targetListId = destination.droppableId;
-
                 await moveCard({
-                    cardId: cardId as any,
-                    targetListId: targetListId as any,
+                    cardId: result.draggableId as any,
+                    targetListId: destination.droppableId as any,
                     newPosition: destination.index,
                 });
             } catch (error) {
                 console.error("Error moving card:", error);
                 toast.error("Failed to move card");
-                // Revert on error
                 setOptimisticBoard(board);
             }
         }
@@ -157,7 +144,7 @@ export function BoardView({ board }: BoardViewProps) {
                 `
             }}
         >
-            {/* Subtle pattern overlay */}
+            {/* Subtle dot-grid pattern */}
             <div
                 className="absolute inset-0 opacity-[0.03] pointer-events-none"
                 style={{
@@ -168,24 +155,56 @@ export function BoardView({ board }: BoardViewProps) {
 
             <BoardHeader board={board} />
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-8 custom-scrollbar">
-                <style dangerouslySetInnerHTML={{
-                    __html: `
-                    .custom-scrollbar::-webkit-scrollbar {
-                        height: 8px;
+            {/* CSS for the "border-expand" animation on newly created lists */}
+            <style>{`
+                @keyframes listBorderExpand {
+                    0% {
+                        box-shadow: 0 0 0 0px ${backgroundColor}00, 0 4px 12px ${backgroundColor}20;
+                        border-color: ${backgroundColor}90;
+                        transform: scaleX(0.92) scaleY(0.96);
+                        opacity: 0;
                     }
-                    .custom-scrollbar::-webkit-scrollbar-track {
-                        background: transparent;
+                    40% {
+                        box-shadow: 0 0 0 3px ${backgroundColor}50, 0 8px 24px ${backgroundColor}30;
+                        border-color: ${backgroundColor};
+                        transform: scaleX(1.01) scaleY(1.01);
+                        opacity: 1;
                     }
-                    .custom-scrollbar::-webkit-scrollbar-thumb {
-                        background: ${backgroundColor}40;
-                        border-radius: 4px;
+                    70% {
+                        box-shadow: 0 0 0 1px ${backgroundColor}30, 0 4px 12px ${backgroundColor}20;
+                        border-color: ${backgroundColor}60;
+                        transform: scaleX(1) scaleY(1);
                     }
-                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                        background: ${backgroundColor}60;
+                    100% {
+                        box-shadow: 0 4px 12px ${backgroundColor}20;
+                        border-color: ${backgroundColor}30;
+                        transform: scaleX(1) scaleY(1);
+                        opacity: 1;
                     }
-                `}} />
+                }
 
+                .list-fresh-enter {
+                    animation: listBorderExpand 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                    transform-origin: left center;
+                }
+
+                @keyframes shimmer {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+
+                .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: ${backgroundColor}40;
+                    border-radius: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: ${backgroundColor}60;
+                }
+            `}</style>
+
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-8 custom-scrollbar">
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" direction="horizontal" type="list">
                         {(provided) => (
@@ -195,19 +214,25 @@ export function BoardView({ board }: BoardViewProps) {
                                 className="flex gap-4 h-full items-start"
                             >
                                 {optimisticBoard.lists.map((list, index) => (
-                                    <ListColumn key={list._id} list={list} index={index} boardColor={backgroundColor} />
+                                    <ListColumn
+                                        key={list._id}
+                                        list={list}
+                                        index={index}
+                                        boardColor={backgroundColor}
+                                        isFresh={list._id === freshListId}
+                                    />
                                 ))}
                                 {provided.placeholder}
 
-                                {/* Add List Button/Form */}
+                                {/* Add List Button / Form */}
                                 <div className="flex-shrink-0 w-72">
                                     {isAddingList ? (
                                         <form
                                             onSubmit={handleCreateList}
-                                            className="rounded-xl p-3 backdrop-blur-sm border shadow-lg transition-all"
+                                            className="rounded-xl p-3 backdrop-blur-sm border shadow-lg"
                                             style={{
                                                 background: `linear-gradient(135deg, hsl(var(--background)) 0%, ${backgroundColor}08 100%)`,
-                                                borderColor: `${backgroundColor}30`
+                                                borderColor: `${backgroundColor}30`,
                                             }}
                                         >
                                             <Input
@@ -216,7 +241,7 @@ export function BoardView({ board }: BoardViewProps) {
                                                 value={newListTitle}
                                                 onChange={(e) => setNewListTitle(e.target.value)}
                                                 onBlur={() => {
-                                                    if (!newListTitle.trim()) {
+                                                    if (!newListTitle.trim() && !isCreatingList) {
                                                         setIsAddingList(false);
                                                     }
                                                 }}
@@ -227,22 +252,24 @@ export function BoardView({ board }: BoardViewProps) {
                                                     }
                                                 }}
                                                 className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
-                                                style={{
-                                                    boxShadow: `0 0 0 1px ${backgroundColor}20`
-                                                }}
+                                                style={{ boxShadow: `0 0 0 1px ${backgroundColor}20` }}
                                                 maxLength={100}
+                                                disabled={isCreatingList}
                                             />
                                             <div className="flex gap-2">
                                                 <Button
                                                     type="submit"
                                                     size="sm"
-                                                    disabled={!newListTitle.trim()}
-                                                    className="transition-all"
+                                                    disabled={!newListTitle.trim() || isCreatingList}
+                                                    className="transition-all gap-2"
                                                     style={{
-                                                        background: !newListTitle.trim() ? undefined : `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`,
-                                                        color: !newListTitle.trim() ? undefined : 'white'
+                                                        background: newListTitle.trim()
+                                                            ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`
+                                                            : undefined,
+                                                        color: newListTitle.trim() ? 'white' : undefined,
                                                     }}
                                                 >
+                                                    {isCreatingList && <Loader2 className="h-4 w-4 animate-spin" />}
                                                     Add List
                                                 </Button>
                                                 <Button
@@ -254,6 +281,7 @@ export function BoardView({ board }: BoardViewProps) {
                                                         setNewListTitle("");
                                                     }}
                                                     className="hover:bg-background/80"
+                                                    disabled={isCreatingList}
                                                 >
                                                     Cancel
                                                 </Button>
@@ -266,11 +294,16 @@ export function BoardView({ board }: BoardViewProps) {
                                             onClick={() => setIsAddingList(true)}
                                             style={{
                                                 borderColor: `${backgroundColor}40`,
-                                                background: `${backgroundColor}05`
+                                                background: `${backgroundColor}05`,
                                             }}
                                         >
-                                            <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" style={{ color: backgroundColor }} />
-                                            <span style={{ color: backgroundColor }} className="font-medium">Add List</span>
+                                            <Plus
+                                                className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
+                                                style={{ color: backgroundColor }}
+                                            />
+                                            <span style={{ color: backgroundColor }} className="font-medium">
+                                                Add List
+                                            </span>
                                         </Button>
                                     )}
                                 </div>
