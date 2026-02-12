@@ -93,17 +93,53 @@ export function BoardView({ board }: BoardViewProps) {
     const backgroundColor = board.color || "#0079BF";
 
     return (
-        <div className="flex h-full flex-col overflow-hidden bg-background">
+        <div
+            className="flex h-full flex-col overflow-hidden relative"
+            style={{
+                background: `
+                    radial-gradient(circle at 10% 20%, ${backgroundColor}12 0%, transparent 50%),
+                    radial-gradient(circle at 90% 80%, ${backgroundColor}10 0%, transparent 50%),
+                    linear-gradient(180deg, ${backgroundColor}08 0%, transparent 100%),
+                    hsl(var(--background))
+                `
+            }}
+        >
+            {/* Subtle pattern overlay */}
+            <div
+                className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                style={{
+                    backgroundImage: `radial-gradient(circle at 1px 1px, ${backgroundColor} 1px, transparent 0)`,
+                    backgroundSize: '40px 40px'
+                }}
+            />
+
             <BoardHeader board={board} />
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-8 custom-scrollbar">
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    .custom-scrollbar::-webkit-scrollbar {
+                        height: 8px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                        background: ${backgroundColor}40;
+                        border-radius: 4px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                        background: ${backgroundColor}60;
+                    }
+                `}} />
+
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" direction="horizontal" type="list">
                         {(provided) => (
                             <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className="flex gap-3 h-full items-start"
+                                className="flex gap-4 h-full items-start"
                             >
                                 {board.lists.map((list, index) => (
                                     <ListColumn key={list._id} list={list} index={index} boardColor={backgroundColor} />
@@ -113,7 +149,14 @@ export function BoardView({ board }: BoardViewProps) {
                                 {/* Add List Button/Form */}
                                 <div className="flex-shrink-0 w-72">
                                     {isAddingList ? (
-                                        <form onSubmit={handleCreateList} className="rounded-lg bg-background p-2 shadow-sm">
+                                        <form
+                                            onSubmit={handleCreateList}
+                                            className="rounded-xl p-3 backdrop-blur-sm border shadow-lg transition-all"
+                                            style={{
+                                                background: `linear-gradient(135deg, hsl(var(--background)) 0%, ${backgroundColor}08 100%)`,
+                                                borderColor: `${backgroundColor}30`
+                                            }}
+                                        >
                                             <Input
                                                 autoFocus
                                                 placeholder="Enter list title..."
@@ -130,11 +173,23 @@ export function BoardView({ board }: BoardViewProps) {
                                                         setNewListTitle("");
                                                     }
                                                 }}
-                                                className="mb-2"
+                                                className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
+                                                style={{
+                                                    boxShadow: `0 0 0 1px ${backgroundColor}20`
+                                                }}
                                                 maxLength={100}
                                             />
                                             <div className="flex gap-2">
-                                                <Button type="submit" size="sm" disabled={!newListTitle.trim()}>
+                                                <Button
+                                                    type="submit"
+                                                    size="sm"
+                                                    disabled={!newListTitle.trim()}
+                                                    className="transition-all"
+                                                    style={{
+                                                        background: !newListTitle.trim() ? undefined : `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`,
+                                                        color: !newListTitle.trim() ? undefined : 'white'
+                                                    }}
+                                                >
                                                     Add List
                                                 </Button>
                                                 <Button
@@ -145,6 +200,7 @@ export function BoardView({ board }: BoardViewProps) {
                                                         setIsAddingList(false);
                                                         setNewListTitle("");
                                                     }}
+                                                    className="hover:bg-background/80"
                                                 >
                                                     Cancel
                                                 </Button>
@@ -152,16 +208,16 @@ export function BoardView({ board }: BoardViewProps) {
                                         </form>
                                     ) : (
                                         <Button
-                                            variant="secondary"
-                                            className="w-full justify-start bg-background/50 hover:bg-background/70"
+                                            variant="ghost"
+                                            className="w-full justify-start h-auto py-3 px-4 border-2 border-dashed rounded-xl transition-all hover:scale-[1.02] hover:shadow-md group"
                                             onClick={() => setIsAddingList(true)}
                                             style={{
-                                                borderColor: backgroundColor,
-                                                borderWidth: '2px',
+                                                borderColor: `${backgroundColor}40`,
+                                                background: `${backgroundColor}05`
                                             }}
                                         >
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Add List
+                                            <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" style={{ color: backgroundColor }} />
+                                            <span style={{ color: backgroundColor }} className="font-medium">Add List</span>
                                         </Button>
                                     )}
                                 </div>

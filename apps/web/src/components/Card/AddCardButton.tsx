@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 
 interface AddCardButtonProps {
     listId: Id<"lists">;
+    boardColor?: string;
 }
 
-export function AddCardButton({ listId }: AddCardButtonProps) {
+export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonProps) {
     const [isAdding, setIsAdding] = useState(false);
     const [title, setTitle] = useState("");
 
@@ -39,7 +40,13 @@ export function AddCardButton({ listId }: AddCardButtonProps) {
 
     if (isAdding) {
         return (
-            <form onSubmit={handleSubmit} className="space-y-2">
+            <form
+                onSubmit={handleSubmit}
+                className="space-y-2 p-2 rounded-lg backdrop-blur-sm"
+                style={{
+                    background: `${boardColor}08`
+                }}
+            >
                 <Input
                     autoFocus
                     placeholder="Enter card title..."
@@ -56,10 +63,23 @@ export function AddCardButton({ listId }: AddCardButtonProps) {
                             setTitle("");
                         }
                     }}
+                    className="border-0 bg-background/80 backdrop-blur-sm focus-visible:ring-1 shadow-sm"
+                    style={{
+                        boxShadow: `0 0 0 1px ${boardColor}30`
+                    }}
                     maxLength={200}
                 />
                 <div className="flex gap-2">
-                    <Button type="submit" size="sm" disabled={!title.trim()}>
+                    <Button
+                        type="submit"
+                        size="sm"
+                        disabled={!title.trim()}
+                        className="transition-all"
+                        style={{
+                            background: !title.trim() ? undefined : `linear-gradient(135deg, ${boardColor} 0%, ${boardColor}dd 100%)`,
+                            color: !title.trim() ? undefined : 'white'
+                        }}
+                    >
                         Add Card
                     </Button>
                     <Button
@@ -70,6 +90,7 @@ export function AddCardButton({ listId }: AddCardButtonProps) {
                             setIsAdding(false);
                             setTitle("");
                         }}
+                        className="hover:bg-background/80"
                     >
                         Cancel
                     </Button>
@@ -81,11 +102,14 @@ export function AddCardButton({ listId }: AddCardButtonProps) {
     return (
         <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:bg-muted"
+            className="w-full justify-start text-muted-foreground hover:text-foreground transition-all hover:scale-[1.02] group"
             onClick={() => setIsAdding(true)}
+            style={{
+                background: `${boardColor}05`,
+            }}
         >
-            <Plus className="mr-2 h-4 w-4" />
-            Add a card
+            <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" style={{ color: boardColor }} />
+            <span className="font-medium">Add a card</span>
         </Button>
     );
 }
