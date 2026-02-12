@@ -46,22 +46,62 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         }
     };
 
+    const boardColor = board.color || '#0079BF';
+
     return (
         <header
-            className="flex items-center gap-4 border-b border-white/20 px-4 py-3 backdrop-blur-sm"
+            className="relative flex items-center gap-4 px-6 py-4 backdrop-blur-md border-b overflow-hidden"
             style={{
-                background: `linear-gradient(135deg, ${board.color || '#0079BF'}dd 0%, ${board.color || '#0079BF'}99 100%)`,
+                background: `linear-gradient(135deg, ${boardColor}f5 0%, ${boardColor}e8 50%, ${boardColor}dd 100%)`,
+                borderColor: `${boardColor}30`,
+                boxShadow: `0 4px 24px ${boardColor}30, 0 2px 8px ${boardColor}20`
             }}
         >
+            {/* Animated gradient overlay */}
+            <div
+                className="absolute inset-0 opacity-20 pointer-events-none animate-pulse"
+                style={{
+                    background: `
+                        radial-gradient(circle at 20% 50%, white 0%, transparent 50%),
+                        radial-gradient(circle at 80% 50%, white 0%, transparent 50%)
+                    `,
+                    animationDuration: '4s'
+                }}
+            />
+
+            {/* Shimmer effect */}
+            <div
+                className="absolute inset-0 opacity-10 pointer-events-none"
+                style={{
+                    background: `linear-gradient(90deg, transparent 0%, white 50%, transparent 100%)`,
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 3s infinite'
+                }}
+            />
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes shimmer {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+            `}} />
+
             {/* Back Button */}
-            <Link to="/boards">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+            <Link to="/boards" className="relative z-10">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/20 transition-all hover:scale-105 backdrop-blur-sm"
+                    style={{
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                >
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
             </Link>
 
             {/* Board Title */}
-            <div className="flex-1">
+            <div className="flex-1 relative z-10">
                 {isEditingTitle ? (
                     <Input
                         autoFocus
@@ -75,13 +115,16 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                                 setIsEditingTitle(false);
                             }
                         }}
-                        className="max-w-md bg-white/90 font-semibold"
+                        className="max-w-md bg-white/95 font-semibold text-lg backdrop-blur-sm border-white/40 shadow-lg"
                         maxLength={100}
                     />
                 ) : (
                     <button
                         onClick={() => setIsEditingTitle(true)}
-                        className="rounded px-3 py-1.5 font-semibold text-white hover:bg-white/20 transition-colors"
+                        className="rounded-lg px-4 py-2 font-semibold text-white hover:bg-white/15 transition-all text-lg backdrop-blur-sm"
+                        style={{
+                            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
                     >
                         {board.title}
                     </button>
@@ -89,12 +132,15 @@ export function BoardHeader({ board }: BoardHeaderProps) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-2 relative z-10">
                 {/* Star/Favorite */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 h-8 w-8 p-0"
+                    className="text-white hover:bg-white/20 h-9 w-9 p-0 transition-all hover:scale-110 backdrop-blur-sm"
+                    style={{
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
                 >
                     <Star className="h-4 w-4" />
                 </Button>
@@ -103,18 +149,25 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 h-8 px-2 md:px-3"
+                    className="text-white hover:bg-white/20 h-9 px-3 transition-all hover:scale-105 backdrop-blur-sm hidden md:flex"
+                    style={{
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
                 >
-                    <Users className="md:mr-2 h-4 w-4" />
-                    <span className="hidden md:inline">Members</span>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Members</span>
                 </Button>
 
                 {/* Settings */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 h-8 w-8 p-0"
+                    className="text-white hover:bg-white/20 h-9 w-9 p-0 transition-all hover:scale-110 hover:rotate-90 backdrop-blur-sm"
                     onClick={() => setSettingsOpen(true)}
+                    style={{
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        transition: 'all 0.3s ease'
+                    }}
                 >
                     <Settings className="h-4 w-4" />
                 </Button>

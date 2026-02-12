@@ -26,8 +26,13 @@ export function CardItem({ card, index }: CardItemProps) {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        onClick={() => setIsModalOpen(true)}
-                        className={`group cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
+                        onClick={() => {
+                            // Don't open modal if we're dragging
+                            if (!snapshot.isDragging) {
+                                setIsModalOpen(true);
+                            }
+                        }}
+                        className={`cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
                             }`}
                     >
                         {/* Cover Image */}
@@ -61,8 +66,8 @@ export function CardItem({ card, index }: CardItemProps) {
                             {hasDueDate && (
                                 <div
                                     className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${isPastDue
-                                        ? "bg-destructive/10 text-destructive"
-                                        : "bg-muted"
+                                            ? "bg-destructive/10 text-destructive"
+                                            : "bg-muted"
                                         }`}
                                 >
                                     <Calendar className="h-3 w-3" />
@@ -81,33 +86,7 @@ export function CardItem({ card, index }: CardItemProps) {
                                     <MessageSquare className="h-3 w-3" />
                                 </div>
                             )}
-
-                            {/* TODO: Add these when we have the data */}
-                            {/* Checklist Progress */}
-                            {/* <div className="flex items-center gap-1">
-                <CheckSquare className="h-3 w-3" />
-                <span>2/5</span>
-              </div> */}
-
-                            {/* Attachments Count */}
-                            {/* <div className="flex items-center gap-1">
-                <Paperclip className="h-3 w-3" />
-                <span>3</span>
-              </div> */}
                         </div>
-
-                        {/* Labels */}
-                        {/* TODO: Add labels when we fetch them with the card */}
-                        {/* <div className="mt-2 flex flex-wrap gap-1">
-              {card.labels?.map((label) => (
-                <div
-                  key={label._id}
-                  className="h-2 w-10 rounded"
-                  style={{ backgroundColor: label.color }}
-                  title={label.name}
-                />
-              ))}
-            </div> */}
                     </div>
                 )}
             </Draggable>

@@ -17,9 +17,10 @@ import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialo
 
 interface ListHeaderProps {
     list: List;
+    boardColor?: string;
 }
 
-export function ListHeader({ list }: ListHeaderProps) {
+export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(list.title);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -72,7 +73,7 @@ export function ListHeader({ list }: ListHeaderProps) {
     const cardCount = (list as any).cards?.length || 0;
 
     return (
-        <div className="flex items-center justify-between gap-2 p-3 pb-2">
+        <div className="flex items-center justify-between gap-2 p-4 pb-3 border-b" style={{ borderColor: `${boardColor}20` }}>
             {isEditingTitle ? (
                 <Input
                     autoFocus
@@ -86,17 +87,28 @@ export function ListHeader({ list }: ListHeaderProps) {
                             setIsEditingTitle(false);
                         }
                     }}
-                    className="h-8 font-semibold"
+                    className="h-9 font-semibold border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
+                    style={{
+                        boxShadow: `0 0 0 1px ${boardColor}40`
+                    }}
                     maxLength={100}
                 />
             ) : (
                 <button
                     onClick={() => setIsEditingTitle(true)}
-                    className="flex-1 text-left rounded px-2 py-1 font-semibold hover:bg-muted transition-colors"
+                    className="flex-1 text-left rounded-lg px-3 py-2 font-semibold hover:bg-muted/50 transition-all group"
                 >
-                    {list.title}
+                    <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                        {list.title}
+                    </span>
                     {cardCount > 0 && (
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span
+                            className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full"
+                            style={{
+                                background: `${boardColor}15`,
+                                color: boardColor
+                            }}
+                        >
                             {cardCount}
                         </span>
                     )}
@@ -105,16 +117,20 @@ export function ListHeader({ list }: ListHeaderProps) {
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-muted/50 transition-all"
+                    >
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleArchive}>
+                <DropdownMenuContent align="end" className="backdrop-blur-md">
+                    <DropdownMenuItem onClick={handleArchive} className="cursor-pointer">
                         <Archive className="mr-2 h-4 w-4" />
                         Archive List
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
+                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive cursor-pointer">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete List
                     </DropdownMenuItem>
