@@ -15,6 +15,7 @@ import type * as cards from "../cards.js";
 import type * as chat from "../chat.js";
 import type * as checklists from "../checklists.js";
 import type * as comments from "../comments.js";
+import type * as dashboard from "../dashboard.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as labels from "../labels.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   checklists: typeof checklists;
   comments: typeof comments;
+  dashboard: typeof dashboard;
   healthCheck: typeof healthCheck;
   http: typeof http;
   labels: typeof labels;
