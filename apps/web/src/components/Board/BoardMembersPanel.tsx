@@ -8,6 +8,7 @@ import {
     User,
     Eye,
     UserMinus,
+    UserPlus,
     ChevronDown,
     Loader2,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 
 interface BoardMembersPanelProps {
@@ -80,6 +82,10 @@ export function BoardMembersPanel({
         name: string;
     } | null>(null);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">("member");
+    const [isInviting, setIsInviting] = useState(false);
+    const addMemberByEmail = useMutation(api.boards.addMemberByEmail);
 
     const canManageMembers =
         currentUserRole === "owner" || currentUserRole === "admin";
@@ -126,6 +132,89 @@ export function BoardMembersPanel({
                                 : "Loading..."}
                         </SheetDescription>
                     </SheetHeader>
+
+                    {/* Invite Section */}
+                    {canManageMembers && (
+                        <div className="mt-4 p-3 rounded-lg border bg-muted/30">
+                            <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                                <UserPlus className="h-4 w-4" />
+                                Invite Member
+                            </p>
+                            <form
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!inviteEmail.trim()) return;
+                                    setIsInviting(true);
+                                    try {
+                                        const result = await addMemberByEmail({
+                                            boardId,
+                                            email: inviteEmail.trim(),
+                                            role: inviteRole,
+                                        });
+                                        toast.success(
+                                            `${result.userName || inviteEmail} added to the board`
+                                        );
+                                        setInviteEmail("");
+                                    } catch (error: any) {
+                                        toast.error(
+                                            error.message || "Failed to add member"
+                                        );
+                                    } finally {
+                                        setIsInviting(false);
+                                    }
+                                }}
+                                className="flex flex-col gap-2"
+                            >
+                                <Input
+                                    type="email"
+                                    placeholder="user@example.com"
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                    disabled={isInviting}
+                                />
+                                <div className="flex gap-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-1 text-xs flex-1"
+                                            >
+                                                {ROLE_CONFIG[inviteRole].label}
+                                                <ChevronDown className="h-3 w-3 opacity-50" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            {(["admin", "member", "viewer"] as const).map(
+                                                (r) => (
+                                                    <DropdownMenuItem
+                                                        key={r}
+                                                        onClick={() => setInviteRole(r)}
+                                                    >
+                                                        {ROLE_CONFIG[r].label}
+                                                    </DropdownMenuItem>
+                                                )
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        disabled={isInviting || !inviteEmail.trim()}
+                                        className="gap-1"
+                                    >
+                                        {isInviting ? (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                            <UserPlus className="h-3 w-3" />
+                                        )}
+                                        Invite
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
 
                     <div className="mt-6 space-y-1 max-h-[calc(100vh-12rem)] overflow-y-auto">
                         {members === undefined ? (

@@ -11,12 +11,13 @@ import {
   CalendarClock,
   Plus,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateBoardModal } from "@/components/Board/CreateBoardModal";
 import { PRIORITY_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -361,86 +362,10 @@ function RecentActivitySection() {
 // ============================================
 
 function RouteComponent() {
-  const boards = useQuery(api.boards.getAll);
-  const assignedData = useQuery(api.dashboard.getMyAssignedCards);
-  const completedCount = useQuery(api.dashboard.getMyCompletedThisWeek);
-
-  const boardsLoading = boards === undefined;
-  const assignedLoading = assignedData === undefined;
-  const completedLoading = completedCount === undefined;
-
-  const boardCount = boards?.length ?? 0;
-  const taskCount = assignedData?.cards?.length ?? 0;
-  const overdueCount = assignedData?.overdueCount ?? 0;
-
   return (
     <>
       <Authenticated>
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="mt-2 text-muted-foreground">
-              Your tasks and activity at a glance
-            </p>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            <StatCard
-              title="Total Boards"
-              icon={Trello}
-              value={boardCount}
-              subtitle="Active boards you have access to"
-              loading={boardsLoading}
-            />
-            <StatCard
-              title="My Tasks"
-              icon={ListTodo}
-              value={taskCount}
-              subtitle="Cards assigned to you"
-              loading={assignedLoading}
-            />
-            <StatCard
-              title="Overdue"
-              icon={AlertTriangle}
-              value={overdueCount}
-              subtitle="Tasks past their due date"
-              loading={assignedLoading}
-              accent={overdueCount > 0 ? "text-destructive" : undefined}
-            />
-            <StatCard
-              title="Completed"
-              icon={CheckCircle2}
-              value={completedCount ?? 0}
-              subtitle="Tasks completed this week"
-              loading={completedLoading}
-              accent="text-green-500"
-            />
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-3 mb-8">
-            <Link to="/boards">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Trello className="h-4 w-4" />
-                View All Boards
-              </Button>
-            </Link>
-            <Link to="/boards">
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Board
-              </Button>
-            </Link>
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <MyTasksSection />
-            <RecentActivitySection />
-          </div>
-        </div>
+        <DashboardContent />
       </Authenticated>
       <Unauthenticated>
         <RedirectToSignIn />
@@ -456,6 +381,95 @@ function RouteComponent() {
     </>
   );
 }
+
+function DashboardContent() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const boards = useQuery(api.boards.getAll);
+  const assignedData = useQuery(api.dashboard.getMyAssignedCards);
+  const completedCount = useQuery(api.dashboard.getMyCompletedThisWeek);
+
+  const boardsLoading = boards === undefined;
+  const assignedLoading = assignedData === undefined;
+  const completedLoading = completedCount === undefined;
+
+  const boardCount = boards?.length ?? 0;
+  const taskCount = assignedData?.cards?.length ?? 0;
+  const overdueCount = assignedData?.overdueCount ?? 0;
+
+  return (
+    <>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="mt-2 text-muted-foreground">
+            Your tasks and activity at a glance
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <StatCard
+            title="Total Boards"
+            icon={Trello}
+            value={boardCount}
+            subtitle="Active boards you have access to"
+            loading={boardsLoading}
+          />
+          <StatCard
+            title="My Tasks"
+            icon={ListTodo}
+            value={taskCount}
+            subtitle="Cards assigned to you"
+            loading={assignedLoading}
+          />
+          <StatCard
+            title="Overdue"
+            icon={AlertTriangle}
+            value={overdueCount}
+            subtitle="Tasks past their due date"
+            loading={assignedLoading}
+            accent={overdueCount > 0 ? "text-destructive" : undefined}
+          />
+          <StatCard
+            title="Completed"
+            icon={CheckCircle2}
+            value={completedCount ?? 0}
+            subtitle="Tasks completed this week"
+            loading={completedLoading}
+            accent="text-green-500"
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <Link to="/boards">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Trello className="h-4 w-4" />
+              View All Boards
+            </Button>
+          </Link>
+          <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Board
+          </Button>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <MyTasksSection />
+          <RecentActivitySection />
+        </div>
+      </div>
+
+      <CreateBoardModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
+    </>
+  );
+}
+
 
 function RedirectToSignIn() {
   const navigate = useNavigate();

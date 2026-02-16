@@ -77,10 +77,12 @@ export default function AppNav() {
           <span className="hidden sm:inline">BetterTodo</span>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex flex-1 items-center justify-center">
-          <NavLinks />
-        </div>
+        {/* Desktop nav — only when signed in */}
+        <Authenticated>
+          <div className="hidden md:flex flex-1 items-center justify-center">
+            <NavLinks />
+          </div>
+        </Authenticated>
 
         {/* Right: theme + user (desktop) / hamburger (mobile) */}
         <div className="flex items-center gap-2">
