@@ -188,6 +188,27 @@ export default defineSchema({
     .index("by_user_time", ["userId", "createdAt"]),
 
   // ============================================
+  // PRESENCE & SYNC
+  // ============================================
+
+  presence: defineTable({
+    boardId: v.id("boards"),
+    userId: v.string(),
+    updatedAt: v.number(),
+    cursor: v.optional(
+      v.object({
+        x: v.number(),
+        y: v.number(),
+        cardId: v.optional(v.id("cards")),
+      })
+    ),
+  })
+    .index("by_board", ["boardId"])
+    .index("by_user", ["userId"])
+    .index("by_board_user", ["boardId", "userId"])
+    .index("by_updated", ["updatedAt"]),
+
+  // ============================================
   // WORKSPACES (Future feature)
   // ============================================
 

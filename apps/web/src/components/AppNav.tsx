@@ -12,6 +12,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ModeToggle } from "@/components/mode-toggle";
+import { SearchCommandPalette } from "@/components/SearchCommandPalette";
+import { NotificationsPopover } from "@/components/Notifications/NotificationsPopover";
 import UserMenu from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
@@ -75,13 +77,19 @@ export default function AppNav() {
           <span className="hidden sm:inline">BetterTodo</span>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex flex-1 items-center justify-center">
-          <NavLinks />
-        </div>
+        {/* Desktop nav — only when signed in */}
+        <Authenticated>
+          <div className="hidden md:flex flex-1 items-center justify-center">
+            <NavLinks />
+          </div>
+        </Authenticated>
 
         {/* Right: theme + user (desktop) / hamburger (mobile) */}
         <div className="flex items-center gap-2">
+          <Authenticated>
+            <SearchCommandPalette />
+            <NotificationsPopover />
+          </Authenticated>
           <ModeToggle />
           <div className="hidden md:flex md:items-center md:gap-2">
             <Authenticated>

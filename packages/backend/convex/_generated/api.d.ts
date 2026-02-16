@@ -22,6 +22,7 @@ import type * as labels from "../labels.js";
 import type * as lists from "../lists.js";
 import type * as notifications from "../notifications.js";
 import type * as privateData from "../privateData.js";
+import type * as search from "../search.js";
 
 import type {
   ApiFromModules,
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   lists: typeof lists;
   notifications: typeof notifications;
   privateData: typeof privateData;
+  search: typeof search;
 }>;
 
 /**

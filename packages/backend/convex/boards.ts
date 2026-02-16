@@ -39,6 +39,70 @@ export const getAll = query({
 });
 
 /**
+ * Get archived boards and cards for the current user
+ */
+export const getArchived = query({
+    args: { boardId: v.optional(v.id("boards")) },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) return { boards: [], cards: [] };
+
+        // Get archived boards
+        const memberships = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect();
+
+        const boardIds = memberships.map((m) => m.boardId);
+        const allBoards = await Promise.all(boardIds.map((id) => ctx.db.get(id)));
+
+        const archivedBoards = allBoards
+            .filter((b) => b !== null && b.archived)
+            .map((board) => ({
+                ...board!,
+                role: memberships.find((m) => m.boardId === board!._id)?.role,
+            }));
+
+        // Get archived cards (optionally scoped to a board)
+        let archivedCards: any[] = [];
+        if (args.boardId) {
+            const cards = await ctx.db
+                .query("cards")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId!))
+                .filter((q) => q.eq(q.field("archived"), true))
+                .collect();
+
+            const board = await ctx.db.get(args.boardId);
+            archivedCards = cards.map((c) => ({
+                ...c,
+                boardTitle: board?.title ?? "Unknown",
+                boardColor: board?.color,
+            }));
+        } else {
+            // Get archived cards from all user's boards
+            for (const boardId of boardIds) {
+                const cards = await ctx.db
+                    .query("cards")
+                    .withIndex("by_board", (q) => q.eq("boardId", boardId))
+                    .filter((q) => q.eq(q.field("archived"), true))
+                    .collect();
+
+                const board = await ctx.db.get(boardId);
+                for (const c of cards) {
+                    archivedCards.push({
+                        ...c,
+                        boardTitle: board?.title ?? "Unknown",
+                        boardColor: board?.color,
+                    });
+                }
+            }
+        }
+
+        return { boards: archivedBoards, cards: archivedCards };
+    },
+});
+
+/**
  * Get a single board by ID with lists and cards
  */
 export const getById = query({
@@ -121,7 +185,26 @@ export const getMembers = query({
             .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
             .collect();
 
-        return members;
+        // Resolve user data for each member
+        const membersWithUser = await Promise.all(
+            members.map(async (member) => {
+                // Look up user via the auth component API
+                const authUser = await authComponent.getAnyUserById(ctx, member.userId);
+
+                return {
+                    ...member,
+                    user: authUser
+                        ? {
+                            name: authUser.name ?? null,
+                            email: authUser.email ?? null,
+                            image: authUser.image ?? null,
+                        }
+                        : null,
+                };
+            })
+        );
+
+        return membersWithUser;
     },
 });
 
@@ -460,6 +543,85 @@ export const addMember = mutation({
         });
 
         return { success: true };
+    },
+});
+
+/**
+ * Add a member by email address
+ */
+export const addMemberByEmail = mutation({
+    args: {
+        boardId: v.id("boards"),
+        email: v.string(),
+        role: v.union(
+            v.literal("admin"),
+            v.literal("member"),
+            v.literal("viewer")
+        ),
+    },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        // Check if current user has admin or owner role
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", args.boardId).eq("userId", user._id)
+            )
+            .first();
+
+        if (!membership || !["owner", "admin"].includes(membership.role)) {
+            throw new Error("Insufficient permissions");
+        }
+
+        // Search for the user by email by checking known users
+        const allMembers = await ctx.db.query("boardMembers").collect();
+        const uniqueUserIds = [...new Set(allMembers.map(m => m.userId))];
+
+        let targetUser = null;
+        for (const uid of uniqueUserIds) {
+            const u = await authComponent.getAnyUserById(ctx, uid);
+            if (u && u.email?.toLowerCase() === args.email.toLowerCase()) {
+                targetUser = u;
+                break;
+            }
+        }
+
+        if (!targetUser) {
+            throw new Error("No user found with that email. They must sign up first.");
+        }
+
+        // Check if already a member
+        const existing = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", args.boardId).eq("userId", targetUser._id)
+            )
+            .first();
+
+        if (existing) {
+            throw new Error("This user is already a member of this board");
+        }
+
+        const now = Date.now();
+        await ctx.db.insert("boardMembers", {
+            boardId: args.boardId,
+            userId: targetUser._id,
+            role: args.role,
+            addedAt: now,
+            addedBy: user._id,
+        });
+
+        await ctx.db.insert("activityLogs", {
+            boardId: args.boardId,
+            userId: user._id,
+            actionType: "member_added",
+            details: { addedUserId: targetUser._id, email: args.email, role: args.role },
+            createdAt: now,
+        });
+
+        return { success: true, userName: targetUser.name };
     },
 });
 

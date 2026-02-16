@@ -1,6 +1,6 @@
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Plus, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -49,6 +49,9 @@ export function BoardView({ board }: BoardViewProps) {
         prevListIdsRef.current = new Set(board.lists.map(l => l._id));
         setOptimisticBoard(board);
     }, [board]);
+
+    // Fetch board members (replaces the old presence/heartbeat system)
+    const boardMembers = useQuery(api.boards.getMembers, { boardId: board._id });
 
     const createList = useMutation(api.lists.create);
     const moveCard = useMutation(api.cards.move);
@@ -153,7 +156,7 @@ export function BoardView({ board }: BoardViewProps) {
                 }}
             />
 
-            <BoardHeader board={board} />
+            <BoardHeader board={board} members={boardMembers || []} />
 
             {/* CSS for the "border-expand" animation on newly created lists */}
             <style>{`

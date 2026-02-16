@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Authenticated, Unauthenticated } from "convex/react";
 import { Trello, Users, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,16 +23,25 @@ function LandingPage() {
             and get things done.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link to="/sign-in">
-              <Button size="lg" className="w-full sm:w-auto text-base px-8">
-                Get Started
-              </Button>
-            </Link>
-            <Link to="/sign-in">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
-                Sign In
-              </Button>
-            </Link>
+            <Authenticated>
+              <Link to="/dashboard">
+                <Button size="lg" className="w-full sm:w-auto text-base px-8">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </Authenticated>
+            <Unauthenticated>
+              <Link to="/sign-in">
+                <Button size="lg" className="w-full sm:w-auto text-base px-8">
+                  Get Started
+                </Button>
+              </Link>
+              <Link to="/sign-in">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
+                  Sign In
+                </Button>
+              </Link>
+            </Unauthenticated>
           </div>
         </div>
       </section>
@@ -77,12 +87,22 @@ function LandingPage() {
       {/* CTA */}
       <section className="border-t py-12 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-muted-foreground mb-4">
-            Ready to organize your work?
-          </p>
-          <Link to="/sign-in">
-            <Button size="lg">Create your first board</Button>
-          </Link>
+          <Authenticated>
+            <p className="text-muted-foreground mb-4">
+              Jump back into your boards
+            </p>
+            <Link to="/dashboard">
+              <Button size="lg">Go to Dashboard</Button>
+            </Link>
+          </Authenticated>
+          <Unauthenticated>
+            <p className="text-muted-foreground mb-4">
+              Ready to organize your work?
+            </p>
+            <Link to="/sign-in">
+              <Button size="lg">Create your first board</Button>
+            </Link>
+          </Unauthenticated>
         </div>
       </section>
     </div>

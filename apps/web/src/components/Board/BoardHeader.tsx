@@ -1,23 +1,29 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Settings, Star, Users } from "lucide-react";
+import { ArrowLeft, Archive, Settings, Star, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import type { Board } from "@/types/board";
+import { BoardAvatars } from "@/components/Board/BoardAvatars";
+import { BoardMembersPanel } from "@/components/Board/BoardMembersPanel";
+import { ArchivedItemsPanel } from "@/components/Board/ArchivedItemsPanel";
 import { BoardSettingsModal } from "@/components/Board/BoardSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface BoardHeaderProps {
     board: Board;
+    members?: any[];
 }
 
-export function BoardHeader({ board }: BoardHeaderProps) {
+export function BoardHeader({ board, members = [] }: BoardHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(board.title);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [membersOpen, setMembersOpen] = useState(false);
+    const [archivedOpen, setArchivedOpen] = useState(false);
 
     useEffect(() => {
         setTitle(board.title);
@@ -119,13 +125,28 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                     <Star className="h-4 w-4" />
                 </Button>
 
+                <div className="h-4 w-px bg-border/50 mx-1 hidden md:block" />
+
+                <BoardAvatars users={members} />
+
                 <Button
                     variant="ghost"
                     size="sm"
                     className="h-8 px-3 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors hidden md:flex items-center gap-1.5"
+                    onClick={() => setMembersOpen(true)}
                 >
                     <Users className="h-4 w-4" />
                     <span className="text-sm">Members</span>
+                </Button>
+
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-3 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors hidden md:flex items-center gap-1.5"
+                    onClick={() => setArchivedOpen(true)}
+                >
+                    <Archive className="h-4 w-4" />
+                    <span className="text-sm">Archived</span>
                 </Button>
 
                 <Button
@@ -145,6 +166,19 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 open={settingsOpen}
                 onOpenChange={setSettingsOpen}
                 board={board}
+            />
+
+            <BoardMembersPanel
+                open={membersOpen}
+                onOpenChange={setMembersOpen}
+                boardId={board._id}
+                currentUserRole={board.role}
+            />
+
+            <ArchivedItemsPanel
+                open={archivedOpen}
+                onOpenChange={setArchivedOpen}
+                boardId={board._id}
             />
         </header>
     );
