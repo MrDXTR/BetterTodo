@@ -11,7 +11,7 @@ import { ListColumn } from "../List/ListColumn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePresence } from "@/hooks/usePresence";
-import { CursorOverlay } from "@/components/CursorOverlay";
+// import { CursorOverlay } from "@/components/CursorOverlay";
 
 interface BoardViewProps {
     board: BoardWithLists;
@@ -157,7 +157,8 @@ export function BoardView({ board }: BoardViewProps) {
                 }}
             />
 
-            <CursorOverlay users={activeUsers || []} />
+            { /* <CursorOverlay users={activeUsers || []} /> */}
+
             <BoardHeader board={board} activeUsers={activeUsers || []} />
 
             {/* CSS for the "border-expand" animation on newly created lists */}
