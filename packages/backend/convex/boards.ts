@@ -121,7 +121,29 @@ export const getMembers = query({
             .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
             .collect();
 
-        return members;
+        // Resolve user data for each member
+        const membersWithUser = await Promise.all(
+            members.map(async (member) => {
+                // Look up user in the auth users table
+                const authUsers = await ctx.db
+                    .query("authUser" as any)
+                    .filter((q: any) => q.eq(q.field("_id"), member.userId))
+                    .first();
+
+                return {
+                    ...member,
+                    user: authUsers
+                        ? {
+                            name: authUsers.name ?? null,
+                            email: authUsers.email ?? null,
+                            image: authUsers.image ?? null,
+                        }
+                        : null,
+                };
+            })
+        );
+
+        return membersWithUser;
     },
 });
 
