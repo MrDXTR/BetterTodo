@@ -50,51 +50,26 @@ export function BoardHeader({ board }: BoardHeaderProps) {
 
     return (
         <header
-            className="relative flex items-center gap-4 px-6 py-4 backdrop-blur-md border-b overflow-hidden"
+            className="relative flex items-center gap-4 px-6 py-3 border-b"
             style={{
-                background: `linear-gradient(135deg, ${boardColor}f5 0%, ${boardColor}e8 50%, ${boardColor}dd 100%)`,
-                borderColor: `${boardColor}30`,
-                boxShadow: `0 4px 24px ${boardColor}30, 0 2px 8px ${boardColor}20`
+                // Only a whisper of the board color — 4% opacity fill + a colored bottom border
+                background: `${boardColor}0a`,
+                borderBottomColor: `${boardColor}35`,
+                borderBottomWidth: '1px',
             }}
         >
-            {/* Animated gradient overlay */}
+            {/* Thin accent line at the very top — the one place color is visible */}
             <div
-                className="absolute inset-0 opacity-20 pointer-events-none animate-pulse"
-                style={{
-                    background: `
-                        radial-gradient(circle at 20% 50%, white 0%, transparent 50%),
-                        radial-gradient(circle at 80% 50%, white 0%, transparent 50%)
-                    `,
-                    animationDuration: '4s'
-                }}
+                className="absolute top-0 left-0 right-0 h-[2px]"
+                style={{ background: boardColor, opacity: 0.6 }}
             />
-
-            {/* Shimmer effect */}
-            <div
-                className="absolute inset-0 opacity-10 pointer-events-none"
-                style={{
-                    background: `linear-gradient(90deg, transparent 0%, white 50%, transparent 100%)`,
-                    backgroundSize: '200% 100%',
-                    animation: 'shimmer 3s infinite'
-                }}
-            />
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                @keyframes shimmer {
-                    0% { background-position: -200% 0; }
-                    100% { background-position: 200% 0; }
-                }
-            `}} />
 
             {/* Back Button */}
             <Link to="/boards" className="relative z-10">
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 transition-all hover:scale-105 backdrop-blur-sm"
-                    style={{
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
+                    className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors"
                 >
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -115,63 +90,57 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                                 setIsEditingTitle(false);
                             }
                         }}
-                        className="max-w-md bg-white/95 font-semibold text-lg backdrop-blur-sm border-white/40 shadow-lg"
+                        className="max-w-md h-9 font-semibold text-base bg-background border-border shadow-sm"
                         maxLength={100}
                     />
                 ) : (
                     <button
                         onClick={() => setIsEditingTitle(true)}
-                        className="rounded-lg px-4 py-2 font-semibold text-white hover:bg-white/15 transition-all text-lg backdrop-blur-sm"
-                        style={{
-                            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                        }}
+                        className="rounded-md px-3 py-1.5 font-semibold text-base text-foreground hover:bg-muted/50 transition-colors"
                     >
                         {board.title}
                     </button>
                 )}
             </div>
 
+            {/* Color dot — small indicator so the board color isn't lost */}
+            <div
+                className="h-2.5 w-2.5 rounded-full flex-shrink-0 opacity-70"
+                style={{ background: boardColor }}
+            />
+
             {/* Actions */}
-            <div className="flex items-center gap-2 relative z-10">
-                {/* Star/Favorite */}
+            <div className="flex items-center gap-1 relative z-10">
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 h-9 w-9 p-0 transition-all hover:scale-110 backdrop-blur-sm"
-                    style={{
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
+                    className="h-8 w-8 p-0 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
                 >
                     <Star className="h-4 w-4" />
                 </Button>
 
-                {/* Members */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 h-9 px-3 transition-all hover:scale-105 backdrop-blur-sm hidden md:flex"
-                    style={{
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
+                    className="h-8 px-3 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors hidden md:flex items-center gap-1.5"
                 >
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>Members</span>
+                    <Users className="h-4 w-4" />
+                    <span className="text-sm">Members</span>
                 </Button>
 
-                {/* Settings */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/20 h-9 w-9 p-0 transition-all hover:scale-110 hover:rotate-90 backdrop-blur-sm"
+                    className="h-8 w-8 p-0 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
                     onClick={() => setSettingsOpen(true)}
-                    style={{
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        transition: 'all 0.3s ease'
-                    }}
+                    style={{ transition: 'transform 0.3s ease, color 0.15s' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'rotate(45deg)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'rotate(0deg)')}
                 >
                     <Settings className="h-4 w-4" />
                 </Button>
             </div>
+
             <BoardSettingsModal
                 open={settingsOpen}
                 onOpenChange={setSettingsOpen}

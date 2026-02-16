@@ -23,9 +23,11 @@ import {
     Image as ImageIcon,
     AlertCircle,
     Save,
+    Loader2,
 } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -74,7 +76,11 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+    const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+    const [showCopyDialog, setShowCopyDialog] = useState(false);
     const [pendingClose, setPendingClose] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
+    const [isCopying, setIsCopying] = useState(false);
 
     // Pending changes state
     const [pendingChanges, setPendingChanges] = useState<PendingChanges>({});
@@ -190,13 +196,29 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
 
     const handleArchive = async () => {
         if (!card) return;
-        await archiveCard({ cardId: card._id });
-        onClose();
+        setIsArchiving(true);
+        try {
+            await archiveCard({ cardId: card._id });
+            setShowArchiveDialog(false);
+            onClose();
+        } catch (error) {
+            console.error("Error archiving card:", error);
+        } finally {
+            setIsArchiving(false);
+        }
     };
 
     const handleDuplicate = async () => {
         if (!card) return;
-        await duplicateCard({ cardId: card._id });
+        setIsCopying(true);
+        try {
+            await duplicateCard({ cardId: card._id });
+            setShowCopyDialog(false);
+        } catch (error) {
+            console.error("Error copying card:", error);
+        } finally {
+            setIsCopying(false);
+        }
     };
 
     const handleDelete = async () => {
@@ -475,19 +497,29 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 <Button
                                                     variant="secondary"
                                                     size="sm"
-                                                    className="w-full justify-start h-8"
-                                                    onClick={handleDuplicate}
+                                                    className="w-full justify-start h-8 gap-2"
+                                                    onClick={() => setShowCopyDialog(true)}
+                                                    disabled={isCopying}
                                                 >
-                                                    <Copy className="w-4 h-4 mr-2" />
+                                                    {isCopying ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Copy className="w-4 h-4" />
+                                                    )}
                                                     Copy
                                                 </Button>
                                                 <Button
                                                     variant="secondary"
                                                     size="sm"
-                                                    className="w-full justify-start h-8"
-                                                    onClick={handleArchive}
+                                                    className="w-full justify-start h-8 gap-2"
+                                                    onClick={() => setShowArchiveDialog(true)}
+                                                    disabled={isArchiving}
                                                 >
-                                                    <Archive className="w-4 h-4 mr-2" />
+                                                    {isArchiving ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Archive className="w-4 h-4" />
+                                                    )}
                                                     Archive
                                                 </Button>
                                                 <Button
@@ -566,6 +598,26 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                 onOpenChange={setShowUnsavedDialog}
                 onSave={handleSaveChanges}
                 onDiscard={handleDiscardChanges}
+            />
+
+            <ConfirmationDialog
+                open={showArchiveDialog}
+                onOpenChange={setShowArchiveDialog}
+                onConfirm={handleArchive}
+                title="Archive Card"
+                description="Are you sure you want to archive this card? You can restore it later from archived items."
+                confirmText="Archive"
+                isLoading={isArchiving}
+            />
+
+            <ConfirmationDialog
+                open={showCopyDialog}
+                onOpenChange={setShowCopyDialog}
+                onConfirm={handleDuplicate}
+                title="Copy Card"
+                description="This will create a duplicate of this card in the same list."
+                confirmText="Copy"
+                isLoading={isCopying}
             />
         </>
     );

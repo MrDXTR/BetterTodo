@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +16,7 @@ interface AddCardButtonProps {
 export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonProps) {
     const [isAdding, setIsAdding] = useState(false);
     const [title, setTitle] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
 
     const createCard = useMutation(api.cards.create);
 
@@ -24,6 +25,7 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
 
         if (!title.trim()) return;
 
+        setIsCreating(true);
         try {
             await createCard({
                 listId,
@@ -35,6 +37,8 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
         } catch (error) {
             console.error("Error creating card:", error);
             toast.error("Failed to create card");
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -73,13 +77,14 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                     <Button
                         type="submit"
                         size="sm"
-                        disabled={!title.trim()}
-                        className="transition-all"
+                        disabled={!title.trim() || isCreating}
+                        className="transition-all gap-2"
                         style={{
                             background: !title.trim() ? undefined : `linear-gradient(135deg, ${boardColor} 0%, ${boardColor}dd 100%)`,
                             color: !title.trim() ? undefined : 'white'
                         }}
                     >
+                        {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
                         Add Card
                     </Button>
                     <Button
