@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Settings, Star, Users } from "lucide-react";
+import { ArrowLeft, Archive, Settings, Star, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { Board } from "@/types/board";
 import { BoardAvatars } from "@/components/Board/BoardAvatars";
 import { BoardMembersPanel } from "@/components/Board/BoardMembersPanel";
+import { ArchivedItemsPanel } from "@/components/Board/ArchivedItemsPanel";
 import { BoardSettingsModal } from "@/components/Board/BoardSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ export function BoardHeader({ board, activeUsers = [] }: BoardHeaderProps) {
     const [title, setTitle] = useState(board.title);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [membersOpen, setMembersOpen] = useState(false);
+    const [archivedOpen, setArchivedOpen] = useState(false);
 
     useEffect(() => {
         setTitle(board.title);
@@ -140,6 +142,16 @@ export function BoardHeader({ board, activeUsers = [] }: BoardHeaderProps) {
                 <Button
                     variant="ghost"
                     size="sm"
+                    className="h-8 px-3 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors hidden md:flex items-center gap-1.5"
+                    onClick={() => setArchivedOpen(true)}
+                >
+                    <Archive className="h-4 w-4" />
+                    <span className="text-sm">Archived</span>
+                </Button>
+
+                <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-8 w-8 p-0 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
                     onClick={() => setSettingsOpen(true)}
                     style={{ transition: 'transform 0.3s ease, color 0.15s' }}
@@ -161,6 +173,12 @@ export function BoardHeader({ board, activeUsers = [] }: BoardHeaderProps) {
                 onOpenChange={setMembersOpen}
                 boardId={board._id}
                 currentUserRole={board.role}
+            />
+
+            <ArchivedItemsPanel
+                open={archivedOpen}
+                onOpenChange={setArchivedOpen}
+                boardId={board._id}
             />
         </header>
     );
