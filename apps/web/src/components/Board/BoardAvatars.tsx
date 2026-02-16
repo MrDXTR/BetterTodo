@@ -7,15 +7,19 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+interface BoardMember {
+    _id: Id<"boardMembers">;
+    userId: string;
+    role: string;
+    user: {
+        name: string | null;
+        email: string | null;
+        image: string | null;
+    } | null;
+}
+
 interface BoardAvatarsProps {
-    users: Array<{
-        _id: Id<"presence">;
-        userId: string;
-        user: {
-            name: string | null;
-            image?: string | null;
-        };
-    }>;
+    users: BoardMember[];
 }
 
 export function BoardAvatars({ users }: BoardAvatarsProps) {
@@ -24,22 +28,21 @@ export function BoardAvatars({ users }: BoardAvatarsProps) {
     return (
         <div className="flex -space-x-2 mr-2">
             <TooltipProvider delayDuration={300}>
-                {users.slice(0, 4).map((user) => (
-                    <Tooltip key={user._id}>
+                {users.slice(0, 4).map((member) => (
+                    <Tooltip key={member._id}>
                         <TooltipTrigger asChild>
                             <div className="relative">
                                 <Avatar className="h-8 w-8 border-2 border-background ring-2 ring-primary/20 transition-transform hover:z-10 hover:scale-110">
-                                    <AvatarImage src={user.user.image || undefined} />
+                                    <AvatarImage src={member.user?.image || undefined} />
                                     <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
-                                        {user.user.name?.charAt(0).toUpperCase() || "?"}
+                                        {member.user?.name?.charAt(0).toUpperCase() || "?"}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background animate-pulse" />
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p className="font-semibold">{user.user.name}</p>
-                            <p className="text-xs text-muted-foreground">Active now</p>
+                            <p className="font-semibold">{member.user?.name || "Unknown"}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                         </TooltipContent>
                     </Tooltip>
                 ))}

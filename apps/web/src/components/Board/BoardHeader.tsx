@@ -15,10 +15,10 @@ import { Input } from "@/components/ui/input";
 
 interface BoardHeaderProps {
     board: Board;
-    activeUsers?: any[]; // Avoiding circular dependency for now, or could import type
+    members?: any[];
 }
 
-export function BoardHeader({ board, activeUsers = [] }: BoardHeaderProps) {
+export function BoardHeader({ board, members = [] }: BoardHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(board.title);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -127,7 +127,7 @@ export function BoardHeader({ board, activeUsers = [] }: BoardHeaderProps) {
 
                 <div className="h-4 w-px bg-border/50 mx-1 hidden md:block" />
 
-                <BoardAvatars users={activeUsers} />
+                <BoardAvatars users={members} />
 
                 <Button
                     variant="ghost"

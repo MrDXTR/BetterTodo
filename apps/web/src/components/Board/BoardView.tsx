@@ -1,6 +1,6 @@
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Plus, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -10,8 +10,6 @@ import { BoardHeader } from "./BoardHeader";
 import { ListColumn } from "../List/ListColumn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePresence } from "@/hooks/usePresence";
-// import { CursorOverlay } from "@/components/CursorOverlay";
 
 interface BoardViewProps {
     board: BoardWithLists;
@@ -52,7 +50,8 @@ export function BoardView({ board }: BoardViewProps) {
         setOptimisticBoard(board);
     }, [board]);
 
-    const activeUsers = usePresence(board._id);
+    // Fetch board members (replaces the old presence/heartbeat system)
+    const boardMembers = useQuery(api.boards.getMembers, { boardId: board._id });
 
     const createList = useMutation(api.lists.create);
     const moveCard = useMutation(api.cards.move);
@@ -157,9 +156,7 @@ export function BoardView({ board }: BoardViewProps) {
                 }}
             />
 
-            { /* <CursorOverlay users={activeUsers || []} /> */}
-
-            <BoardHeader board={board} activeUsers={activeUsers || []} />
+            <BoardHeader board={board} members={boardMembers || []} />
 
             {/* CSS for the "border-expand" animation on newly created lists */}
             <style>{`
