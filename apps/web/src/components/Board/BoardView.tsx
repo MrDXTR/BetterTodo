@@ -10,6 +10,8 @@ import { BoardHeader } from "./BoardHeader";
 import { ListColumn } from "../List/ListColumn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePresence } from "@/hooks/usePresence";
+import { CursorOverlay } from "@/components/CursorOverlay";
 
 interface BoardViewProps {
     board: BoardWithLists;
@@ -49,6 +51,8 @@ export function BoardView({ board }: BoardViewProps) {
         prevListIdsRef.current = new Set(board.lists.map(l => l._id));
         setOptimisticBoard(board);
     }, [board]);
+
+    const activeUsers = usePresence(board._id);
 
     const createList = useMutation(api.lists.create);
     const moveCard = useMutation(api.cards.move);
@@ -153,7 +157,8 @@ export function BoardView({ board }: BoardViewProps) {
                 }}
             />
 
-            <BoardHeader board={board} />
+            <CursorOverlay users={activeUsers || []} />
+            <BoardHeader board={board} activeUsers={activeUsers || []} />
 
             {/* CSS for the "border-expand" animation on newly created lists */}
             <style>{`

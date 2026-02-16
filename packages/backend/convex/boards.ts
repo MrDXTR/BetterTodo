@@ -124,19 +124,16 @@ export const getMembers = query({
         // Resolve user data for each member
         const membersWithUser = await Promise.all(
             members.map(async (member) => {
-                // Look up user in the auth users table
-                const authUsers = await ctx.db
-                    .query("authUser" as any)
-                    .filter((q: any) => q.eq(q.field("_id"), member.userId))
-                    .first();
+                // Look up user via the auth component API
+                const authUser = await authComponent.getAnyUserById(ctx, member.userId);
 
                 return {
                     ...member,
-                    user: authUsers
+                    user: authUser
                         ? {
-                            name: authUsers.name ?? null,
-                            email: authUsers.email ?? null,
-                            image: authUsers.image ?? null,
+                            name: authUser.name ?? null,
+                            email: authUser.email ?? null,
+                            image: authUser.image ?? null,
                         }
                         : null,
                 };

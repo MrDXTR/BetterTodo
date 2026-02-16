@@ -12,6 +12,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ModeToggle } from "@/components/mode-toggle";
+import { SearchCommandPalette } from "@/components/SearchCommandPalette";
+import { NotificationsPopover } from "@/components/Notifications/NotificationsPopover";
 import UserMenu from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +84,10 @@ export default function AppNav() {
 
         {/* Right: theme + user (desktop) / hamburger (mobile) */}
         <div className="flex items-center gap-2">
+          <Authenticated>
+            <SearchCommandPalette />
+            <NotificationsPopover />
+          </Authenticated>
           <ModeToggle />
           <div className="hidden md:flex md:items-center md:gap-2">
             <Authenticated>

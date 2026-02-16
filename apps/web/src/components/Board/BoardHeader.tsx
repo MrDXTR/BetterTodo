@@ -6,18 +6,22 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import type { Board } from "@/types/board";
+import { BoardAvatars } from "@/components/Board/BoardAvatars";
+import { BoardMembersPanel } from "@/components/Board/BoardMembersPanel";
 import { BoardSettingsModal } from "@/components/Board/BoardSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface BoardHeaderProps {
     board: Board;
+    activeUsers?: any[]; // Avoiding circular dependency for now, or could import type
 }
 
-export function BoardHeader({ board }: BoardHeaderProps) {
+export function BoardHeader({ board, activeUsers = [] }: BoardHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(board.title);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [membersOpen, setMembersOpen] = useState(false);
 
     useEffect(() => {
         setTitle(board.title);
@@ -119,10 +123,15 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                     <Star className="h-4 w-4" />
                 </Button>
 
+                <div className="h-4 w-px bg-border/50 mx-1 hidden md:block" />
+
+                <BoardAvatars users={activeUsers} />
+
                 <Button
                     variant="ghost"
                     size="sm"
                     className="h-8 px-3 text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors hidden md:flex items-center gap-1.5"
+                    onClick={() => setMembersOpen(true)}
                 >
                     <Users className="h-4 w-4" />
                     <span className="text-sm">Members</span>
@@ -145,6 +154,13 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 open={settingsOpen}
                 onOpenChange={setSettingsOpen}
                 board={board}
+            />
+
+            <BoardMembersPanel
+                open={membersOpen}
+                onOpenChange={setMembersOpen}
+                boardId={board._id}
+                currentUserRole={board.role}
             />
         </header>
     );
