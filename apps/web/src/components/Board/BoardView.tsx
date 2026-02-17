@@ -2,7 +2,7 @@ import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { Plus, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 
 import type { BoardWithLists } from "@/types/board";
@@ -134,6 +134,26 @@ export function BoardView({ board }: BoardViewProps) {
     };
 
     const backgroundColor = optimisticBoard.color || "#0079BF";
+    const boardStats = useMemo(() => {
+        let cards = 0;
+        let checklistItemsTotal = 0;
+        let checklistItemsCompleted = 0;
+
+        for (const list of optimisticBoard.lists) {
+            cards += list.cards.length;
+            for (const card of list.cards) {
+                checklistItemsTotal += card.checklistItemsTotal ?? 0;
+                checklistItemsCompleted += card.checklistItemsCompleted ?? 0;
+            }
+        }
+
+        return {
+            cards,
+            lists: optimisticBoard.lists.length,
+            checklistItemsTotal,
+            checklistItemsCompleted,
+        };
+    }, [optimisticBoard.lists]);
 
     return (
         <div
@@ -156,7 +176,7 @@ export function BoardView({ board }: BoardViewProps) {
                 }}
             />
 
-            <BoardHeader board={board} members={boardMembers || []} />
+            <BoardHeader board={board} members={boardMembers || []} stats={boardStats} />
 
             {/* CSS for the "border-expand" animation on newly created lists */}
             <style>{`
@@ -207,7 +227,7 @@ export function BoardView({ board }: BoardViewProps) {
                 }
             `}</style>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-8 custom-scrollbar">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-8 custom-scrollbar">
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" direction="horizontal" type="list">
                         {(provided) => (
@@ -226,6 +246,17 @@ export function BoardView({ board }: BoardViewProps) {
                                     />
                                 ))}
                                 {provided.placeholder}
+                                {optimisticBoard.lists.length === 0 && (
+                                    <div
+                                        className="w-72 rounded-xl border border-dashed p-4 text-sm text-muted-foreground"
+                                        style={{
+                                            borderColor: `${backgroundColor}50`,
+                                            background: `${backgroundColor}08`,
+                                        }}
+                                    >
+                                        Create your first list to start adding cards and checklist tasks.
+                                    </div>
+                                )}
 
                                 {/* Add List Button / Form */}
                                 <div className="flex-shrink-0 w-72">

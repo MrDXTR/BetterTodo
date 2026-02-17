@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { Trello, Users, Zap } from "lucide-react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +10,30 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
+  return (
+    <>
+      <Authenticated>
+        <RedirectToDashboard />
+      </Authenticated>
+      <AuthLoading>
+        <LandingLoading />
+      </AuthLoading>
+      <Unauthenticated>
+        <LandingContent />
+      </Unauthenticated>
+    </>
+  );
+}
+
+function LandingLoading() {
+  return (
+    <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
+function LandingContent() {
   return (
     <div className="min-h-[calc(100vh-3rem)] flex flex-col">
       {/* Hero */}
@@ -23,25 +48,16 @@ function LandingPage() {
             and get things done.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Authenticated>
-              <Link to="/dashboard">
-                <Button size="lg" className="w-full sm:w-auto text-base px-8">
-                  Go to Dashboard
-                </Button>
-              </Link>
-            </Authenticated>
-            <Unauthenticated>
-              <Link to="/sign-in">
-                <Button size="lg" className="w-full sm:w-auto text-base px-8">
-                  Get Started
-                </Button>
-              </Link>
-              <Link to="/sign-in">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
-                  Sign In
-                </Button>
-              </Link>
-            </Unauthenticated>
+            <Link to="/sign-in">
+              <Button size="lg" className="w-full sm:w-auto text-base px-8">
+                Get Started
+              </Button>
+            </Link>
+            <Link to="/sign-in">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -87,24 +103,26 @@ function LandingPage() {
       {/* CTA */}
       <section className="border-t py-12 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <Authenticated>
-            <p className="text-muted-foreground mb-4">
-              Jump back into your boards
-            </p>
-            <Link to="/dashboard">
-              <Button size="lg">Go to Dashboard</Button>
-            </Link>
-          </Authenticated>
-          <Unauthenticated>
-            <p className="text-muted-foreground mb-4">
-              Ready to organize your work?
-            </p>
-            <Link to="/sign-in">
-              <Button size="lg">Create your first board</Button>
-            </Link>
-          </Unauthenticated>
+          <p className="text-muted-foreground mb-4">
+            Ready to organize your work?
+          </p>
+          <Link to="/sign-in">
+            <Button size="lg">Create your first board</Button>
+          </Link>
         </div>
       </section>
+    </div>
+  );
+}
+
+function RedirectToDashboard() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate({ to: "/dashboard", replace: true });
+  }, [navigate]);
+  return (
+    <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center">
+      <p className="text-muted-foreground">Redirecting...</p>
     </div>
   );
 }

@@ -68,6 +68,9 @@ export interface Card {
     createdBy: string;
     archived: boolean;
     completed: boolean;
+    checklistCount?: number;
+    checklistItemsCompleted?: number;
+    checklistItemsTotal?: number;
     createdAt: number;
     updatedAt: number;
 }

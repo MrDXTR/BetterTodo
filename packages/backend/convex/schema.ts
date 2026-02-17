@@ -229,8 +229,4 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_user", ["userId"])
     .index("by_workspace_user", ["workspaceId", "userId"]),
-
-  // ============================================
-  // LEGACY (Keep for now, can remove later)
-  // ============================================
 });

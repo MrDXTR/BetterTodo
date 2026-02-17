@@ -146,9 +146,50 @@ export const getById = query({
                 // Sort cards by position
                 cards.sort((a, b) => a.position - b.position);
 
+                const cardsWithTaskSummary = await Promise.all(
+                    cards.map(async (card) => {
+                        const checklists = await ctx.db
+                            .query("checklists")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect();
+
+                        if (checklists.length === 0) {
+                            return {
+                                ...card,
+                                checklistCount: 0,
+                                checklistItemsCompleted: 0,
+                                checklistItemsTotal: 0,
+                            };
+                        }
+
+                        const checklistItemsPerList = await Promise.all(
+                            checklists.map((checklist) =>
+                                ctx.db
+                                    .query("checklistItems")
+                                    .withIndex("by_checklist", (q) =>
+                                        q.eq("checklistId", checklist._id)
+                                    )
+                                    .collect()
+                            )
+                        );
+
+                        const checklistItems = checklistItemsPerList.flat();
+                        const checklistItemsCompleted = checklistItems.filter(
+                            (item) => item.completed
+                        ).length;
+
+                        return {
+                            ...card,
+                            checklistCount: checklists.length,
+                            checklistItemsCompleted,
+                            checklistItemsTotal: checklistItems.length,
+                        };
+                    })
+                );
+
                 return {
                     ...list,
-                    cards,
+                    cards: cardsWithTaskSummary,
                 };
             })
         );
