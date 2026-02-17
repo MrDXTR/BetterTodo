@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { Tag, X, Plus, Check } from "lucide-react";
+import { Plus, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,40 +28,90 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
     const createLabel = useMutation(api.labels.create);
 
     const [isCreating, setIsCreating] = useState(false);
+    const [isCreatingLabel, setIsCreatingLabel] = useState(false);
     const [newLabelName, setNewLabelName] = useState("");
     const [selectedColor, setSelectedColor] = useState(LABEL_COLORS[0].value);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [localLabelIds, setLocalLabelIds] = useState<Id<"labels">[]>([]);
+    const [pendingLabelIds, setPendingLabelIds] = useState<Record<string, boolean>>({});
+
+    const serverCardLabelIds = useMemo(
+        () => card?.labels?.map((l: any) => l._id) ?? [],
+        [card?.labels]
+    );
+
+    useEffect(() => {
+        setLocalLabelIds(serverCardLabelIds);
+    }, [serverCardLabelIds.join("|")]);
 
     if (!card || !boardLabels) return null;
 
-    const cardLabelIds = card.labels?.map((l: any) => l._id) || [];
+    const filteredLabels = boardLabels.filter((label) =>
+        label.name.toLowerCase().includes(searchTerm.trim().toLowerCase())
+    );
+
+    const selectedLabels = boardLabels.filter((label) => localLabelIds.includes(label._id));
 
     const handleToggleLabel = async (labelId: Id<"labels">) => {
-        if (cardLabelIds.includes(labelId)) {
-            await removeLabel({ cardId, labelId });
-        } else {
-            await addLabel({ cardId, labelId });
+        const isSelected = localLabelIds.includes(labelId);
+        const previousIds = localLabelIds;
+
+        setPendingLabelIds((prev) => ({ ...prev, [labelId]: true }));
+        setLocalLabelIds((prev) =>
+            isSelected ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+        );
+
+        try {
+            if (isSelected) {
+                await removeLabel({ cardId, labelId });
+            } else {
+                await addLabel({ cardId, labelId });
+            }
+        } catch (error) {
+            setLocalLabelIds(previousIds);
+            toast.error("Failed to update label");
+            console.error("Error toggling label:", error);
+        } finally {
+            setPendingLabelIds((prev) => {
+                const { [labelId]: _removed, ...rest } = prev;
+                return rest;
+            });
         }
     };
 
     const handleCreateLabel = async () => {
-        if (!newLabelName.trim()) return;
+        if (!newLabelName.trim() || isCreatingLabel) return;
 
-        await createLabel({
-            boardId,
-            name: newLabelName.trim(),
-            color: selectedColor,
-        });
+        setIsCreatingLabel(true);
+        try {
+            const created = await createLabel({
+                boardId,
+                name: newLabelName.trim(),
+                color: selectedColor,
+            });
 
-        setNewLabelName("");
-        setIsCreating(false);
+            if (created?._id) {
+                setLocalLabelIds((prev) => (prev.includes(created._id) ? prev : [...prev, created._id]));
+                await addLabel({ cardId, labelId: created._id });
+            }
+
+            setNewLabelName("");
+            setSearchTerm("");
+            setIsCreating(false);
+            toast.success("Label created");
+        } catch (error) {
+            toast.error("Failed to create label");
+            console.error("Error creating label:", error);
+        } finally {
+            setIsCreatingLabel(false);
+        }
     };
 
     return (
         <div className="flex items-center gap-2">
-            {/* Display assigned labels */}
-            {card.labels && card.labels.length > 0 && (
+            {selectedLabels.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                    {card.labels.map((label: any) => (
+                    {selectedLabels.map((label) => (
                         <Badge
                             key={label._id}
                             style={{ backgroundColor: label.color }}
@@ -72,7 +123,6 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                 </div>
             )}
 
-            {/* Add label button */}
             <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-6 px-2">
@@ -85,33 +135,47 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                             <h4 className="text-sm font-semibold">Labels</h4>
                         </div>
 
-                        {/* Search */}
                         <Input
                             placeholder="Search labels..."
                             className="h-8 text-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
 
-                        {/* Label list */}
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {boardLabels.map((label) => (
-                                <button
-                                    key={label._id}
-                                    onClick={() => handleToggleLabel(label._id)}
-                                    className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted transition-colors"
-                                >
-                                    <div
-                                        className="w-8 h-4 rounded"
-                                        style={{ backgroundColor: label.color }}
-                                    />
-                                    <span className="flex-1 text-left text-sm">{label.name}</span>
-                                    {cardLabelIds.includes(label._id) && (
-                                        <Check className="w-4 h-4 text-primary" />
-                                    )}
-                                </button>
-                            ))}
+                        <div
+                            className="space-y-1 max-h-48 overflow-y-auto overscroll-contain pr-1"
+                            onWheel={(e) => e.stopPropagation()}
+                            onWheelCapture={(e) => e.stopPropagation()}
+                        >
+                            {filteredLabels.map((label) => {
+                                const isPending = !!pendingLabelIds[label._id];
+                                const isSelected = localLabelIds.includes(label._id);
+
+                                return (
+                                    <button
+                                        key={label._id}
+                                        onClick={() => handleToggleLabel(label._id)}
+                                        disabled={isPending}
+                                        className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted transition-colors disabled:opacity-60"
+                                    >
+                                        <div
+                                            className="w-8 h-4 rounded"
+                                            style={{ backgroundColor: label.color }}
+                                        />
+                                        <span className="flex-1 text-left text-sm">{label.name}</span>
+                                        {isPending ? (
+                                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                        ) : (
+                                            isSelected && <Check className="w-4 h-4 text-primary" />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                            {filteredLabels.length === 0 && (
+                                <p className="text-xs text-muted-foreground px-2 py-1">No labels found.</p>
+                            )}
                         </div>
 
-                        {/* Create new label */}
                         {isCreating ? (
                             <div className="space-y-2 pt-2 border-t">
                                 <Input
@@ -120,18 +184,20 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                     onChange={(e) => setNewLabelName(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") handleCreateLabel();
-                                        if (e.key === "Escape") setIsCreating(false);
+                                        if (e.key === "Escape" && !isCreatingLabel) setIsCreating(false);
                                     }}
                                     className="h-8 text-sm"
                                     autoFocus
+                                    disabled={isCreatingLabel}
                                 />
                                 <div className="grid grid-cols-5 gap-1">
                                     {LABEL_COLORS.map((color) => (
                                         <button
                                             key={color.value}
                                             onClick={() => setSelectedColor(color.value)}
+                                            disabled={isCreatingLabel}
                                             className={cn(
-                                                "w-full h-6 rounded transition-all",
+                                                "w-full h-6 rounded transition-all disabled:opacity-50",
                                                 selectedColor === color.value && "ring-2 ring-primary ring-offset-2"
                                             )}
                                             style={{ backgroundColor: color.value }}
@@ -140,13 +206,20 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button size="sm" onClick={handleCreateLabel} className="flex-1">
-                                        Create
+                                    <Button
+                                        size="sm"
+                                        onClick={handleCreateLabel}
+                                        className="flex-1"
+                                        disabled={!newLabelName.trim() || isCreatingLabel}
+                                    >
+                                        {isCreatingLabel && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+                                        Create & Add
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => setIsCreating(false)}
+                                        disabled={isCreatingLabel}
                                     >
                                         Cancel
                                     </Button>

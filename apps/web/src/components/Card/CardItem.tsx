@@ -1,5 +1,5 @@
 import { Draggable } from "@hello-pangea/dnd";
-import { Calendar, CheckSquare, Paperclip, MessageSquare } from "lucide-react";
+import { Calendar, CheckSquare, MessageSquare } from "lucide-react";
 import { useState } from "react";
 
 import type { Card } from "@/types/board";
@@ -15,8 +15,10 @@ export function CardItem({ card, index }: CardItemProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const hasDueDate = !!card.dueDate;
-    const isPastDue = hasDueDate && card.dueDate! < Date.now();
+    const isPastDue = hasDueDate && !card.completed && card.dueDate! < Date.now();
     const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
+    const checklistItemsTotal = card.checklistItemsTotal ?? 0;
+    const checklistItemsCompleted = card.checklistItemsCompleted ?? 0;
 
     return (
         <>
@@ -84,6 +86,22 @@ export function CardItem({ card, index }: CardItemProps) {
                             {card.description && (
                                 <div className="flex items-center gap-1">
                                     <MessageSquare className="h-3 w-3" />
+                                </div>
+                            )}
+
+                            {/* Checklist task progress */}
+                            {checklistItemsTotal > 0 && (
+                                <div
+                                    className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${
+                                        checklistItemsCompleted === checklistItemsTotal
+                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                                            : "bg-muted"
+                                    }`}
+                                >
+                                    <CheckSquare className="h-3 w-3" />
+                                    <span>
+                                        {checklistItemsCompleted}/{checklistItemsTotal}
+                                    </span>
                                 </div>
                             )}
                         </div>

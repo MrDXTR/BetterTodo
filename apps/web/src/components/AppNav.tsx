@@ -119,10 +119,12 @@ export default function AppNav() {
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-2 pt-4">
-                <NavLinks
-                  vertical
-                  onNavigate={() => setMobileOpen(false)}
-                />
+                <Authenticated>
+                  <NavLinks
+                    vertical
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                </Authenticated>
                 <div className="mt-4 pt-4 border-t">
                   <Authenticated>
                     <UserMenu />

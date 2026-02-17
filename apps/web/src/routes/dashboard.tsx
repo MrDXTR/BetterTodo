@@ -117,8 +117,8 @@ function StatCard({
 // ============================================
 
 function MyTasksSection() {
-  const assignedData = useQuery(api.dashboard.getMyAssignedCards);
-  const isLoading = assignedData === undefined;
+  const tasksData = useQuery(api.dashboard.getMyOpenTasks);
+  const isLoading = tasksData === undefined;
 
   if (isLoading) {
     return (
@@ -144,9 +144,9 @@ function MyTasksSection() {
     );
   }
 
-  const cards = assignedData?.cards ?? [];
+  const tasks = tasksData?.tasks ?? [];
 
-  if (cards.length === 0) {
+  if (tasks.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -159,7 +159,7 @@ function MyTasksSection() {
           <div className="text-center py-6">
             <CheckCircle2 className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">
-              No tasks assigned to you. You're all caught up!
+              No open checklist tasks. You're all caught up!
             </p>
           </div>
         </CardContent>
@@ -168,15 +168,15 @@ function MyTasksSection() {
   }
 
   // Group by board
-  const grouped = cards.reduce(
-    (acc, card) => {
-      if (!card) return acc;
-      const key = card.boardId;
-      if (!acc[key]) acc[key] = { boardTitle: card.boardTitle, boardColor: card.boardColor, boardId: card.boardId, cards: [] };
-      acc[key].cards.push(card);
+  const grouped = tasks.reduce(
+    (acc, task) => {
+      if (!task) return acc;
+      const key = task.boardId;
+      if (!acc[key]) acc[key] = { boardTitle: task.boardTitle, boardColor: task.boardColor, boardId: task.boardId, tasks: [] };
+      acc[key].tasks.push(task);
       return acc;
     },
-    {} as Record<string, { boardTitle: string; boardColor?: string; boardId: string; cards: typeof cards }>
+    {} as Record<string, { boardTitle: string; boardColor?: string; boardId: string; tasks: typeof tasks }>
   );
 
   return (
@@ -186,12 +186,14 @@ function MyTasksSection() {
           <ListTodo className="h-5 w-5" />
           My Tasks
           <Badge variant="secondary" className="ml-auto">
-            {cards.length}
+            {tasks.length}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5 max-h-[400px] overflow-y-auto">
-        {Object.entries(grouped).map(([boardId, group]) => (
+        {(Object.entries(grouped) as Array<
+          [string, { boardTitle: string; boardColor?: string; boardId: string; tasks: typeof tasks }]
+        >).map(([boardId, group]) => (
           <div key={boardId}>
             <Link
               to="/boards/$boardId"
@@ -207,24 +209,24 @@ function MyTasksSection() {
               </span>
             </Link>
             <div className="space-y-1.5 ml-5">
-              {group.cards.map((card) => {
-                if (!card) return null;
-                const priorityConfig = card.priority
-                  ? PRIORITY_CONFIG[card.priority as keyof typeof PRIORITY_CONFIG]
+              {group.tasks.map((task) => {
+                if (!task) return null;
+                const priorityConfig = task.priority
+                  ? PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG]
                   : null;
                 return (
                   <Link
-                    key={card._id}
+                    key={task._id}
                     to="/boards/$boardId"
-                    params={{ boardId: card.boardId }}
+                    params={{ boardId: task.boardId }}
                     className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/60 transition-colors group"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate font-medium">
-                        {card.title}
+                        {task.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {card.listName}
+                        {task.cardTitle} · {task.listName}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -239,13 +241,13 @@ function MyTasksSection() {
                           {priorityConfig.label}
                         </Badge>
                       )}
-                      {card.dueDate && (
+                      {task.dueDate && (
                         <Badge
-                          variant={card.isOverdue ? "destructive" : "secondary"}
+                          variant={task.isOverdue ? "destructive" : "secondary"}
                           className="text-[10px] px-1.5 py-0 gap-1"
                         >
                           <CalendarClock className="h-2.5 w-2.5" />
-                          {new Date(card.dueDate).toLocaleDateString(undefined, {
+                          {new Date(task.dueDate).toLocaleDateString(undefined, {
                             month: "short",
                             day: "numeric",
                           })}
@@ -385,16 +387,16 @@ function RouteComponent() {
 function DashboardContent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const boards = useQuery(api.boards.getAll);
-  const assignedData = useQuery(api.dashboard.getMyAssignedCards);
+  const tasksData = useQuery(api.dashboard.getMyOpenTasks);
   const completedCount = useQuery(api.dashboard.getMyCompletedThisWeek);
 
   const boardsLoading = boards === undefined;
-  const assignedLoading = assignedData === undefined;
+  const tasksLoading = tasksData === undefined;
   const completedLoading = completedCount === undefined;
 
   const boardCount = boards?.length ?? 0;
-  const taskCount = assignedData?.cards?.length ?? 0;
-  const overdueCount = assignedData?.overdueCount ?? 0;
+  const taskCount = tasksData?.tasks?.length ?? 0;
+  const overdueCount = tasksData?.overdueCount ?? 0;
 
   return (
     <>
@@ -420,15 +422,15 @@ function DashboardContent() {
             title="My Tasks"
             icon={ListTodo}
             value={taskCount}
-            subtitle="Cards assigned to you"
-            loading={assignedLoading}
+            subtitle="Open checklist tasks"
+            loading={tasksLoading}
           />
           <StatCard
             title="Overdue"
             icon={AlertTriangle}
             value={overdueCount}
             subtitle="Tasks past their due date"
-            loading={assignedLoading}
+            loading={tasksLoading}
             accent={overdueCount > 0 ? "text-destructive" : undefined}
           />
           <StatCard
