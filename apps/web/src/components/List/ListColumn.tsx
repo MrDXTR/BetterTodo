@@ -23,7 +23,7 @@ export function ListColumn({ list, index, boardColor, isFresh = false }: ListCol
                     className="flex-shrink-0 w-72"
                 >
                     <div
-                        className={`flex h-full max-h-full flex-col rounded-xl border transition-all ${snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
+                        className={`flex flex-col max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)] rounded-xl border overflow-hidden transition-all ${snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
                             } ${isFresh ? "list-fresh-enter" : ""}`}
                         style={{
                             background: snapshot.isDragging
@@ -52,7 +52,7 @@ export function ListColumn({ list, index, boardColor, isFresh = false }: ListCol
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`flex-1 overflow-y-auto p-3 space-y-2.5 transition-colors ${snapshot.isDraggingOver ? "bg-muted/30" : ""
+                                    className={`flex-1 overflow-y-auto min-h-0 p-3 space-y-2.5 transition-colors ${snapshot.isDraggingOver ? "bg-muted/30" : ""
                                         }`}
                                     style={{
                                         minHeight: "100px",

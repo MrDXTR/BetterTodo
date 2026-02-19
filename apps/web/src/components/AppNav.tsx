@@ -114,7 +114,7 @@ export default function AppNav() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px]">
+            <SheetContent side="right" className="w-[280px] p-4">
               <SheetHeader>
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>

@@ -227,7 +227,7 @@ export function BoardView({ board }: BoardViewProps) {
                 }
             `}</style>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-8 custom-scrollbar">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-8 custom-scrollbar h-full">
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" direction="horizontal" type="list">
                         {(provided) => (
