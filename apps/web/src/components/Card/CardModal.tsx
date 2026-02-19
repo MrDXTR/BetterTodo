@@ -101,6 +101,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
     const [showCopyDialog, setShowCopyDialog] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [pendingClose, setPendingClose] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
@@ -145,6 +146,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
 
     const handleSaveChanges = async () => {
         if (!card || !hasUnsavedChanges) return;
+        setIsSaving(true);
 
         const updates: {
             cardId: Id<"cards">;
@@ -172,6 +174,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
 
         await updateCard(updates);
         setPendingChanges({});
+        setIsSaving(false);
 
         if (pendingClose) {
             setPendingClose(false);
@@ -248,7 +251,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                     }
                 }}
             >
-                <DialogContent className="flex h-[90vh] md:min-w-4xl w-[95vw] max-w-4xl flex-col p-0">
+                <DialogContent className="flex h-[90vh] md:min-w-4xl w-[95vw] max-w-4xl flex-col">
                     <div className="flex-1 overflow-y-auto p-4 md:p-6">
                         {isLoading && <CardModalSkeleton />}
 
@@ -561,7 +564,11 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                 Discard
                             </Button>
                             <Button size="sm" onClick={handleSaveChanges} className="gap-2">
-                                <Save className="h-4 w-4" />
+                                {isSaving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
                                 Save Changes
                             </Button>
                         </div>

@@ -51,6 +51,7 @@ function Button({
   const Comp = asChild ? Slot.Root : "button"
 
   return (
+    // @ts-expect-error TODO: Fix types for React 19
     <Comp
       data-slot="button"
       data-variant={variant}
