@@ -192,15 +192,6 @@ export const addToCard = mutation({
             labelId: args.labelId,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "label_added",
-            details: { labelId: args.labelId },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -245,15 +236,6 @@ export const removeFromCard = mutation({
 
         await ctx.db.delete(cardLabel._id);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "label_removed",
-            details: { labelId: args.labelId },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },

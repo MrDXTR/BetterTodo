@@ -50,14 +50,6 @@ export const create = mutation({
             createdAt: now,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "list_created",
-            details: { listId, title: args.title },
-            createdAt: now,
-        });
 
         return await ctx.db.get(listId);
     },
@@ -97,14 +89,6 @@ export const update = mutation({
 
         await ctx.db.patch(args.listId, updates);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: list.boardId,
-            userId: user._id,
-            actionType: "list_updated",
-            details: { listId: args.listId, ...updates },
-            createdAt: Date.now(),
-        });
 
         return await ctx.db.get(args.listId);
     },
@@ -164,14 +148,6 @@ export const updatePosition = mutation({
             }
         }
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: list.boardId,
-            userId: user._id,
-            actionType: "list_moved",
-            details: { listId: args.listId, oldPosition, newPosition: args.newPosition },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -203,14 +179,6 @@ export const archive = mutation({
 
         await ctx.db.patch(args.listId, { archived: true });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: list.boardId,
-            userId: user._id,
-            actionType: "list_archived",
-            details: { listId: args.listId, title: list.title },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -253,14 +221,6 @@ export const deleteList = mutation({
         // Delete the list
         await ctx.db.delete(args.listId);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: list.boardId,
-            userId: user._id,
-            actionType: "list_deleted",
-            details: { listId: args.listId, title: list.title, cardsDeleted: cards.length },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },

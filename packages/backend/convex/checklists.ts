@@ -100,15 +100,6 @@ export const create = mutation({
             position: maxPosition + 1,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "checklist_added",
-            details: { title: args.title },
-            createdAt: Date.now(),
-        });
 
         return await ctx.db.get(checklistId);
     },
@@ -153,15 +144,6 @@ export const deleteChecklist = mutation({
 
         await ctx.db.delete(args.checklistId);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: checklist.cardId,
-            userId: user._id,
-            actionType: "checklist_removed",
-            details: { title: checklist.title },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },

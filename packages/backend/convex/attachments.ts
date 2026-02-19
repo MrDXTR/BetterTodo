@@ -88,15 +88,6 @@ export const addAttachment = mutation({
             createdAt: now,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "attachment_added",
-            details: { fileName: args.fileName },
-            createdAt: now,
-        });
 
         return await ctx.db.get(attachmentId);
     },
@@ -143,15 +134,6 @@ export const deleteAttachment = mutation({
         // Delete the DB record
         await ctx.db.delete(args.attachmentId);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: attachment.cardId,
-            userId: user._id,
-            actionType: "attachment_deleted",
-            details: { fileName: attachment.fileName },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },

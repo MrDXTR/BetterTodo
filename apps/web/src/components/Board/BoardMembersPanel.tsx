@@ -152,7 +152,7 @@ export function BoardMembersPanel({
                                             role: inviteRole,
                                         });
                                         toast.success(
-                                            `${result.userName || inviteEmail} added to the board`
+                                            `Invitation sent to ${result.userName || inviteEmail}`
                                         );
                                         setInviteEmail("");
                                     } catch (error: any) {

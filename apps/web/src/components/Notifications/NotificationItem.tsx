@@ -1,10 +1,12 @@
 import { formatDistanceToNow } from "date-fns";
-import { Bell, MessageSquare, UserPlus, CheckCircle2, AlertCircle, X } from "lucide-react";
-import { useMutation } from "convex/react";
+import { Bell, MessageSquare, UserPlus, CheckCircle2, AlertCircle, X, Check, XCircle, Loader2 } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface NotificationItemProps {
     notification: {
@@ -19,28 +21,84 @@ interface NotificationItemProps {
     onNavigate?: () => void;
 }
 
-const NOTIFICATION_ICONS = {
+const NOTIFICATION_ICONS: Record<string, React.ElementType> = {
     mention: MessageSquare,
     assignment: UserPlus,
     due_date: AlertCircle,
     comment: MessageSquare,
     completed: CheckCircle2,
+    board_invite: UserPlus,
     default: Bell,
 };
 
 export function NotificationItem({ notification, onNavigate }: NotificationItemProps) {
     const markAsRead = useMutation(api.notifications.markAsRead);
     const deleteNotification = useMutation(api.notifications.deleteNotification);
+    const acceptInvite = useMutation(api.boards.acceptInvite);
+    const declineInvite = useMutation(api.boards.declineInvite);
 
-    const Icon = NOTIFICATION_ICONS[notification.type as keyof typeof NOTIFICATION_ICONS] || NOTIFICATION_ICONS.default;
+    const pendingInvites = useQuery(
+        api.boards.getPendingInvites,
+        notification.type === "board_invite" ? {} : "skip"
+    );
+
+    const [isAccepting, setIsAccepting] = useState(false);
+    const [isDeclining, setIsDeclining] = useState(false);
+
+    const Icon = NOTIFICATION_ICONS[notification.type] || NOTIFICATION_ICONS.default;
+
+    // Extract boardId from linkUrl (format: /boards/{boardId})
+    const boardIdFromLink = notification.linkUrl?.split("/boards/")[1];
+
+    // Find matching invite for this notification
+    const matchingInvite = pendingInvites?.find(
+        (invite) => String(invite.boardId) === boardIdFromLink
+    );
+
+    const isBoardInvite = notification.type === "board_invite";
 
     const handleClick = async () => {
+        // Don't navigate if this is a board invite (they should use the buttons)
+        if (isBoardInvite) return;
+
         if (!notification.read) {
             await markAsRead({ notificationId: notification._id });
         }
         if (notification.linkUrl && onNavigate) {
             onNavigate();
             window.location.href = notification.linkUrl;
+        }
+    };
+
+    const handleAccept = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!matchingInvite) return;
+
+        setIsAccepting(true);
+        try {
+            await acceptInvite({ inviteId: matchingInvite._id });
+            await markAsRead({ notificationId: notification._id });
+            toast.success(`Joined "${matchingInvite.boardTitle}"!`);
+        } catch (error: any) {
+            toast.error(error.message || "Failed to accept invite");
+        } finally {
+            setIsAccepting(false);
+        }
+    };
+
+    const handleDecline = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!matchingInvite) return;
+
+        setIsDeclining(true);
+        try {
+            await declineInvite({ inviteId: matchingInvite._id });
+            await deleteNotification({ notificationId: notification._id });
+            toast.success("Invite declined");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to decline invite");
+        } finally {
+            setIsDeclining(false);
         }
     };
 
@@ -53,7 +111,8 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
         <div
             onClick={handleClick}
             className={cn(
-                "group relative flex gap-3 p-3 rounded-lg transition-colors cursor-pointer border",
+                "group relative flex gap-3 p-3 rounded-lg transition-colors border",
+                isBoardInvite ? "cursor-default" : "cursor-pointer",
                 notification.read
                     ? "bg-background hover:bg-muted/50 border-transparent"
                     : "bg-primary/5 hover:bg-primary/10 border-primary/20"
@@ -84,6 +143,47 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
                 <p className="text-xs text-muted-foreground line-clamp-2">
                     {notification.message}
                 </p>
+
+                {/* Accept/Decline buttons for board invites */}
+                {isBoardInvite && matchingInvite && (
+                    <div className="flex items-center gap-2 pt-1">
+                        <Button
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={handleAccept}
+                            disabled={isAccepting || isDeclining}
+                        >
+                            {isAccepting ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <Check className="h-3 w-3" />
+                            )}
+                            Accept
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={handleDecline}
+                            disabled={isAccepting || isDeclining}
+                        >
+                            {isDeclining ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <XCircle className="h-3 w-3" />
+                            )}
+                            Decline
+                        </Button>
+                    </div>
+                )}
+
+                {/* Show "responded" state if invite was already handled */}
+                {isBoardInvite && !matchingInvite && pendingInvites !== undefined && (
+                    <p className="text-xs text-muted-foreground italic pt-1">
+                        Invite already responded to
+                    </p>
+                )}
+
                 <p className="text-[10px] text-muted-foreground">
                     {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
                 </p>
