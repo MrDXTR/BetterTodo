@@ -44,6 +44,7 @@ export default defineSchema({
     description: v.optional(v.string()), // Rich text/markdown
     position: v.number(), // For ordering within list
     coverImage: v.optional(v.string()),
+    coverStorageId: v.optional(v.id("_storage")),
     dueDate: v.optional(v.number()),
     priority: v.optional(
       v.union(
@@ -149,7 +150,7 @@ export default defineSchema({
     cardId: v.id("cards"),
     uploadedBy: v.string(), // User ID
     fileName: v.string(),
-    fileUrl: v.string(), // Convex storage URL or external URL
+    storageId: v.id("_storage"), // Convex file storage ID
     fileSize: v.number(), // Bytes
     mimeType: v.string(),
     createdAt: v.number(),

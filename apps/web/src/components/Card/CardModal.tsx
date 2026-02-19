@@ -24,6 +24,7 @@ import {
     AlertCircle,
     Save,
     Loader2,
+    Paperclip,
 } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
@@ -47,6 +48,8 @@ import { CardLabels } from "./CardLabels";
 import { CardMembers } from "./CardMembers";
 import { CardChecklists } from "./CardChecklists";
 import { CardComments } from "./CardComments";
+import { CardAttachments } from "./CardAttachments";
+import { CardCoverImage } from "./CardCoverImage";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CardModalProps {
@@ -289,6 +292,17 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                         )}
                         {card && (
                             <>
+                                {/* Cover Image Banner */}
+                                {card.coverImage && (
+                                    <div className="relative -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 group/cover">
+                                        <img
+                                            src={card.coverImage}
+                                            alt="Cover"
+                                            className="h-40 w-full object-cover rounded-t-lg"
+                                        />
+                                    </div>
+                                )}
+
                                 {/* Header */}
                                 <DialogHeader className="mb-6">
                                     <div className="flex items-start gap-3">
@@ -432,6 +446,15 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 <CardComments cardId={card._id} />
                                             </div>
                                         </div>
+
+                                        {/* Attachments */}
+                                        <div className="flex items-start gap-3">
+                                            <Paperclip className="w-5 h-5 mt-1 text-muted-foreground" />
+                                            <div className="flex-1">
+                                                <h3 className="text-sm font-semibold mb-2">Attachments</h3>
+                                                <CardAttachments cardId={card._id} />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Sidebar */}
@@ -482,10 +505,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
-                                                <Button variant="secondary" size="sm" className="w-full justify-start h-8">
-                                                    <ImageIcon className="w-4 h-4 mr-2" />
-                                                    Cover
-                                                </Button>
+                                                <CardCoverImage cardId={card._id} coverImage={card.coverImage} />
                                             </div>
                                         </div>
 

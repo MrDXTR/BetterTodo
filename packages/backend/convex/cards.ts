@@ -518,6 +518,32 @@ export const deleteCard = mutation({
             throw new Error("Insufficient permissions");
         }
 
+        // Delete all attachments and their storage files
+        const attachments = await ctx.db
+            .query("attachments")
+            .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
+            .collect();
+
+        for (const attachment of attachments) {
+            await ctx.storage.delete(attachment.storageId);
+            await ctx.db.delete(attachment._id);
+        }
+
+        // Delete the cover image storage if it exists and isn't from an attachment
+        if (card.coverStorageId) {
+            // Only delete if not already deleted as part of attachments
+            const stillExists = attachments.every(
+                (a) => a.storageId !== card.coverStorageId
+            );
+            if (stillExists) {
+                try {
+                    await ctx.storage.delete(card.coverStorageId);
+                } catch {
+                    // Storage file may already be deleted
+                }
+            }
+        }
+
         await ctx.db.delete(args.cardId);
 
         // Log activity

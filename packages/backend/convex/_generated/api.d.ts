@@ -9,6 +9,7 @@
  */
 
 import type * as agent from "../agent.js";
+import type * as attachments from "../attachments.js";
 import type * as auth from "../auth.js";
 import type * as boards from "../boards.js";
 import type * as cards from "../cards.js";
@@ -16,6 +17,7 @@ import type * as chat from "../chat.js";
 import type * as checklists from "../checklists.js";
 import type * as comments from "../comments.js";
 import type * as dashboard from "../dashboard.js";
+import type * as files from "../files.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as labels from "../labels.js";
@@ -32,6 +34,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   agent: typeof agent;
+  attachments: typeof attachments;
   auth: typeof auth;
   boards: typeof boards;
   cards: typeof cards;
@@ -39,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   checklists: typeof checklists;
   comments: typeof comments;
   dashboard: typeof dashboard;
+  files: typeof files;
   healthCheck: typeof healthCheck;
   http: typeof http;
   labels: typeof labels;
