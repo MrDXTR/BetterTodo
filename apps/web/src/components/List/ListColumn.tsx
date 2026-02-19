@@ -23,7 +23,7 @@ export function ListColumn({ list, index, boardColor, isFresh = false }: ListCol
                     className="flex-shrink-0 w-72"
                 >
                     <div
-                        className={`flex flex-col max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-200px)] rounded-xl border overflow-hidden transition-all ${snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
+                        className={`flex flex-col max-h-[calc(100vh-30vh)] md:max-h-[calc(100vh-20vh)] rounded-xl border overflow-hidden transition-all ${snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
                             } ${isFresh ? "list-fresh-enter" : ""}`}
                         style={{
                             background: snapshot.isDragging

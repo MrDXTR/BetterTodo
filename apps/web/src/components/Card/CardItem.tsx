@@ -39,11 +39,13 @@ export function CardItem({ card, index }: CardItemProps) {
                     >
                         {/* Cover Image */}
                         {card.coverImage && (
-                            <img
-                                src={card.coverImage}
-                                alt=""
-                                className="mb-2 -mx-3 -mt-3 h-32 w-[calc(100%+1.5rem)] rounded-t-md object-cover"
-                            />
+                            <div className="mb-2 -mx-3 -mt-3 overflow-hidden rounded-t-md">
+                                <img
+                                    src={card.coverImage}
+                                    alt=""
+                                    className="block h-32 w-full object-cover"
+                                />
+                            </div>
                         )}
 
                         {/* Priority Badge */}

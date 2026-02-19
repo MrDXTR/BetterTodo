@@ -109,7 +109,7 @@ export const getById = query({
     args: { boardId: v.id("boards") },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) return null;
 
         // Check if user has access to this board
         const membership = await ctx.db
@@ -119,10 +119,10 @@ export const getById = query({
             )
             .first();
 
-        if (!membership) throw new Error("Access denied");
+        if (!membership) return null;
 
         const board = await ctx.db.get(args.boardId);
-        if (!board) throw new Error("Board not found");
+        if (!board) return null;
 
         // Get lists for this board
         const lists = await ctx.db
@@ -209,7 +209,7 @@ export const getMembers = query({
     args: { boardId: v.id("boards") },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) return [];
 
         // Check if user has access to this board
         const membership = await ctx.db
@@ -219,7 +219,7 @@ export const getMembers = query({
             )
             .first();
 
-        if (!membership) throw new Error("Access denied");
+        if (!membership) return [];
 
         const members = await ctx.db
             .query("boardMembers")

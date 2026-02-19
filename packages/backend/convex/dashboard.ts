@@ -94,40 +94,48 @@ export const getMyOpenTasks = query({
 });
 
 /**
- * Get count of cards completed this week that were assigned to the current user.
+ * Get count of completed checklist tasks across boards the user can access.
  */
 export const getMyCompletedThisWeek = query({
     handler: async (ctx) => {
         const user = await authComponent.safeGetAuthUser(ctx);
         if (!user) return 0;
 
-        // Get start of current week (Monday)
-        const now = new Date();
-        const day = now.getDay();
-        const diff = day === 0 ? 6 : day - 1; // Monday = 0
-        const monday = new Date(now);
-        monday.setHours(0, 0, 0, 0);
-        monday.setDate(monday.getDate() - diff);
-        const weekStart = monday.getTime();
-
-        // Get all assignments for this user
-        const assignments = await ctx.db
-            .query("cardAssignments")
+        // Get boards the user can access.
+        const memberships = await ctx.db
+            .query("boardMembers")
             .withIndex("by_user", (q) => q.eq("userId", user._id))
             .collect();
 
-        if (assignments.length === 0) return 0;
+        if (memberships.length === 0) return 0;
 
-        let completedCount = 0;
+        const boardIds = new Set(memberships.map((membership) => membership.boardId));
+        let completedTasks = 0;
 
-        for (const assignment of assignments) {
-            const card = await ctx.db.get(assignment.cardId);
-            if (card && card.completed && card.updatedAt >= weekStart) {
-                completedCount++;
+        for (const boardId of boardIds) {
+            const cards = await ctx.db
+                .query("cards")
+                .withIndex("by_board", (q) => q.eq("boardId", boardId))
+                .filter((q) => q.eq(q.field("archived"), false))
+                .collect();
+
+            for (const card of cards) {
+                const checklists = await ctx.db
+                    .query("checklists")
+                    .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                    .collect();
+
+                for (const checklist of checklists) {
+                    const items = await ctx.db
+                        .query("checklistItems")
+                        .withIndex("by_checklist", (q) => q.eq("checklistId", checklist._id))
+                        .collect();
+
+                    completedTasks += items.filter((item) => item.completed).length;
+                }
             }
         }
 
-        return completedCount;
+        return completedTasks;
     },
 });
-

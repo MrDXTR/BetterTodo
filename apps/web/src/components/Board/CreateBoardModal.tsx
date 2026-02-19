@@ -1,4 +1,5 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -27,9 +28,10 @@ import {
 interface CreateBoardModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onCreated?: (boardId: Id<"boards">) => void;
 }
 
-export function CreateBoardModal({ open, onOpenChange }: CreateBoardModalProps) {
+export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardModalProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [color, setColor] = useState(DEFAULT_BOARD_COLOR);
@@ -49,7 +51,7 @@ export function CreateBoardModal({ open, onOpenChange }: CreateBoardModalProps) 
         setIsSubmitting(true);
 
         try {
-            await createBoard({
+            const createdBoard = await createBoard({
                 title: title.trim(),
                 description: description.trim() || undefined,
                 color,
@@ -64,6 +66,10 @@ export function CreateBoardModal({ open, onOpenChange }: CreateBoardModalProps) 
             setColor(DEFAULT_BOARD_COLOR);
             setVisibility("private");
             onOpenChange(false);
+
+            if (createdBoard?._id) {
+                onCreated?.(createdBoard._id);
+            }
         } catch (error) {
             console.error("Error creating board:", error);
             toast.error("Failed to create board. Please try again.");
