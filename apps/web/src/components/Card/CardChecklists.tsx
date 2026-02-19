@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 
 interface CardChecklistsProps {
     cardId: Id<"cards">;
@@ -104,11 +105,11 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                 prev.map((checklist) =>
                     checklist._id === tempId
                         ? {
-                              _id: String(created?._id),
-                              title: created?.title ?? title,
-                              position: created?.position ?? checklist.position,
-                              items: [],
-                          }
+                            _id: String(created?._id),
+                            title: created?.title ?? title,
+                            position: created?.position ?? checklist.position,
+                            items: [],
+                        }
                         : checklist
                 )
             );
@@ -188,11 +189,11 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                         items: checklist.items.map((item) =>
                             item._id === tempId
                                 ? {
-                                      _id: String(created?._id),
-                                      title: created?.title ?? title,
-                                      completed: created?.completed ?? false,
-                                      position: created?.position ?? item.position,
-                                  }
+                                    _id: String(created?._id),
+                                    title: created?.title ?? title,
+                                    completed: created?.completed ?? false,
+                                    position: created?.position ?? item.position,
+                                }
                                 : item
                         ),
                     };
@@ -359,11 +360,10 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                             disabled={isToggling || isDeleting || item.isOptimistic}
                                         />
                                         <span
-                                            className={`flex-1 text-sm ${
-                                                item.completed ? "line-through text-muted-foreground" : ""
-                                            }`}
+                                            className={`flex-1 text-sm ${item.completed ? "line-through text-muted-foreground" : ""
+                                                }`}
                                         >
-                                            {item.title}
+                                            <TextWithLinkPreviews text={item.title} />
                                         </span>
                                         {(isToggling || item.isOptimistic) && (
                                             <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />

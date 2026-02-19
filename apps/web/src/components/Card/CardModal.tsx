@@ -50,6 +50,7 @@ import { CardChecklists } from "./CardChecklists";
 import { CardComments } from "./CardComments";
 import { CardAttachments } from "./CardAttachments";
 import { CardCoverImage } from "./CardCoverImage";
+import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CardModalProps {
@@ -423,7 +424,11 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                         className="text-sm text-muted-foreground cursor-pointer [word-break:break-word] hover:bg-muted p-3 rounded min-h-[60px] break-words whitespace-pre-wrap"
                                                         onClick={handleDescriptionEdit}
                                                     >
-                                                        {currentDescription || "Add a more detailed description..."}
+                                                        {currentDescription ? (
+                                                            <TextWithLinkPreviews text={currentDescription} />
+                                                        ) : (
+                                                            "Add a more detailed description..."
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
