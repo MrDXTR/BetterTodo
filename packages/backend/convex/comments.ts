@@ -81,15 +81,6 @@ export const create = mutation({
             updatedAt: now,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "comment_added",
-            details: { commentId },
-            createdAt: now,
-        });
 
         // TODO: Check for @mentions and create notifications
 
@@ -160,15 +151,6 @@ export const deleteComment = mutation({
 
         await ctx.db.delete(args.commentId);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: comment.cardId,
-            userId: user._id,
-            actionType: "comment_deleted",
-            details: { commentId: args.commentId },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },

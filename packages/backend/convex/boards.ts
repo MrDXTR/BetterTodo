@@ -249,37 +249,6 @@ export const getMembers = query({
     },
 });
 
-/**
- * Get board activity log
- */
-export const getActivity = query({
-    args: {
-        boardId: v.id("boards"),
-        limit: v.optional(v.number()),
-    },
-    handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
-            .first();
-
-        if (!membership) throw new Error("Access denied");
-
-        const activities = await ctx.db
-            .query("activityLogs")
-            .withIndex("by_board_time", (q) => q.eq("boardId", args.boardId))
-            .order("desc")
-            .take(args.limit ?? 50);
-
-        return activities;
-    },
-});
 
 // ============================================
 // MUTATIONS
@@ -324,14 +293,6 @@ export const create = mutation({
             addedAt: now,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId,
-            userId: user._id,
-            actionType: "board_created",
-            details: { title: args.title },
-            createdAt: now,
-        });
 
         return await ctx.db.get(boardId);
     },
@@ -374,14 +335,6 @@ export const update = mutation({
 
         await ctx.db.patch(args.boardId, updates);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "board_updated",
-            details: updates,
-            createdAt: Date.now(),
-        });
 
         return await ctx.db.get(args.boardId);
     },
@@ -413,14 +366,6 @@ export const archive = mutation({
             updatedAt: Date.now(),
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "board_archived",
-            details: {},
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -452,14 +397,6 @@ export const restore = mutation({
             updatedAt: Date.now(),
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "board_restored",
-            details: {},
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -574,21 +511,13 @@ export const addMember = mutation({
             addedBy: user._id,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "member_added",
-            details: { addedUserId: args.userId, role: args.role },
-            createdAt: now,
-        });
 
         return { success: true };
     },
 });
 
 /**
- * Add a member by email address
+ * Invite a member by email address (creates an invite + notification)
  */
 export const addMemberByEmail = mutation({
     args: {
@@ -616,7 +545,7 @@ export const addMemberByEmail = mutation({
             throw new Error("Insufficient permissions");
         }
 
-        // Search for the user by email by checking known users
+        // Search for the user by email
         const allMembers = await ctx.db.query("boardMembers").collect();
         const uniqueUserIds = [...new Set(allMembers.map(m => m.userId))];
 
@@ -645,24 +574,150 @@ export const addMemberByEmail = mutation({
             throw new Error("This user is already a member of this board");
         }
 
+        // Check if there's already a pending invite
+        const existingInvite = await ctx.db
+            .query("boardInvites")
+            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+            .filter((q) =>
+                q.and(
+                    q.eq(q.field("invitedUserId"), targetUser._id),
+                    q.eq(q.field("status"), "pending")
+                )
+            )
+            .first();
+
+        if (existingInvite) {
+            throw new Error("An invite is already pending for this user");
+        }
+
         const now = Date.now();
-        await ctx.db.insert("boardMembers", {
+        const board = await ctx.db.get(args.boardId);
+
+        // Create the invite
+        await ctx.db.insert("boardInvites", {
             boardId: args.boardId,
-            userId: targetUser._id,
+            invitedUserId: targetUser._id,
+            invitedByUserId: user._id,
             role: args.role,
-            addedAt: now,
-            addedBy: user._id,
+            status: "pending",
+            createdAt: now,
         });
 
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "member_added",
-            details: { addedUserId: targetUser._id, email: args.email, role: args.role },
+        // Create a notification for the invited user
+        await ctx.db.insert("notifications", {
+            userId: targetUser._id,
+            type: "board_invite",
+            title: "Board Invitation",
+            message: `You've been invited to join "${board?.title ?? "a board"}"`,
+            linkUrl: `/boards/${args.boardId}`,
+            read: false,
             createdAt: now,
         });
 
         return { success: true, userName: targetUser.name };
+    },
+});
+
+/**
+ * Accept a board invite
+ */
+export const acceptInvite = mutation({
+    args: { inviteId: v.id("boardInvites") },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const invite = await ctx.db.get(args.inviteId);
+        if (!invite) throw new Error("Invite not found");
+
+        if (invite.invitedUserId !== user._id) {
+            throw new Error("This invite is not for you");
+        }
+
+        if (invite.status !== "pending") {
+            throw new Error("This invite has already been responded to");
+        }
+
+        const now = Date.now();
+
+        // Add user as board member
+        await ctx.db.insert("boardMembers", {
+            boardId: invite.boardId,
+            userId: user._id,
+            role: invite.role,
+            addedAt: now,
+            addedBy: invite.invitedByUserId,
+        });
+
+        // Update invite status
+        await ctx.db.patch(args.inviteId, {
+            status: "accepted",
+            respondedAt: now,
+        });
+
+        return { success: true };
+    },
+});
+
+/**
+ * Decline a board invite
+ */
+export const declineInvite = mutation({
+    args: { inviteId: v.id("boardInvites") },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        const invite = await ctx.db.get(args.inviteId);
+        if (!invite) throw new Error("Invite not found");
+
+        if (invite.invitedUserId !== user._id) {
+            throw new Error("This invite is not for you");
+        }
+
+        if (invite.status !== "pending") {
+            throw new Error("This invite has already been responded to");
+        }
+
+        await ctx.db.patch(args.inviteId, {
+            status: "declined",
+            respondedAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
+/**
+ * Get pending invites for the current user
+ */
+export const getPendingInvites = query({
+    handler: async (ctx) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) return [];
+
+        const invites = await ctx.db
+            .query("boardInvites")
+            .withIndex("by_user_status", (q) =>
+                q.eq("invitedUserId", user._id).eq("status", "pending")
+            )
+            .collect();
+
+        // Enrich with board details
+        const enriched = await Promise.all(
+            invites.map(async (invite) => {
+                const board = await ctx.db.get(invite.boardId);
+                const inviter = await authComponent.getAnyUserById(ctx, invite.invitedByUserId);
+                return {
+                    ...invite,
+                    boardTitle: board?.title ?? "Unknown Board",
+                    boardColor: board?.color,
+                    inviterName: inviter?.name ?? "Someone",
+                };
+            })
+        );
+
+        return enriched;
     },
 });
 
@@ -713,14 +768,6 @@ export const updateMemberRole = mutation({
 
         await ctx.db.patch(targetMember._id, { role: args.role });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "member_role_updated",
-            details: { targetUserId: args.userId, newRole: args.role },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -768,14 +815,6 @@ export const removeMember = mutation({
 
         await ctx.db.delete(targetMember._id);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: args.boardId,
-            userId: user._id,
-            actionType: "member_removed",
-            details: { removedUserId: args.userId },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },

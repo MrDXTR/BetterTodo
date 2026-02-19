@@ -44,6 +44,7 @@ export default defineSchema({
     description: v.optional(v.string()), // Rich text/markdown
     position: v.number(), // For ordering within list
     coverImage: v.optional(v.string()),
+    coverStorageId: v.optional(v.id("_storage")),
     dueDate: v.optional(v.number()),
     priority: v.optional(
       v.union(
@@ -149,7 +150,7 @@ export default defineSchema({
     cardId: v.id("cards"),
     uploadedBy: v.string(), // User ID
     fileName: v.string(),
-    fileUrl: v.string(), // Convex storage URL or external URL
+    storageId: v.id("_storage"), // Convex file storage ID
     fileSize: v.number(), // Bytes
     mimeType: v.string(),
     createdAt: v.number(),
@@ -158,21 +159,20 @@ export default defineSchema({
     .index("by_uploader", ["uploadedBy"]),
 
   // ============================================
-  // ACTIVITY & NOTIFICATIONS
+  // NOTIFICATIONS & INVITES
   // ============================================
 
-  activityLogs: defineTable({
+  boardInvites: defineTable({
     boardId: v.id("boards"),
-    cardId: v.optional(v.id("cards")),
-    userId: v.string(), // User who performed the action
-    actionType: v.string(), // e.g., "created", "updated", "moved", "deleted", "commented"
-    details: v.any(), // JSON object with action details
+    invitedUserId: v.string(),
+    invitedByUserId: v.string(),
+    role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("declined")),
     createdAt: v.number(),
+    respondedAt: v.optional(v.number()),
   })
-    .index("by_board", ["boardId"])
-    .index("by_card", ["cardId"])
-    .index("by_user", ["userId"])
-    .index("by_board_time", ["boardId", "createdAt"]),
+    .index("by_user_status", ["invitedUserId", "status"])
+    .index("by_board", ["boardId"]),
 
   notifications: defineTable({
     userId: v.string(), // Recipient user ID

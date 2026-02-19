@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { Comment } from "@/types/board";
+import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 
 interface CardCommentsProps {
   cardId: Id<"cards">;
@@ -312,8 +313,8 @@ function CommentItem({
           )}
         </div>
       </div>
-      <div className="text-sm whitespace-pre-wrap break-words">
-        {comment.content}
+      <div className="text-sm break-words">
+        <TextWithLinkPreviews text={comment.content} />
       </div>
       {comment.edited && (
         <p className="mt-1 text-[10px] text-muted-foreground italic">

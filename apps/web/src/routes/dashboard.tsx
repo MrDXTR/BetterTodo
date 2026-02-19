@@ -6,8 +6,6 @@ import {
   ListTodo,
   CheckCircle2,
   AlertTriangle,
-  Clock,
-  ArrowRight,
   CalendarClock,
   Plus,
 } from "lucide-react";
@@ -25,50 +23,6 @@ export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
 });
 
-// ============================================
-// HELPERS
-// ============================================
-
-function formatTimeAgo(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString();
-}
-
-function actionTypeLabel(actionType: string): string {
-  const map: Record<string, string> = {
-    board_created: "created a board",
-    board_updated: "updated a board",
-    board_archived: "archived a board",
-    board_restored: "restored a board",
-    card_created: "created a card",
-    card_updated: "updated a card",
-    card_moved: "moved a card",
-    card_archived: "archived a card",
-    card_restored: "restored a card",
-    card_deleted: "deleted a card",
-    list_created: "created a list",
-    list_updated: "updated a list",
-    list_archived: "archived a list",
-    comment_added: "commented on a card",
-    comment_deleted: "deleted a comment",
-    member_added: "added a member",
-    member_removed: "removed a member",
-    member_role_updated: "changed a member's role",
-    label_created: "created a label",
-    label_assigned: "assigned a label",
-    checklist_created: "added a checklist",
-    user_assigned: "assigned a user",
-    user_unassigned: "unassigned a user",
-  };
-  return map[actionType] ?? actionType.replace(/_/g, " ");
-}
 
 // ============================================
 // STAT CARD COMPONENT
@@ -266,100 +220,6 @@ function MyTasksSection() {
 }
 
 // ============================================
-// RECENT ACTIVITY SECTION
-// ============================================
-
-function RecentActivitySection() {
-  const activity = useQuery(api.dashboard.getRecentActivity);
-  const isLoading = activity === undefined;
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex gap-3">
-              <Skeleton className="h-2 w-2 rounded-full mt-2 shrink-0" />
-              <div className="flex-1 space-y-1">
-                <Skeleton className="h-3.5 w-full" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!activity || activity.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-6">
-            No recent activity to display
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Recent Activity
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="max-h-[400px] overflow-y-auto">
-        <div className="space-y-3">
-          {activity.map((item: any) => (
-            <Link
-              key={item._id}
-              to="/boards/$boardId"
-              params={{ boardId: item.boardId }}
-              className="flex gap-3 group hover:bg-muted/50 rounded-md p-2 -mx-2 transition-colors"
-            >
-              <div className="h-2 w-2 rounded-full bg-primary/60 mt-1.5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm leading-snug">
-                  <span className="font-medium">{actionTypeLabel(item.actionType)}</span>
-                  <span className="text-muted-foreground">
-                    {" "}in{" "}
-                  </span>
-                  <span
-                    className="font-medium"
-                    style={{ color: item.boardColor ?? undefined }}
-                  >
-                    {item.boardTitle}
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatTimeAgo(item.createdAt)}
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
-            </Link>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================
 // MAIN DASHBOARD
 // ============================================
 
@@ -405,7 +265,7 @@ function DashboardContent() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="mt-2 text-muted-foreground">
-            Your tasks and activity at a glance
+            Your tasks at a glance
           </p>
         </div>
 
@@ -457,10 +317,9 @@ function DashboardContent() {
           </Button>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* Main Content */}
+        <div className="max-w-2xl">
           <MyTasksSection />
-          <RecentActivitySection />
         </div>
       </div>
 

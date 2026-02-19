@@ -154,15 +154,6 @@ export const create = mutation({
             updatedAt: now,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: list.boardId,
-            cardId,
-            userId: user._id,
-            actionType: "card_created",
-            details: { title: args.title, listId: args.listId },
-            createdAt: now,
-        });
 
         return await ctx.db.get(cardId);
     },
@@ -221,15 +212,6 @@ export const update = mutation({
 
         await ctx.db.patch(args.cardId, updates);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "card_updated",
-            details: updates,
-            createdAt: Date.now(),
-        });
 
         return await ctx.db.get(args.cardId);
     },
@@ -328,20 +310,6 @@ export const move = mutation({
             }
         }
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "card_moved",
-            details: {
-                oldListId,
-                newListId: args.targetListId,
-                oldPosition,
-                newPosition: args.newPosition,
-            },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -376,15 +344,6 @@ export const archive = mutation({
             updatedAt: Date.now(),
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "card_archived",
-            details: { title: card.title },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -419,15 +378,6 @@ export const restore = mutation({
             updatedAt: Date.now(),
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "card_restored",
-            details: { title: card.title },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -480,15 +430,6 @@ export const duplicate = mutation({
             updatedAt: now,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: newCardId,
-            userId: user._id,
-            actionType: "card_duplicated",
-            details: { originalCardId: args.cardId, title: card.title },
-            createdAt: now,
-        });
 
         return await ctx.db.get(newCardId);
     },
@@ -518,16 +459,34 @@ export const deleteCard = mutation({
             throw new Error("Insufficient permissions");
         }
 
+        // Delete all attachments and their storage files
+        const attachments = await ctx.db
+            .query("attachments")
+            .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
+            .collect();
+
+        for (const attachment of attachments) {
+            await ctx.storage.delete(attachment.storageId);
+            await ctx.db.delete(attachment._id);
+        }
+
+        // Delete the cover image storage if it exists and isn't from an attachment
+        if (card.coverStorageId) {
+            // Only delete if not already deleted as part of attachments
+            const stillExists = attachments.every(
+                (a) => a.storageId !== card.coverStorageId
+            );
+            if (stillExists) {
+                try {
+                    await ctx.storage.delete(card.coverStorageId);
+                } catch {
+                    // Storage file may already be deleted
+                }
+            }
+        }
+
         await ctx.db.delete(args.cardId);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            userId: user._id,
-            actionType: "card_deleted",
-            details: { cardId: args.cardId, title: card.title },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
@@ -579,15 +538,6 @@ export const assignUser = mutation({
             assignedBy: user._id,
         });
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "user_assigned",
-            details: { assignedUserId: args.userId },
-            createdAt: now,
-        });
 
         return { success: true };
     },
@@ -632,15 +582,6 @@ export const unassignUser = mutation({
 
         await ctx.db.delete(assignment._id);
 
-        // Log activity
-        await ctx.db.insert("activityLogs", {
-            boardId: card.boardId,
-            cardId: args.cardId,
-            userId: user._id,
-            actionType: "user_unassigned",
-            details: { unassignedUserId: args.userId },
-            createdAt: Date.now(),
-        });
 
         return { success: true };
     },
