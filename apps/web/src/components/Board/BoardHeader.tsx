@@ -106,7 +106,8 @@ export function BoardHeader({ board, members = [], stats }: BoardHeaderProps) {
             />
 
             <div className="relative px-4 md:px-6 py-3.5">
-                <div className="flex items-start gap-3 md:gap-4">
+                {/* Row 1: back button, title, controls */}
+                <div className="flex items-center gap-3 md:gap-4 min-w-0">
                     <Link to="/boards" className="shrink-0">
                         <Button
                             variant="ghost"
@@ -117,64 +118,36 @@ export function BoardHeader({ board, members = [], stats }: BoardHeaderProps) {
                         </Button>
                     </Link>
 
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span
-                                className="h-2.5 w-2.5 rounded-full shrink-0"
-                                style={{ background: boardColor }}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ background: boardColor }}
+                        />
+
+                        {isEditingTitle ? (
+                            <Input
+                                autoFocus
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                onBlur={handleSaveTitle}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveTitle();
+                                    if (e.key === "Escape") {
+                                        setTitle(board.title);
+                                        setIsEditingTitle(false);
+                                    }
+                                }}
+                                className="h-9 max-w-lg font-semibold text-base bg-background border-border shadow-sm"
+                                maxLength={100}
                             />
-
-                            {isEditingTitle ? (
-                                <Input
-                                    autoFocus
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    onBlur={handleSaveTitle}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSaveTitle();
-                                        if (e.key === "Escape") {
-                                            setTitle(board.title);
-                                            setIsEditingTitle(false);
-                                        }
-                                    }}
-                                    className="h-9 max-w-lg font-semibold text-base bg-background border-border shadow-sm"
-                                    maxLength={100}
-                                />
-                            ) : (
-                                <button
-                                    onClick={() => setIsEditingTitle(true)}
-                                    className="truncate rounded-md px-2 py-1.5 text-left text-base font-semibold text-foreground hover:bg-background/65 transition-colors max-w-full"
-                                >
-                                    {board.title}
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span
-                                className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted-foreground"
-                                style={{ borderColor: colors.tintBorder, background: colors.tintChip }}
+                        ) : (
+                            <button
+                                onClick={() => setIsEditingTitle(true)}
+                                className="truncate rounded-md px-2 py-1.5 text-left text-base font-semibold text-foreground hover:bg-background/65 transition-colors max-w-full"
                             >
-                                {board.visibility}
-                            </span>
-
-                            {stats && (
-                                <>
-                                    <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground">
-                                        <Layers3 className="h-3 w-3" />
-                                        {stats.lists} {stats.lists === 1 ? "list" : "lists"}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground">
-                                        <ListTodo className="h-3 w-3" />
-                                        {stats.cards} {stats.cards === 1 ? "card" : "cards"}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground">
-                                        <CheckSquare className="h-3 w-3" />
-                                        {stats.checklistItemsCompleted}/{stats.checklistItemsTotal} tasks
-                                    </span>
-                                </>
-                            )}
-                        </div>
+                                {board.title}
+                            </button>
+                        )}
                     </div>
 
                     <div
@@ -212,6 +185,33 @@ export function BoardHeader({ board, members = [], stats }: BoardHeaderProps) {
                             <Settings className="h-4 w-4" />
                         </Button>
                     </div>
+                </div>
+
+                {/* Row 2: stats chips — full width, no competition */}
+                <div className="mt-2 ml-10 flex flex-row items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none">
+                    <span
+                        className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted-foreground whitespace-nowrap"
+                        style={{ borderColor: colors.tintBorder, background: colors.tintChip }}
+                    >
+                        {board.visibility}
+                    </span>
+
+                    {stats && (
+                        <>
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                                <Layers3 className="h-3 w-3 shrink-0" />
+                                {stats.lists} {stats.lists === 1 ? "list" : "lists"}
+                            </span>
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                                <ListTodo className="h-3 w-3 shrink-0" />
+                                {stats.cards} {stats.cards === 1 ? "card" : "cards"}
+                            </span>
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                                <CheckSquare className="h-3 w-3 shrink-0" />
+                                {stats.checklistItemsCompleted}/{stats.checklistItemsTotal} tasks
+                            </span>
+                        </>
+                    )}
                 </div>
             </div>
 

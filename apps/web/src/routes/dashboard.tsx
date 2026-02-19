@@ -246,6 +246,7 @@ function RouteComponent() {
 
 function DashboardContent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const navigate = useNavigate();
   const boards = useQuery(api.boards.getAll);
   const tasksData = useQuery(api.dashboard.getMyOpenTasks);
   const completedCount = useQuery(api.dashboard.getMyCompletedThisWeek);
@@ -297,7 +298,7 @@ function DashboardContent() {
             title="Completed"
             icon={CheckCircle2}
             value={completedCount ?? 0}
-            subtitle="Tasks completed this week"
+            subtitle="Completed checklist tasks"
             loading={completedLoading}
             accent="text-green-500"
           />
@@ -326,6 +327,12 @@ function DashboardContent() {
       <CreateBoardModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
+        onCreated={(boardId) => {
+          navigate({
+            to: "/boards/$boardId",
+            params: { boardId },
+          });
+        }}
       />
     </>
   );
