@@ -123,7 +123,7 @@ export function BoardMembersPanel({
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent className="sm:max-w-md">
+                <SheetContent className="sm:max-w-md p-4">
                     <SheetHeader>
                         <SheetTitle>Board Members</SheetTitle>
                         <SheetDescription>

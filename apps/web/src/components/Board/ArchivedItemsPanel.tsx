@@ -88,7 +88,7 @@ export function ArchivedItemsPanel({
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent className="sm:max-w-md">
+                <SheetContent className="sm:max-w-md p-4">
                     <SheetHeader>
                         <SheetTitle className="flex items-center gap-2">
                             <Archive className="h-5 w-5" />
