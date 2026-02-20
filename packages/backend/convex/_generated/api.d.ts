@@ -17,6 +17,7 @@ import type * as chat from "../chat.js";
 import type * as checklists from "../checklists.js";
 import type * as comments from "../comments.js";
 import type * as dashboard from "../dashboard.js";
+import type * as emails from "../emails.js";
 import type * as files from "../files.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   checklists: typeof checklists;
   comments: typeof comments;
   dashboard: typeof dashboard;
+  emails: typeof emails;
   files: typeof files;
   healthCheck: typeof healthCheck;
   http: typeof http;
