@@ -27,6 +27,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { LabelManager } from "@/components/Board/LabelManager";
 
 interface BoardSettingsModalProps {
     open: boolean;
@@ -146,9 +147,9 @@ export function BoardSettingsModal({
     return (
         <>
             <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <form onSubmit={handleSave}>
-                        <DialogHeader>
+                <DialogContent className="sm:max-w-[500px] w-[95vw] sm:w-full max-h-[90dvh] flex flex-col p-4 sm:p-6 rounded-xl">
+                    <form onSubmit={handleSave} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+                        <DialogHeader className="shrink-0 pb-2">
                             <DialogTitle>Board settings</DialogTitle>
                             <DialogDescription>
                                 Edit board details and manage visibility. Only
@@ -156,7 +157,7 @@ export function BoardSettingsModal({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid gap-4 py-4">
+                        <div className="grid gap-4 py-2 px-1 overflow-y-auto flex-1 min-h-0">
                             {/* Title */}
                             <div className="grid gap-2">
                                 <Label htmlFor="settings-title">
@@ -197,11 +198,10 @@ export function BoardSettingsModal({
                                                 canEdit && setColor(boardColor.value)
                                             }
                                             disabled={!canEdit}
-                                            className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${
-                                                color === boardColor.value
-                                                    ? "ring-2 ring-primary ring-offset-2"
-                                                    : ""
-                                            }`}
+                                            className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${color === boardColor.value
+                                                ? "ring-2 ring-primary ring-offset-2"
+                                                : ""
+                                                }`}
                                             style={{
                                                 backgroundColor: boardColor.value,
                                             }}
@@ -252,9 +252,11 @@ export function BoardSettingsModal({
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {canEdit && <LabelManager boardId={board._id} />}
                         </div>
 
-                        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+                        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between pt-4 shrink-0 mt-2 border-t">
                             <div className="flex flex-col gap-2 w-full sm:w-auto order-2 sm:order-1">
                                 {isOwner && (
                                     <>
@@ -294,12 +296,13 @@ export function BoardSettingsModal({
                                     </>
                                 )}
                             </div>
-                            <div className="flex gap-2 order-1 sm:order-2">
+                            <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2 w-full sm:w-auto">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => onOpenChange(false)}
                                     disabled={isSubmitting}
+                                    className="w-full sm:w-auto"
                                 >
                                     Cancel
                                 </Button>
@@ -307,6 +310,7 @@ export function BoardSettingsModal({
                                     <Button
                                         type="submit"
                                         disabled={isSubmitting || !title.trim()}
+                                        className="w-full sm:w-auto"
                                     >
                                         {isSubmitting ? "Saving..." : "Save changes"}
                                     </Button>
