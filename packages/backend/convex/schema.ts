@@ -164,15 +164,19 @@ export default defineSchema({
 
   boardInvites: defineTable({
     boardId: v.id("boards"),
-    invitedUserId: v.string(),
+    invitedUserId: v.optional(v.string()), // optional: not set for unregistered users
+    invitedEmail: v.optional(v.string()),  // for unregistered users
     invitedByUserId: v.string(),
     role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("declined")),
+    token: v.optional(v.string()),         // secure token for email link acceptance
     createdAt: v.number(),
     respondedAt: v.optional(v.number()),
   })
     .index("by_user_status", ["invitedUserId", "status"])
-    .index("by_board", ["boardId"]),
+    .index("by_board", ["boardId"])
+    .index("by_email", ["invitedEmail"])
+    .index("by_token", ["token"]),
 
   notifications: defineTable({
     userId: v.string(), // Recipient user ID

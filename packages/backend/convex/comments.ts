@@ -81,8 +81,53 @@ export const create = mutation({
             updatedAt: now,
         });
 
+        // ── @mention detection ─────────────────────────────────────────────────
+        // Parse all @Name mentions from the comment content
+        const mentionRegex = /@([\w][\w\s]*?)(?=\s|$|[^a-zA-Z0-9\s])/g;
+        const mentionMatches = [...args.content.matchAll(mentionRegex)];
 
-        // TODO: Check for @mentions and create notifications
+        if (mentionMatches.length > 0) {
+            // Get all board members
+            const members = await ctx.db
+                .query("boardMembers")
+                .withIndex("by_board", (q) => q.eq("boardId", card.boardId))
+                .collect();
+
+            const commenter = await authComponent.getAnyUserById(ctx, user._id);
+            const commenterName = commenter?.name ?? commenter?.email ?? "Someone";
+
+            // Collect unique userIds to notify (exclude the commenter)
+            const notifiedUserIds = new Set<string>();
+
+            for (const match of mentionMatches) {
+                const mentionedName = match[1].trim().toLowerCase();
+
+                for (const member of members) {
+                    // Skip the commenter themselves
+                    if (member.userId === user._id) continue;
+                    if (notifiedUserIds.has(member.userId)) continue;
+
+                    const memberUser = await authComponent.getAnyUserById(ctx, member.userId);
+                    if (!memberUser) continue;
+
+                    const memberName = memberUser.name ?? memberUser.email ?? "";
+                    if (memberName.toLowerCase().includes(mentionedName)) {
+                        notifiedUserIds.add(member.userId);
+
+                        // Create in-app notification
+                        await ctx.db.insert("notifications", {
+                            userId: member.userId,
+                            type: "mention",
+                            title: "You were mentioned",
+                            message: `${commenterName} mentioned you in "${card.title}"`,
+                            linkUrl: `/boards/${card.boardId}?card=${args.cardId}`,
+                            read: false,
+                            createdAt: now,
+                        });
+                    }
+                }
+            }
+        }
 
         return await ctx.db.get(commentId);
     },

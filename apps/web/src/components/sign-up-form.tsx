@@ -11,9 +11,11 @@ import { Label } from "./ui/label";
 
 function GoogleSignInButton() {
   const handleGoogleSignIn = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const token = searchParams.get('inviteToken');
     authClient.signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: token ? `/sign-in?inviteToken=${token}` : "/dashboard",
     });
   };
 
@@ -67,9 +69,12 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         },
         {
           onSuccess: () => {
-            navigate({
-              to: "/dashboard",
-            });
+            const searchParams = new URLSearchParams(window.location.search);
+            if (!searchParams.has('inviteToken')) {
+              navigate({
+                to: "/dashboard",
+              });
+            }
             toast.success("Sign up successful");
           },
           onError: (error) => {

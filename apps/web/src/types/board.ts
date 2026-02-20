@@ -71,6 +71,7 @@ export interface Card {
     checklistCount?: number;
     checklistItemsCompleted?: number;
     checklistItemsTotal?: number;
+    labelIds?: string[]; // label IDs for quick filtering
     createdAt: number;
     updatedAt: number;
 }

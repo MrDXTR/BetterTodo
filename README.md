@@ -1,3 +1,4 @@
+
 # BetterTodo
 
 A Trello-like collaborative task management app built with React, TanStack Router, Convex, and Better Auth.
@@ -8,6 +9,7 @@ A Trello-like collaborative task management app built with React, TanStack Route
 - **Collaboration** – Invite teammates, assign cards, and work together in real time.
 - **Cards** – Titles, descriptions, due dates, priorities, labels, checklists, and member assignments.
 - **Authentication** – Email/password and Google OAuth via Better Auth.
+- **Email Notifications** – Transactional emails for board invites and @mentions via Resend.
 - **Real-time** – Convex-powered reactive updates across all clients.
 - **PWA** – Progressive Web App support for install and offline readiness.
 - **Dark/Light Mode** – Theme toggle with system preference support.
@@ -19,6 +21,7 @@ A Trello-like collaborative task management app built with React, TanStack Route
 | Frontend | React 19, TanStack Router, TailwindCSS, shadcn/ui |
 | Backend  | Convex (BaaS)                 |
 | Auth     | Better Auth (email + Google OAuth) |
+| Emails   | Resend                        |
 | Drag & Drop | @hello-pangea/dnd          |
 | Monorepo | Turborepo                     |
 
@@ -50,6 +53,8 @@ bun run dev:setup
 npx convex env set SITE_URL "http://localhost:3001"
 npx convex env set GOOGLE_CLIENT_ID "your-google-client-id"
 npx convex env set GOOGLE_CLIENT_SECRET "your-google-client-secret"
+npx convex env set RESEND_API_KEY "re_your_resend_api_key"
+npx convex env set FROM_EMAIL "noreply@yourdomain.com"
 ```
 
 4. For Google OAuth, add this redirect URI in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
@@ -85,6 +90,7 @@ BetterTodo/
 │   │       ├── labels.ts     # Label CRUD
 │   │       ├── checklists.ts # Checklist CRUD
 │   │       ├── comments.ts   # Comment CRUD
+│   │       ├── emails.ts     # Resend email actions and templates
 │   │       ├── notifications.ts
 │   │       └── schema.ts     # Convex schema
 │   ├── config/           # Shared TypeScript config

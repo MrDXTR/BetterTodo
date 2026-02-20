@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { authComponent } from "./auth";
 
 // ============================================
@@ -153,9 +154,18 @@ export const getById = query({
                             .withIndex("by_card", (q) => q.eq("cardId", card._id))
                             .collect();
 
+                        // Fetch label IDs for this card
+                        const cardLabelLinks = await ctx.db
+                            .query("cardLabels")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect();
+
+                        const labelIds = cardLabelLinks.map((l) => l.labelId);
+
                         if (checklists.length === 0) {
                             return {
                                 ...card,
+                                labelIds,
                                 checklistCount: 0,
                                 checklistItemsCompleted: 0,
                                 checklistItemsTotal: 0,
@@ -180,6 +190,7 @@ export const getById = query({
 
                         return {
                             ...card,
+                            labelIds,
                             checklistCount: checklists.length,
                             checklistItemsCompleted,
                             checklistItemsTotal: checklistItems.length,
@@ -517,7 +528,9 @@ export const addMember = mutation({
 });
 
 /**
- * Invite a member by email address (creates an invite + notification)
+ * Invite a member by email address.
+ * - If the email belongs to an existing user: creates an in-app invite + notification + sends invite email.
+ * - If the email is unregistered: creates a token-based invite and sends an external signup email.
  */
 export const addMemberByEmail = mutation({
     args: {
@@ -545,7 +558,13 @@ export const addMemberByEmail = mutation({
             throw new Error("Insufficient permissions");
         }
 
-        // Search for the user by email
+        const board = await ctx.db.get(args.boardId);
+        const now = Date.now();
+        const inviterName = user.name ?? user.email ?? "Someone";
+        const boardTitle = board?.title ?? "a board";
+
+        // ── Step 1: Search for a registered user by email ──────────────────────
+        // We scan all board members across the system to find a matching auth user.
         const allMembers = await ctx.db.query("boardMembers").collect();
         const uniqueUserIds = [...new Set(allMembers.map(m => m.userId))];
 
@@ -558,63 +577,112 @@ export const addMemberByEmail = mutation({
             }
         }
 
-        if (!targetUser) {
-            throw new Error("No user found with that email. They must sign up first.");
+        // ── Step 2a: Registered user flow ──────────────────────────────────────
+        if (targetUser) {
+            // Check if already a member
+            const existing = await ctx.db
+                .query("boardMembers")
+                .withIndex("by_board_user", (q) =>
+                    q.eq("boardId", args.boardId).eq("userId", targetUser!._id)
+                )
+                .first();
+
+            if (existing) {
+                throw new Error("This user is already a member of this board");
+            }
+
+            // Check if there's already a pending invite
+            const existingInvite = await ctx.db
+                .query("boardInvites")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .filter((q) =>
+                    q.and(
+                        q.eq(q.field("invitedUserId"), targetUser!._id),
+                        q.eq(q.field("status"), "pending")
+                    )
+                )
+                .first();
+
+            if (existingInvite) {
+                throw new Error("An invite is already pending for this user");
+            }
+
+            // Create the invite record
+            const inviteId = await ctx.db.insert("boardInvites", {
+                boardId: args.boardId,
+                invitedUserId: targetUser._id,
+                invitedByUserId: user._id,
+                role: args.role,
+                status: "pending",
+                createdAt: now,
+            });
+
+            // Create an in-app notification
+            await ctx.db.insert("notifications", {
+                userId: targetUser._id,
+                type: "board_invite",
+                title: "Board Invitation",
+                message: `You've been invited to join "${boardTitle}"`,
+                linkUrl: `/boards/${args.boardId}`,
+                read: false,
+                createdAt: now,
+            });
+
+            // Schedule the invite email
+            await ctx.scheduler.runAfter(0, internal.emails.sendBoardInviteEmail, {
+                to: targetUser.email ?? args.email,
+                recipientName: targetUser.name ?? undefined,
+                inviterName,
+                boardTitle,
+                boardId: args.boardId,
+                role: args.role,
+                inviteId,
+            });
+
+            return { success: true, isNewUser: false, userName: targetUser.name };
         }
 
-        // Check if already a member
-        const existing = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", targetUser._id)
-            )
-            .first();
-
-        if (existing) {
-            throw new Error("This user is already a member of this board");
-        }
-
-        // Check if there's already a pending invite
-        const existingInvite = await ctx.db
+        // ── Step 2b: Unregistered user flow ────────────────────────────────────
+        // Check if there's already a pending external invite for this email
+        const existingEmailInvite = await ctx.db
             .query("boardInvites")
-            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+            .withIndex("by_email", (q) => q.eq("invitedEmail", args.email.toLowerCase()))
             .filter((q) =>
                 q.and(
-                    q.eq(q.field("invitedUserId"), targetUser._id),
+                    q.eq(q.field("boardId"), args.boardId),
                     q.eq(q.field("status"), "pending")
                 )
             )
             .first();
 
-        if (existingInvite) {
-            throw new Error("An invite is already pending for this user");
+        if (existingEmailInvite) {
+            throw new Error("An invite is already pending for this email");
         }
 
-        const now = Date.now();
-        const board = await ctx.db.get(args.boardId);
+        // Generate a unique secure token
+        const token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 
-        // Create the invite
+        // Create the token-based invite (no userId yet)
         await ctx.db.insert("boardInvites", {
             boardId: args.boardId,
-            invitedUserId: targetUser._id,
+            invitedEmail: args.email.toLowerCase(),
             invitedByUserId: user._id,
             role: args.role,
             status: "pending",
+            token,
             createdAt: now,
         });
 
-        // Create a notification for the invited user
-        await ctx.db.insert("notifications", {
-            userId: targetUser._id,
-            type: "board_invite",
-            title: "Board Invitation",
-            message: `You've been invited to join "${board?.title ?? "a board"}"`,
-            linkUrl: `/boards/${args.boardId}`,
-            read: false,
-            createdAt: now,
+        // Schedule the external signup email
+        await ctx.scheduler.runAfter(0, internal.emails.sendBoardInviteEmailExternal, {
+            to: args.email,
+            inviterName,
+            boardTitle,
+            role: args.role,
+            token,
         });
 
-        return { success: true, userName: targetUser.name };
+        return { success: true, isNewUser: true, userName: null };
     },
 });
 
@@ -685,6 +753,62 @@ export const declineInvite = mutation({
         });
 
         return { success: true };
+    },
+});
+
+/**
+ * Accept a board invite via token (email link flow for unregistered users).
+ * Called after the user signs up/in using the invite link.
+ */
+export const acceptInviteByToken = mutation({
+    args: { token: v.string() },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new Error("Unauthorized");
+
+        // Find invite by token
+        const invite = await ctx.db
+            .query("boardInvites")
+            .withIndex("by_token", (q) => q.eq("token", args.token))
+            .first();
+
+        if (!invite) throw new Error("Invite not found or expired");
+        if (invite.status !== "pending") throw new Error("This invite has already been used");
+
+        // Validate the user's email matches the invited email (if set)
+        if (invite.invitedEmail && user.email?.toLowerCase() !== invite.invitedEmail) {
+            throw new Error("This invite was sent to a different email address");
+        }
+
+        const now = Date.now();
+
+        // Check if user is already a board member
+        const existingMember = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", invite.boardId).eq("userId", user._id)
+            )
+            .first();
+
+        if (!existingMember) {
+            // Add user as board member
+            await ctx.db.insert("boardMembers", {
+                boardId: invite.boardId,
+                userId: user._id,
+                role: invite.role,
+                addedAt: now,
+                addedBy: invite.invitedByUserId,
+            });
+        }
+
+        // Mark invite as accepted
+        await ctx.db.patch(invite._id, {
+            status: "accepted",
+            invitedUserId: user._id, // link the user account to the invite
+            respondedAt: now,
+        });
+
+        return { success: true, boardId: invite.boardId };
     },
 });
 

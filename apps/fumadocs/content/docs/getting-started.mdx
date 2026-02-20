@@ -27,7 +27,17 @@ bun run dev:setup
 
 3. **Environment variables**
 
-Copy environment variables from `packages/backend/.env.local` to `apps/web/.env` if needed. The Convex CLI typically populates these during setup.
+Set Convex environment variables for auth and emails (via Convex Dashboard or CLI):
+
+```bash
+npx convex env set SITE_URL "http://localhost:3001"
+npx convex env set GOOGLE_CLIENT_ID "your-google-client-id"
+npx convex env set GOOGLE_CLIENT_SECRET "your-google-client-secret"
+npx convex env set RESEND_API_KEY "re_your_resend_api_key"
+npx convex env set FROM_EMAIL "noreply@yourdomain.com"
+```
+
+Copy other environment variables from `packages/backend/.env.local` to `apps/web/.env` if needed.
 
 4. **Run the development server**
 
@@ -45,7 +55,7 @@ BetterTodo/
 │   ├── web/           # React frontend (Vite + TanStack Router)
 │   └── fumadocs/      # Documentation (this site)
 ├── packages/
-│   ├── backend/       # Convex backend (boards, cards, auth, etc.)
+│   ├── backend/       # Convex backend (boards, cards, auth, emails, etc.)
 │   ├── config/        # Shared TypeScript config
 │   └── env/           # Environment schema
 └── task.md            # Development task tracker
