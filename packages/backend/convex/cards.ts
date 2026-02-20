@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 
@@ -538,6 +539,40 @@ export const assignUser = mutation({
             assignedBy: user._id,
         });
 
+        // NOTIFICATIONS LOGIC
+        if (args.userId !== user._id) {
+            const assignedUser = await authComponent.getAnyUserById(ctx, args.userId);
+            const assignerUser = await authComponent.getAnyUserById(ctx, user._id);
+            const board = await ctx.db.get(card.boardId);
+
+            const assignerName = assignerUser?.name ?? assignerUser?.email ?? "Someone";
+
+            if (assignedUser) {
+                // In-app notification
+                await ctx.db.insert("notifications", {
+                    userId: args.userId,
+                    type: "assignment",
+                    title: "New Assignment",
+                    message: `${assignerName} assigned you to "${card.title}"`,
+                    linkUrl: `/boards/${card.boardId}?card=${args.cardId}`,
+                    read: false,
+                    createdAt: now,
+                });
+
+                // Email notification
+                if (assignedUser.email) {
+                    await ctx.scheduler.runAfter(0, internal.emails.sendCardAssignmentEmail, {
+                        to: assignedUser.email,
+                        recipientName: assignedUser.name ?? undefined,
+                        assignerName,
+                        cardTitle: card.title,
+                        boardTitle: board?.title ?? "a board",
+                        boardId: card.boardId,
+                        cardId: args.cardId,
+                    });
+                }
+            }
+        }
 
         return { success: true };
     },

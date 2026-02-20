@@ -1,15 +1,17 @@
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 
-import type { BoardWithLists } from "@/types/board";
+import type { BoardWithLists, CardPriority } from "@/types/board";
 import { BoardHeader } from "./BoardHeader";
 import { ListColumn } from "../List/ListColumn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface BoardViewProps {
     board: BoardWithLists;
@@ -31,6 +33,13 @@ export function BoardView({ board }: BoardViewProps) {
 
     // Optimistic state for drag-and-drop
     const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
+
+    // -- Filters --
+    const [activeLabelIds, setActiveLabelIds] = useState<string[]>([]);
+    const [activePriorities, setActivePriorities] = useState<CardPriority[]>([]);
+    const [showFilters, setShowFilters] = useState(false);
+
+    const boardLabels = useQuery(api.labels.getByBoard, { boardId: board._id });
 
     // Sync optimistic state with actual board data when it changes
     useEffect(() => {
@@ -56,6 +65,45 @@ export function BoardView({ board }: BoardViewProps) {
     const createList = useMutation(api.lists.create);
     const moveCard = useMutation(api.cards.move);
     const updateListPosition = useMutation(api.lists.updatePosition);
+
+    // Filtered board derived from active label / priority filters
+    const hasActiveFilters = activeLabelIds.length > 0 || activePriorities.length > 0;
+    const filteredBoard = useMemo(() => {
+        if (!hasActiveFilters) return optimisticBoard;
+
+        return {
+            ...optimisticBoard,
+            lists: optimisticBoard.lists.map((list) => ({
+                ...list,
+                cards: list.cards.filter((card) => {
+                    const labelMatch =
+                        activeLabelIds.length === 0 ||
+                        activeLabelIds.some((id) => card.labelIds?.includes(id));
+                    const priorityMatch =
+                        activePriorities.length === 0 ||
+                        (card.priority && activePriorities.includes(card.priority));
+                    return labelMatch && priorityMatch;
+                }),
+            })),
+        };
+    }, [optimisticBoard, activeLabelIds, activePriorities, hasActiveFilters]);
+
+    const toggleLabelFilter = (labelId: string) => {
+        setActiveLabelIds((prev) =>
+            prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+        );
+    };
+
+    const togglePriorityFilter = (priority: CardPriority) => {
+        setActivePriorities((prev) =>
+            prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority]
+        );
+    };
+
+    const clearFilters = () => {
+        setActiveLabelIds([]);
+        setActivePriorities([]);
+    };
 
     const handleCreateList = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -178,6 +226,85 @@ export function BoardView({ board }: BoardViewProps) {
 
             <BoardHeader board={board} members={boardMembers || []} stats={boardStats} />
 
+            {/* Filter toolbar */}
+            <div
+                className="relative z-10 flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-background/70 backdrop-blur-sm flex-wrap"
+            >
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("h-7 gap-1.5 text-xs", showFilters && "bg-accent text-accent-foreground")}
+                    onClick={() => setShowFilters(!showFilters)}
+                >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    Filter
+                    {hasActiveFilters && (
+                        <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                            {activeLabelIds.length + activePriorities.length}
+                        </Badge>
+                    )}
+                </Button>
+
+                {showFilters && (
+                    <>
+                        {/* Priority filters */}
+                        {(["urgent", "high", "medium", "low"] as CardPriority[]).map((priority) => (
+                            <button
+                                key={priority}
+                                onClick={() => togglePriorityFilter(priority)}
+                                className={cn(
+                                    "h-7 px-2.5 rounded-full text-xs font-medium border transition-all",
+                                    activePriorities.includes(priority)
+                                        ? "border-transparent text-white shadow-sm"
+                                        : "border-border bg-background/80 text-muted-foreground hover:bg-muted"
+                                )}
+                                style={activePriorities.includes(priority) ? {
+                                    background: priority === "urgent" ? "#ef4444" : priority === "high" ? "#f97316" : priority === "medium" ? "#eab308" : "#22c55e"
+                                } : {}}
+                            >
+                                {priority}
+                            </button>
+                        ))}
+
+                        {/* Separator if both label and priority filters possible */}
+                        {boardLabels && boardLabels.length > 0 && (
+                            <span className="h-4 w-px bg-border/60" />
+                        )}
+
+                        {/* Label filters */}
+                        {boardLabels?.map((label) => (
+                            <button
+                                key={label._id}
+                                onClick={() => toggleLabelFilter(label._id)}
+                                className={cn(
+                                    "h-7 px-2.5 rounded-full text-xs font-medium border transition-all",
+                                    activeLabelIds.includes(label._id)
+                                        ? "border-transparent text-white shadow-sm"
+                                        : "border-border bg-background/80 text-muted-foreground hover:bg-muted"
+                                )}
+                                style={activeLabelIds.includes(label._id) ? { background: label.color } : { borderColor: label.color + "80" }}
+                            >
+                                <span
+                                    className="inline-block h-2 w-2 rounded-full mr-1.5"
+                                    style={{ background: label.color }}
+                                />
+                                {label.name}
+                            </button>
+                        ))}
+
+                        {hasActiveFilters && (
+                            <button
+                                onClick={clearFilters}
+                                className="h-7 px-2 rounded-full text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                            >
+                                <X className="h-3 w-3" />
+                                Clear
+                            </button>
+                        )}
+                    </>
+                )}
+            </div>
+
             {/* CSS for the "border-expand" animation on newly created lists */}
             <style>{`
                 @keyframes listBorderExpand {
@@ -236,13 +363,14 @@ export function BoardView({ board }: BoardViewProps) {
                                 {...provided.droppableProps}
                                 className="flex gap-4 h-full items-start"
                             >
-                                {optimisticBoard.lists.map((list, index) => (
+                                {filteredBoard.lists.map((list, index) => (
                                     <ListColumn
                                         key={list._id}
                                         list={list}
                                         index={index}
                                         boardColor={backgroundColor}
                                         isFresh={list._id === freshListId}
+                                        isFiltered={hasActiveFilters}
                                     />
                                 ))}
                                 {provided.placeholder}

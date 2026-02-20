@@ -11,9 +11,11 @@ interface ListColumnProps {
     boardColor: string;
     /** True for the very first render cycle after this list was created */
     isFresh?: boolean;
+    /** True when board-level filters are active */
+    isFiltered?: boolean;
 }
 
-export function ListColumn({ list, index, boardColor, isFresh = false }: ListColumnProps) {
+export function ListColumn({ list, index, boardColor, isFresh = false, isFiltered = false }: ListColumnProps) {
     return (
         <Draggable draggableId={list._id} index={index}>
             {(provided, snapshot) => (

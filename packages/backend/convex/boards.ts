@@ -154,9 +154,18 @@ export const getById = query({
                             .withIndex("by_card", (q) => q.eq("cardId", card._id))
                             .collect();
 
+                        // Fetch label IDs for this card
+                        const cardLabelLinks = await ctx.db
+                            .query("cardLabels")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect();
+
+                        const labelIds = cardLabelLinks.map((l) => l.labelId);
+
                         if (checklists.length === 0) {
                             return {
                                 ...card,
+                                labelIds,
                                 checklistCount: 0,
                                 checklistItemsCompleted: 0,
                                 checklistItemsTotal: 0,
@@ -181,6 +190,7 @@ export const getById = query({
 
                         return {
                             ...card,
+                            labelIds,
                             checklistCount: checklists.length,
                             checklistItemsCompleted,
                             checklistItemsTotal: checklistItems.length,

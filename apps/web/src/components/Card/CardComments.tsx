@@ -29,6 +29,20 @@ export function CardComments({ cardId }: CardCommentsProps) {
   const [replyToId, setReplyToId] = useState<Id<"comments"> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Mentions autocomplete state
+  const [mentionQuery, setMentionQuery] = useState<{ active: boolean; text: string; startIndex: number; } | null>(null);
+  const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+
+  const matchingMembers = useMemo(() => {
+    if (!mentionQuery?.active || !boardMembers) return [];
+    const query = mentionQuery.text.toLowerCase();
+    const members = boardMembers.filter((m: any) => {
+      const name = m.user?.name || m.user?.email || "Member";
+      return name.toLowerCase().includes(query);
+    });
+    return members;
+  }, [mentionQuery, boardMembers]);
+
   const isLoading = comments === undefined;
 
   // Group comments by root parent (Instagram-style single branch)
@@ -71,6 +85,60 @@ export function CardComments({ cardId }: CardCommentsProps) {
   const handleReply = (commentId: Id<"comments">) => {
     setReplyToId(commentId);
     textareaRef.current?.focus();
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+
+    // Check for mention
+    const cursor = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursor);
+    const match = textBeforeCursor.match(/(?:^|\s)@([^\s]*)$/);
+
+    if (match) {
+      const atIndex = textBeforeCursor.lastIndexOf('@');
+      setMentionQuery({
+        active: true,
+        text: textBeforeCursor.slice(atIndex + 1),
+        startIndex: atIndex,
+      });
+      setMentionSelectedIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (memberName: string) => {
+    if (!mentionQuery) return;
+    const newContent =
+      content.slice(0, mentionQuery.startIndex) +
+      `@${memberName} ` +
+      content.slice(mentionQuery.startIndex + mentionQuery.text.length + 1);
+
+    setContent(newContent);
+    setMentionQuery(null);
+    textareaRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!mentionQuery?.active || matchingMembers.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMentionSelectedIndex((prev) => (prev + 1) % matchingMembers.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMentionSelectedIndex((prev) => (prev - 1 + matchingMembers.length) % matchingMembers.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const selectedMember = matchingMembers[mentionSelectedIndex];
+      const name = selectedMember.user?.name || selectedMember.user?.email || "Member";
+      insertMention(name);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setMentionQuery(null);
+    }
   };
 
   const handleDelete = async (commentId: Id<"comments">) => {
@@ -123,7 +191,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-2 relative">
         {replyToId && replyToAuthor && (
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
@@ -142,10 +210,44 @@ export function CardComments({ cardId }: CardCommentsProps) {
         <Textarea
           ref={textareaRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={handleContentChange}
+          onKeyDown={handleKeyDown}
           placeholder="Write a comment..."
           className="min-h-[60px] text-sm"
         />
+
+        {mentionQuery?.active && matchingMembers.length > 0 && (
+          <div
+            className="absolute z-10 w-[240px] bg-popover text-popover-foreground border border-border/50 shadow-md rounded-md overflow-hidden"
+            style={{ bottom: "100%", left: "0", marginBottom: "8px" }}
+          >
+            <ul className="max-h-[200px] overflow-auto py-1">
+              {matchingMembers.map((m: any, idx: number) => {
+                const name = m.user?.name || m.user?.email || "Member";
+                const isActive = idx === mentionSelectedIndex;
+                return (
+                  <li
+                    key={m.userId}
+                    className={cn(
+                      "px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2",
+                      isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50 text-foreground"
+                    )}
+                    onClick={() => insertMention(name)}
+                    onMouseEnter={() => setMentionSelectedIndex(idx)}
+                  >
+                    <span className="truncate flex-1">{name}</span>
+                    {m.role && (
+                      <span className="text-[10px] uppercase text-muted-foreground tracking-wider shrink-0">
+                        {m.role}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         <div className="flex justify-end">
           <Button
             type="submit"
