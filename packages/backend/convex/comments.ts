@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { authComponent } from "./auth";
 
 // ============================================
@@ -94,7 +93,6 @@ export const create = mutation({
                 .withIndex("by_board", (q) => q.eq("boardId", card.boardId))
                 .collect();
 
-            const board = await ctx.db.get(card.boardId);
             const commenter = await authComponent.getAnyUserById(ctx, user._id);
             const commenterName = commenter?.name ?? commenter?.email ?? "Someone";
 
@@ -126,20 +124,6 @@ export const create = mutation({
                             read: false,
                             createdAt: now,
                         });
-
-                        // Schedule mention email (only if the user has an email)
-                        if (memberUser.email) {
-                            await ctx.scheduler.runAfter(0, internal.emails.sendMentionEmail, {
-                                to: memberUser.email,
-                                recipientName: memberUser.name ?? undefined,
-                                mentionerName: commenterName,
-                                commentContent: args.content,
-                                cardTitle: card.title,
-                                boardTitle: board?.title ?? "a board",
-                                boardId: card.boardId,
-                                cardId: args.cardId,
-                            });
-                        }
                     }
                 }
             }
