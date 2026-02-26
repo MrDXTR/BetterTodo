@@ -47,9 +47,7 @@ export function UnsavedChangesDialog({
                     <Button variant="destructive" onClick={handleDiscard}>
                         Discard
                     </Button>
-                    <AlertDialogAction onClick={handleSave}>
-                        Save Changes
-                    </AlertDialogAction>
+                    <AlertDialogAction onClick={handleSave}>Save Changes</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

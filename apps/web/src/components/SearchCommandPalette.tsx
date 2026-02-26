@@ -2,13 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useNavigate } from "@tanstack/react-router";
-import {
-    Search,
-    LayoutGrid,
-    CreditCard,
-    ArrowRight,
-    CheckCircle2,
-} from "lucide-react";
+import { Search, LayoutGrid, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react";
 import {
     CommandDialog,
     CommandEmpty,
@@ -31,7 +25,7 @@ export function SearchCommandPalette() {
 
     const results = useQuery(
         api.search.globalSearch,
-        shouldSearch ? { query: debouncedQuery, limit: 8 } : "skip"
+        shouldSearch ? { query: debouncedQuery, limit: 8 } : "skip",
     );
 
     // Cmd+K / Ctrl+K to open
@@ -56,7 +50,7 @@ export function SearchCommandPalette() {
                 navigate({ to: "/boards/$boardId", params: { boardId } });
             }
         },
-        [navigate]
+        [navigate],
     );
 
     return (
@@ -115,16 +109,13 @@ export function SearchCommandPalette() {
                                 <CommandItem
                                     key={board._id}
                                     value={`board-${board._id}-${board.title}`}
-                                    onSelect={() =>
-                                        handleSelect("board", board._id)
-                                    }
+                                    onSelect={() => handleSelect("board", board._id)}
                                     className="flex items-center gap-3 cursor-pointer"
                                 >
                                     <div
                                         className="h-4 w-4 rounded-sm shrink-0"
                                         style={{
-                                            backgroundColor:
-                                                board.color || "#0079BF",
+                                            backgroundColor: board.color || "#0079BF",
                                         }}
                                     />
                                     <LayoutGrid className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -144,9 +135,9 @@ export function SearchCommandPalette() {
                         </CommandGroup>
                     )}
 
-                    {results &&
-                        results.boards.length > 0 &&
-                        results.cards.length > 0 && <CommandSeparator />}
+                    {results && results.boards.length > 0 && results.cards.length > 0 && (
+                        <CommandSeparator />
+                    )}
 
                     {/* Cards results */}
                     {results && results.cards.length > 0 && (
@@ -155,13 +146,7 @@ export function SearchCommandPalette() {
                                 <CommandItem
                                     key={card._id}
                                     value={`card-${card._id}-${card.title}`}
-                                    onSelect={() =>
-                                        handleSelect(
-                                            "card",
-                                            card._id,
-                                            card.boardId
-                                        )
-                                    }
+                                    onSelect={() => handleSelect("card", card._id, card.boardId)}
                                     className="flex items-center gap-3 cursor-pointer"
                                 >
                                     {card.completed ? (
@@ -179,14 +164,11 @@ export function SearchCommandPalette() {
                                             <span
                                                 className="h-2 w-2 rounded-sm shrink-0"
                                                 style={{
-                                                    backgroundColor:
-                                                        card.boardColor ||
-                                                        "#0079BF",
+                                                    backgroundColor: card.boardColor || "#0079BF",
                                                 }}
                                             />
                                             <span className="truncate">
-                                                {card.boardTitle} ›{" "}
-                                                {card.listTitle}
+                                                {card.boardTitle} › {card.listTitle}
                                             </span>
                                             {card.priority && (
                                                 <Badge

@@ -33,10 +33,7 @@ export const getMyOpenTasks = query({
                 .query("cards")
                 .withIndex("by_board", (q) => q.eq("boardId", board._id))
                 .filter((q) =>
-                    q.and(
-                        q.eq(q.field("archived"), false),
-                        q.eq(q.field("completed"), false)
-                    )
+                    q.and(q.eq(q.field("archived"), false), q.eq(q.field("completed"), false)),
                 )
                 .collect();
 

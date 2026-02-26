@@ -21,9 +21,7 @@ export const getByCard = query({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) throw new Error("Access denied");
@@ -45,7 +43,7 @@ export const getByCard = query({
                     ...checklist,
                     items: items.sort((a, b) => a.position - b.position),
                 };
-            })
+            }),
         );
 
         return checklistsWithItems.sort((a, b) => a.position - b.position);
@@ -74,9 +72,7 @@ export const create = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -89,17 +85,13 @@ export const create = mutation({
             .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
             .collect();
 
-        const maxPosition = Math.max(
-            0,
-            ...existingChecklists.map((c) => c.position)
-        );
+        const maxPosition = Math.max(0, ...existingChecklists.map((c) => c.position));
 
         const checklistId = await ctx.db.insert("checklists", {
             cardId: args.cardId,
             title: args.title,
             position: maxPosition + 1,
         });
-
 
         return await ctx.db.get(checklistId);
     },
@@ -123,9 +115,7 @@ export const deleteChecklist = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -143,7 +133,6 @@ export const deleteChecklist = mutation({
         }
 
         await ctx.db.delete(args.checklistId);
-
 
         return { success: true };
     },
@@ -170,9 +159,7 @@ export const createItem = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -225,9 +212,7 @@ export const updateItem = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -267,9 +252,7 @@ export const deleteItem = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {

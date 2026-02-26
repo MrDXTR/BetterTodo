@@ -5,11 +5,7 @@ import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { Users, X, Plus, Check } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
 interface CardMembersProps {
@@ -38,9 +34,10 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
         }
     };
 
-    const filteredMembers = boardMembers.filter((member: any) =>
-        member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.user?.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredMembers = boardMembers.filter(
+        (member: any) =>
+            member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            member.user?.email?.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
     return (
@@ -49,7 +46,10 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
             {cardAssignments.length > 0 && (
                 <div className="flex -space-x-2">
                     {cardAssignments.slice(0, 3).map((assignment: any) => (
-                        <Avatar key={assignment.userId} className="w-8 h-8 border-2 border-background">
+                        <Avatar
+                            key={assignment.userId}
+                            className="w-8 h-8 border-2 border-background"
+                        >
                             <AvatarImage src={assignment.user?.image} />
                             <AvatarFallback className="text-xs">
                                 {assignment.user?.name?.charAt(0).toUpperCase() || "?"}
@@ -58,7 +58,9 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
                     ))}
                     {cardAssignments.length > 3 && (
                         <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                            <span className="text-xs font-medium">+{cardAssignments.length - 3}</span>
+                            <span className="text-xs font-medium">
+                                +{cardAssignments.length - 3}
+                            </span>
                         </div>
                     )}
                 </div>
@@ -100,8 +102,12 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 text-left">
-                                        <p className="text-sm font-medium">{member.user?.name || "Unknown"}</p>
-                                        <p className="text-xs text-muted-foreground">{member.role}</p>
+                                        <p className="text-sm font-medium">
+                                            {member.user?.name || "Unknown"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {member.role}
+                                        </p>
                                     </div>
                                     {assignedUserIds.includes(member.userId) && (
                                         <Check className="w-4 h-4 text-primary" />

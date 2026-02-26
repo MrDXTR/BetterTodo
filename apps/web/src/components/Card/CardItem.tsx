@@ -34,8 +34,9 @@ export function CardItem({ card, index }: CardItemProps) {
                                 setIsModalOpen(true);
                             }
                         }}
-                        className={`cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
-                            }`}
+                        className={`cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-all ${
+                            snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : ""
+                        }`}
                     >
                         {/* Cover Image */}
                         {card.coverImage && (
@@ -60,19 +61,18 @@ export function CardItem({ card, index }: CardItemProps) {
                         )}
 
                         {/* Card Title */}
-                        <h4 className="mb-2 text-sm font-medium leading-snug">
-                            {card.title}
-                        </h4>
+                        <h4 className="mb-2 text-sm font-medium leading-snug">{card.title}</h4>
 
                         {/* Card Metadata */}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {/* Due Date */}
                             {hasDueDate && (
                                 <div
-                                    className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${isPastDue
+                                    className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${
+                                        isPastDue
                                             ? "bg-destructive/10 text-destructive"
                                             : "bg-muted"
-                                        }`}
+                                    }`}
                                 >
                                     <Calendar className="h-3 w-3" />
                                     <span>

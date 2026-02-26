@@ -18,9 +18,7 @@ export const getByBoard = query({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) throw new Error("Access denied");
@@ -52,9 +50,7 @@ export const create = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -91,7 +87,7 @@ export const update = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", label.boardId).eq("userId", user._id)
+                q.eq("boardId", label.boardId).eq("userId", user._id),
             )
             .first();
 
@@ -125,7 +121,7 @@ export const deleteLabel = mutation({
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", label.boardId).eq("userId", user._id)
+                q.eq("boardId", label.boardId).eq("userId", user._id),
             )
             .first();
 
@@ -167,9 +163,7 @@ export const addToCard = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -191,7 +185,6 @@ export const addToCard = mutation({
             cardId: args.cardId,
             labelId: args.labelId,
         });
-
 
         return { success: true };
     },
@@ -215,9 +208,7 @@ export const removeFromCard = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -235,7 +226,6 @@ export const removeFromCard = mutation({
         }
 
         await ctx.db.delete(cardLabel._id);
-
 
         return { success: true };
     },

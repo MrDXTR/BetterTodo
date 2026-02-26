@@ -13,12 +13,12 @@ Open [http://localhost:4000](http://localhost:4000) in your browser.
 
 ## Content Structure
 
-| Path | Description |
-| ---- | ----------- |
-| `content/docs/index.mdx` | Introduction |
-| `content/docs/getting-started.mdx` | Setup, install, run |
-| `content/docs/authentication.mdx` | Auth (email + Google OAuth) |
-| `content/docs/boards-and-cards.mdx` | Boards, lists, cards |
+| Path                                | Description                 |
+| ----------------------------------- | --------------------------- |
+| `content/docs/index.mdx`            | Introduction                |
+| `content/docs/getting-started.mdx`  | Setup, install, run         |
+| `content/docs/authentication.mdx`   | Auth (email + Google OAuth) |
+| `content/docs/boards-and-cards.mdx` | Boards, lists, cards        |
 
 ## Add a New Page
 
@@ -32,6 +32,7 @@ description: Brief description
 ---
 
 # My Page
+
 Content...
 ```
 

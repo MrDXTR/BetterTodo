@@ -27,7 +27,7 @@ export function BoardView({ board }: BoardViewProps) {
     const [freshListId, setFreshListId] = useState<NewListId | null>(null);
 
     // Used to detect the newly-added list after the board updates
-    const prevListIdsRef = useRef<Set<string>>(new Set(board.lists.map(l => l._id)));
+    const prevListIdsRef = useRef<Set<string>>(new Set(board.lists.map((l) => l._id)));
 
     // Optimistic state for drag-and-drop
     const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
@@ -42,18 +42,18 @@ export function BoardView({ board }: BoardViewProps) {
     // Sync optimistic state with actual board data when it changes
     useEffect(() => {
         const prevIds = prevListIdsRef.current;
-        const newList = board.lists.find(l => !prevIds.has(l._id));
+        const newList = board.lists.find((l) => !prevIds.has(l._id));
 
         if (newList) {
             setFreshListId(newList._id);
             // Clear the "fresh" flag after the animation finishes (~700ms)
             const timer = setTimeout(() => setFreshListId(null), 700);
-            prevListIdsRef.current = new Set(board.lists.map(l => l._id));
+            prevListIdsRef.current = new Set(board.lists.map((l) => l._id));
             setOptimisticBoard(board);
             return () => clearTimeout(timer);
         }
 
-        prevListIdsRef.current = new Set(board.lists.map(l => l._id));
+        prevListIdsRef.current = new Set(board.lists.map((l) => l._id));
         setOptimisticBoard(board);
     }, [board]);
 
@@ -88,13 +88,13 @@ export function BoardView({ board }: BoardViewProps) {
 
     const toggleLabelFilter = (labelId: string) => {
         setActiveLabelIds((prev) =>
-            prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+            prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId],
         );
     };
 
     const togglePriorityFilter = (priority: CardPriority) => {
         setActivePriorities((prev) =>
-            prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority]
+            prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority],
         );
     };
 
@@ -128,10 +128,8 @@ export function BoardView({ board }: BoardViewProps) {
         const { destination, source, type } = result;
 
         if (!destination) return;
-        if (
-            destination.droppableId === source.droppableId &&
-            destination.index === source.index
-        ) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index)
+            return;
 
         if (type === "list") {
             const newLists = Array.from(optimisticBoard.lists);
@@ -153,11 +151,18 @@ export function BoardView({ board }: BoardViewProps) {
         }
 
         if (type === "card") {
-            const sourceListIndex = optimisticBoard.lists.findIndex(l => l._id === source.droppableId);
-            const destListIndex = optimisticBoard.lists.findIndex(l => l._id === destination.droppableId);
+            const sourceListIndex = optimisticBoard.lists.findIndex(
+                (l) => l._id === source.droppableId,
+            );
+            const destListIndex = optimisticBoard.lists.findIndex(
+                (l) => l._id === destination.droppableId,
+            );
             if (sourceListIndex === -1 || destListIndex === -1) return;
 
-            const newLists = optimisticBoard.lists.map(list => ({ ...list, cards: [...list.cards] }));
+            const newLists = optimisticBoard.lists.map((list) => ({
+                ...list,
+                cards: [...list.cards],
+            }));
             const [movedCard] = newLists[sourceListIndex].cards.splice(source.index, 1);
             newLists[destListIndex].cards.splice(destination.index, 0, {
                 ...movedCard,
@@ -210,7 +215,7 @@ export function BoardView({ board }: BoardViewProps) {
                     radial-gradient(circle at 90% 80%, ${backgroundColor}10 0%, transparent 50%),
                     linear-gradient(180deg, ${backgroundColor}08 0%, transparent 100%),
                     hsl(var(--background))
-                `
+                `,
             }}
         >
             {/* Subtle dot-grid pattern */}
@@ -218,7 +223,7 @@ export function BoardView({ board }: BoardViewProps) {
                 className="absolute inset-0 opacity-[0.03] pointer-events-none"
                 style={{
                     backgroundImage: `radial-gradient(circle at 1px 1px, ${backgroundColor} 1px, transparent 0)`,
-                    backgroundSize: '40px 40px'
+                    backgroundSize: "40px 40px",
                 }}
             />
 
@@ -314,7 +319,8 @@ export function BoardView({ board }: BoardViewProps) {
                                             background: `${backgroundColor}08`,
                                         }}
                                     >
-                                        Create your first list to start adding cards and checklist tasks.
+                                        Create your first list to start adding cards and checklist
+                                        tasks.
                                     </div>
                                 )}
 
@@ -346,7 +352,9 @@ export function BoardView({ board }: BoardViewProps) {
                                                     }
                                                 }}
                                                 className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
-                                                style={{ boxShadow: `0 0 0 1px ${backgroundColor}20` }}
+                                                style={{
+                                                    boxShadow: `0 0 0 1px ${backgroundColor}20`,
+                                                }}
                                                 maxLength={100}
                                                 disabled={isCreatingList}
                                             />
@@ -354,16 +362,22 @@ export function BoardView({ board }: BoardViewProps) {
                                                 <Button
                                                     type="submit"
                                                     size="sm"
-                                                    disabled={!newListTitle.trim() || isCreatingList}
+                                                    disabled={
+                                                        !newListTitle.trim() || isCreatingList
+                                                    }
                                                     className="transition-all gap-2"
                                                     style={{
                                                         background: newListTitle.trim()
                                                             ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`
                                                             : undefined,
-                                                        color: newListTitle.trim() ? 'white' : undefined,
+                                                        color: newListTitle.trim()
+                                                            ? "white"
+                                                            : undefined,
                                                     }}
                                                 >
-                                                    {isCreatingList && <Loader2 className="h-4 w-4 animate-spin" />}
+                                                    {isCreatingList && (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    )}
                                                     Add List
                                                 </Button>
                                                 <Button
@@ -395,7 +409,10 @@ export function BoardView({ board }: BoardViewProps) {
                                                 className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
                                                 style={{ color: backgroundColor }}
                                             />
-                                            <span style={{ color: backgroundColor }} className="font-medium">
+                                            <span
+                                                style={{ color: backgroundColor }}
+                                                className="font-medium"
+                                            >
                                                 Add List
                                             </span>
                                         </Button>

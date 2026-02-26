@@ -180,7 +180,8 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                 Start from a template
                             </DialogTitle>
                             <DialogDescription>
-                                Choose a template to get started quickly, or start with a blank board.
+                                Choose a template to get started quickly, or start with a blank
+                                board.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -192,7 +193,7 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                     onClick={() => handleTemplateSelect(template)}
                                     className={cn(
                                         "relative text-left rounded-xl border p-4 transition-all hover:shadow-md hover:scale-[1.02]",
-                                        "bg-background hover:bg-muted/50"
+                                        "bg-background hover:bg-muted/50",
                                     )}
                                     style={{ borderColor: template.color + "60" }}
                                 >
@@ -205,7 +206,9 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                         </div>
                                         <div className="min-w-0">
                                             <p className="font-semibold text-sm">{template.name}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {template.description}
+                                            </p>
                                             {template.lists.length > 0 && (
                                                 <p className="text-[10px] text-muted-foreground/70 mt-1.5 truncate">
                                                     {template.lists.join(" · ")}
@@ -274,10 +277,11 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                             key={boardColor.value}
                                             type="button"
                                             onClick={() => setColor(boardColor.value as any)}
-                                            className={`relative h-10 w-full rounded-md transition-all hover:scale-110 ${color === boardColor.value
-                                                ? "ring-2 ring-primary ring-offset-2"
-                                                : ""
-                                                }`}
+                                            className={`relative h-10 w-full rounded-md transition-all hover:scale-110 ${
+                                                color === boardColor.value
+                                                    ? "ring-2 ring-primary ring-offset-2"
+                                                    : ""
+                                            }`}
                                             style={{ backgroundColor: boardColor.value }}
                                             title={boardColor.name}
                                         >
@@ -303,19 +307,25 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                         <SelectItem value="private">
                                             <div>
                                                 <div className="font-medium">Private</div>
-                                                <div className="text-xs text-muted-foreground">Only you and invited members</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Only you and invited members
+                                                </div>
                                             </div>
                                         </SelectItem>
                                         <SelectItem value="team">
                                             <div>
                                                 <div className="font-medium">Team</div>
-                                                <div className="text-xs text-muted-foreground">All team members can view</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    All team members can view
+                                                </div>
                                             </div>
                                         </SelectItem>
                                         <SelectItem value="public">
                                             <div>
                                                 <div className="font-medium">Public</div>
-                                                <div className="text-xs text-muted-foreground">Anyone with the link</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Anyone with the link
+                                                </div>
                                             </div>
                                         </SelectItem>
                                     </SelectContent>
@@ -324,10 +334,15 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
 
                             {selectedTemplate.lists.length > 0 && (
                                 <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Lists to be created:</p>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                                        Lists to be created:
+                                    </p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {selectedTemplate.lists.map((list) => (
-                                            <span key={list} className="text-xs bg-background border border-border rounded px-2 py-0.5">
+                                            <span
+                                                key={list}
+                                                className="text-xs bg-background border border-border rounded px-2 py-0.5"
+                                            >
                                                 {list}
                                             </span>
                                         ))}

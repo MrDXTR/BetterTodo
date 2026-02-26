@@ -3,6 +3,6 @@ import { env } from "@BetterTodo/env/web";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  baseURL: env.VITE_CONVEX_SITE_URL,
-  plugins: [convexClient(), crossDomainClient()],
+    baseURL: env.VITE_CONVEX_SITE_URL,
+    plugins: [convexClient(), crossDomainClient()],
 });

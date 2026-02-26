@@ -1,6 +1,17 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Archive, Check, CheckSquare, Layers3, ListTodo, Settings, SlidersHorizontal, Users, X } from "lucide-react";
+import {
+    ArrowLeft,
+    Archive,
+    Check,
+    CheckSquare,
+    Layers3,
+    ListTodo,
+    Settings,
+    SlidersHorizontal,
+    Users,
+    X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -66,7 +77,20 @@ function hexToRgba(hex: string, alpha: number) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export function BoardHeader({ board, members = [], stats, showFilters, setShowFilters, activeLabelIds, activePriorities, toggleLabelFilter, togglePriorityFilter, clearFilters, boardLabels, hasActiveFilters }: BoardHeaderProps) {
+export function BoardHeader({
+    board,
+    members = [],
+    stats,
+    showFilters,
+    setShowFilters,
+    activeLabelIds,
+    activePriorities,
+    toggleLabelFilter,
+    togglePriorityFilter,
+    clearFilters,
+    boardLabels,
+    hasActiveFilters,
+}: BoardHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(board.title);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -109,7 +133,7 @@ export function BoardHeader({ board, members = [], stats, showFilters, setShowFi
             tintBorder: hexToRgba(boardColor, 0.3),
             tintChip: hexToRgba(boardColor, 0.12),
         }),
-        [boardColor]
+        [boardColor],
     );
 
     const controlButtonClass =
@@ -206,7 +230,7 @@ export function BoardHeader({ board, members = [], stats, showFilters, setShowFi
                                     className={cn(
                                         controlButtonClass,
                                         "relative",
-                                        showFilters && "bg-background/75 text-foreground"
+                                        showFilters && "bg-background/75 text-foreground",
                                     )}
                                 >
                                     <SlidersHorizontal className="h-4 w-4" />
@@ -241,24 +265,39 @@ export function BoardHeader({ board, members = [], stats, showFilters, setShowFi
                                             Priority
                                         </p>
                                         <div className="space-y-0.5">
-                                            {(["urgent", "high", "medium", "low"] as CardPriority[]).map((priority) => {
-                                                const isActive = activePriorities.includes(priority);
+                                            {(
+                                                [
+                                                    "urgent",
+                                                    "high",
+                                                    "medium",
+                                                    "low",
+                                                ] as CardPriority[]
+                                            ).map((priority) => {
+                                                const isActive =
+                                                    activePriorities.includes(priority);
                                                 return (
                                                     <button
                                                         key={priority}
-                                                        onClick={() => togglePriorityFilter(priority)}
+                                                        onClick={() =>
+                                                            togglePriorityFilter(priority)
+                                                        }
                                                         className={cn(
                                                             "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors",
                                                             isActive
                                                                 ? "bg-accent/80 text-accent-foreground"
-                                                                : "text-foreground/80 hover:bg-muted/60"
+                                                                : "text-foreground/80 hover:bg-muted/60",
                                                         )}
                                                     >
                                                         <span
                                                             className="h-2.5 w-2.5 rounded-full shrink-0"
-                                                            style={{ background: PRIORITY_COLORS[priority] }}
+                                                            style={{
+                                                                background:
+                                                                    PRIORITY_COLORS[priority],
+                                                            }}
                                                         />
-                                                        <span className="capitalize flex-1 text-left">{priority}</span>
+                                                        <span className="capitalize flex-1 text-left">
+                                                            {priority}
+                                                        </span>
                                                         {isActive && (
                                                             <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                                                         )}
@@ -276,23 +315,29 @@ export function BoardHeader({ board, members = [], stats, showFilters, setShowFi
                                             </p>
                                             <div className="space-y-0.5">
                                                 {boardLabels.map((label) => {
-                                                    const isActive = activeLabelIds.includes(label._id);
+                                                    const isActive = activeLabelIds.includes(
+                                                        label._id,
+                                                    );
                                                     return (
                                                         <button
                                                             key={label._id}
-                                                            onClick={() => toggleLabelFilter(label._id)}
+                                                            onClick={() =>
+                                                                toggleLabelFilter(label._id)
+                                                            }
                                                             className={cn(
                                                                 "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors",
                                                                 isActive
                                                                     ? "bg-accent/80 text-accent-foreground"
-                                                                    : "text-foreground/80 hover:bg-muted/60"
+                                                                    : "text-foreground/80 hover:bg-muted/60",
                                                             )}
                                                         >
                                                             <span
                                                                 className="h-2.5 w-2.5 rounded-full shrink-0"
                                                                 style={{ background: label.color }}
                                                             />
-                                                            <span className="flex-1 text-left truncate">{label.name}</span>
+                                                            <span className="flex-1 text-left truncate">
+                                                                {label.name}
+                                                            </span>
                                                             {isActive && (
                                                                 <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                                                             )}
@@ -394,11 +439,7 @@ export function BoardHeader({ board, members = [], stats, showFilters, setShowFi
                 </div>
             </div>
 
-            <BoardSettingsModal
-                open={settingsOpen}
-                onOpenChange={setSettingsOpen}
-                board={board}
-            />
+            <BoardSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} board={board} />
 
             <BoardMembersPanel
                 open={membersOpen}

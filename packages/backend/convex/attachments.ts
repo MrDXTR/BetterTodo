@@ -21,9 +21,7 @@ export const getByCard = query({
         // Check board membership
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) throw new Error("Access denied");
@@ -38,7 +36,7 @@ export const getByCard = query({
             attachments.map(async (attachment) => ({
                 ...attachment,
                 url: await ctx.storage.getUrl(attachment.storageId),
-            }))
+            })),
         );
     },
 });
@@ -68,9 +66,7 @@ export const addAttachment = mutation({
         // Check board membership
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -87,7 +83,6 @@ export const addAttachment = mutation({
             mimeType: args.mimeType,
             createdAt: now,
         });
-
 
         return await ctx.db.get(attachmentId);
     },
@@ -111,9 +106,7 @@ export const deleteAttachment = mutation({
         // Check board membership
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -133,7 +126,6 @@ export const deleteAttachment = mutation({
 
         // Delete the DB record
         await ctx.db.delete(args.attachmentId);
-
 
         return { success: true };
     },
@@ -157,9 +149,7 @@ export const setAsCover = mutation({
         // Check board membership
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -194,9 +184,7 @@ export const removeCover = mutation({
         // Check board membership
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {

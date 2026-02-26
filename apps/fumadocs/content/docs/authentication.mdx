@@ -16,18 +16,18 @@ BetterTodo uses [Better Auth](https://www.better-auth.com/) with [@convex-dev/be
 
 Set these via Convex Dashboard or CLI (`npx convex env set`):
 
-| Variable | Description | Example |
-| -------- | ----------- | ------- |
-| `SITE_URL` | Frontend URL (used for trusted origins) | `http://localhost:3001` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | From Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | From Google Cloud Console |
+| Variable               | Description                             | Example                   |
+| ---------------------- | --------------------------------------- | ------------------------- |
+| `SITE_URL`             | Frontend URL (used for trusted origins) | `http://localhost:3001`   |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                  | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret              | From Google Cloud Console |
 
 ## Google OAuth Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 2. Create an OAuth 2.0 Client ID (Web application)
 3. Add **Authorized redirect URIs**:
-   - `https://<your-deployment>.convex.site/api/auth/callback/google`
+    - `https://<your-deployment>.convex.site/api/auth/callback/google`
 
 Use your Convex deployment URL (same as `VITE_CONVEX_SITE_URL` in `.env`).
 

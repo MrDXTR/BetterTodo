@@ -1,16 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
-import {
-    Shield,
-    Trash2,
-    UserCog,
-    Users,
-    ChevronLeft,
-    Crown,
-    User,
-    Loader2,
-} from "lucide-react";
+import { Shield, Trash2, UserCog, Users, ChevronLeft, Crown, User, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -112,7 +103,6 @@ function AdminPanel() {
     return (
         <div className="min-h-[calc(100vh-3rem)] bg-muted/30">
             <div className="max-w-4xl mx-auto px-4 py-8">
-
                 {/* Header */}
                 <div className="mb-8">
                     <Link
@@ -128,7 +118,9 @@ function AdminPanel() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
-                            <p className="text-sm text-muted-foreground">Manage user roles and accounts</p>
+                            <p className="text-sm text-muted-foreground">
+                                Manage user roles and accounts
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -180,7 +172,9 @@ function AdminPanel() {
                     ) : !users || users.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
                             <Users className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                            <p className="text-sm text-muted-foreground">No other users found yet.</p>
+                            <p className="text-sm text-muted-foreground">
+                                No other users found yet.
+                            </p>
                         </div>
                     ) : (
                         <div className="divide-y">
@@ -199,7 +193,7 @@ function AdminPanel() {
                                         key={user.userId}
                                         className={cn(
                                             "flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
-                                            isSelf && "bg-muted/40"
+                                            isSelf && "bg-muted/40",
                                         )}
                                     >
                                         {/* Avatar + info */}
@@ -216,7 +210,10 @@ function AdminPanel() {
                                                         {user.name ?? "Unnamed user"}
                                                     </p>
                                                     {isSelf && (
-                                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] px-1.5 py-0 shrink-0"
+                                                        >
                                                             You
                                                         </Badge>
                                                     )}
@@ -233,7 +230,8 @@ function AdminPanel() {
                                                 variant={isAdmin ? "default" : "secondary"}
                                                 className={cn(
                                                     "gap-1 text-xs",
-                                                    isAdmin && "bg-primary/15 text-primary border-primary/20 hover:bg-primary/20"
+                                                    isAdmin &&
+                                                        "bg-primary/15 text-primary border-primary/20 hover:bg-primary/20",
                                                 )}
                                             >
                                                 {isAdmin ? (
@@ -247,9 +245,16 @@ function AdminPanel() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                disabled={isUpdatingRole === user.userId || isDeletingUser === user.userId || isSelf}
+                                                disabled={
+                                                    isUpdatingRole === user.userId ||
+                                                    isDeletingUser === user.userId ||
+                                                    isSelf
+                                                }
                                                 onClick={() =>
-                                                    handleToggleRole(user.userId, isAdmin ? "user" : "admin")
+                                                    handleToggleRole(
+                                                        user.userId,
+                                                        isAdmin ? "user" : "admin",
+                                                    )
                                                 }
                                                 className="gap-1.5 h-8 text-xs"
                                             >
@@ -264,7 +269,11 @@ function AdminPanel() {
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                disabled={isUpdatingRole === user.userId || isDeletingUser === user.userId || isSelf}
+                                                disabled={
+                                                    isUpdatingRole === user.userId ||
+                                                    isDeletingUser === user.userId ||
+                                                    isSelf
+                                                }
                                                 onClick={() => setPendingDeleteUserId(user.userId)}
                                                 className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                                             >

@@ -15,7 +15,13 @@ interface ListColumnProps {
     isFiltered?: boolean;
 }
 
-export function ListColumn({ list, index, boardColor, isFresh = false, isFiltered = false }: ListColumnProps) {
+export function ListColumn({
+    list,
+    index,
+    boardColor,
+    isFresh = false,
+    isFiltered = false,
+}: ListColumnProps) {
     return (
         <Draggable draggableId={list._id} index={index}>
             {(provided, snapshot) => (
@@ -25,8 +31,9 @@ export function ListColumn({ list, index, boardColor, isFresh = false, isFiltere
                     className="flex-shrink-0 w-72"
                 >
                     <div
-                        className={`flex flex-col max-h-[calc(100vh-40vh)] md:max-h-[calc(100vh-25vh)] rounded-xl border overflow-hidden transition-all ${snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
-                            } ${isFresh ? "list-fresh-enter" : ""}`}
+                        className={`flex flex-col max-h-[calc(100vh-40vh)] md:max-h-[calc(100vh-25vh)] rounded-xl border overflow-hidden transition-all ${
+                            snapshot.isDragging ? "shadow-2xl" : "shadow-lg hover:shadow-xl"
+                        } ${isFresh ? "list-fresh-enter" : ""}`}
                         style={{
                             background: snapshot.isDragging
                                 ? `linear-gradient(135deg, hsl(var(--background)) 0%, ${boardColor}15 100%)`
@@ -40,7 +47,7 @@ export function ListColumn({ list, index, boardColor, isFresh = false, isFiltere
                             // Don't override transition when the fresh animation is running
                             transition: isFresh
                                 ? undefined
-                                : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                : "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                         }}
                     >
                         {/* Drag handle wraps only the header */}
@@ -54,11 +61,12 @@ export function ListColumn({ list, index, boardColor, isFresh = false, isFiltere
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`flex-1 overflow-y-auto min-h-0 p-3 space-y-2.5 transition-colors ${snapshot.isDraggingOver ? "bg-muted/30" : ""
-                                        }`}
+                                    className={`flex-1 overflow-y-auto min-h-0 p-3 space-y-2.5 transition-colors ${
+                                        snapshot.isDraggingOver ? "bg-muted/30" : ""
+                                    }`}
                                     style={{
                                         minHeight: "100px",
-                                        scrollbarWidth: 'thin',
+                                        scrollbarWidth: "thin",
                                         scrollbarColor: `${boardColor}40 transparent`,
                                     }}
                                 >

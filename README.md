@@ -1,4 +1,3 @@
-
 # BetterTodo
 
 A Trello-like collaborative task management app built with React, TanStack Router, Convex, and Better Auth.
@@ -16,14 +15,14 @@ A Trello-like collaborative task management app built with React, TanStack Route
 
 ## Tech Stack
 
-| Layer    | Tech                          |
-| -------- | ----------------------------- |
-| Frontend | React 19, TanStack Router, TailwindCSS, shadcn/ui |
-| Backend  | Convex (BaaS)                 |
-| Auth     | Better Auth (email + Google OAuth) |
-| Emails   | Resend                        |
-| Drag & Drop | @hello-pangea/dnd          |
-| Monorepo | Turborepo                     |
+| Layer       | Tech                                              |
+| ----------- | ------------------------------------------------- |
+| Frontend    | React 19, TanStack Router, TailwindCSS, shadcn/ui |
+| Backend     | Convex (BaaS)                                     |
+| Auth        | Better Auth (email + Google OAuth)                |
+| Emails      | Resend                                            |
+| Drag & Drop | @hello-pangea/dnd                                 |
+| Monorepo    | Turborepo                                         |
 
 ## Getting Started
 
@@ -58,7 +57,7 @@ npx convex env set FROM_EMAIL "noreply@yourdomain.com"
 ```
 
 4. For Google OAuth, add this redirect URI in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
-   - `https://<your-deployment>.convex.site/api/auth/callback/google`
+    - `https://<your-deployment>.convex.site/api/auth/callback/google`
 
 ### Run Development
 
@@ -100,14 +99,14 @@ BetterTodo/
 
 ## Available Scripts
 
-| Script            | Description                          |
-| ----------------- | ------------------------------------ |
-| `bun run dev`     | Start all apps (web + Convex)        |
-| `bun run build`   | Build all applications               |
-| `bun run dev:web` | Start only the web app               |
-| `bun run dev:setup` | Setup and configure Convex project |
-| `bun run check-types` | Type-check all packages          |
-| `cd apps/web && bun run generate-pwa-assets` | Generate PWA assets |
+| Script                                       | Description                        |
+| -------------------------------------------- | ---------------------------------- |
+| `bun run dev`                                | Start all apps (web + Convex)      |
+| `bun run build`                              | Build all applications             |
+| `bun run dev:web`                            | Start only the web app             |
+| `bun run dev:setup`                          | Setup and configure Convex project |
+| `bun run check-types`                        | Type-check all packages            |
+| `cd apps/web && bun run generate-pwa-assets` | Generate PWA assets                |
 
 ## Documentation
 

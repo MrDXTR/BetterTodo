@@ -28,9 +28,7 @@ export const globalSearch = query({
         const boardIds = memberships.map((m) => m.boardId);
 
         // Search boards
-        const allBoards = await Promise.all(
-            boardIds.map((id) => ctx.db.get(id))
-        );
+        const allBoards = await Promise.all(boardIds.map((id) => ctx.db.get(id)));
 
         const matchingBoards = allBoards
             .filter(
@@ -38,7 +36,7 @@ export const globalSearch = query({
                     b &&
                     !b.archived &&
                     (b.title.toLowerCase().includes(searchQuery) ||
-                        b.description?.toLowerCase().includes(searchQuery))
+                        b.description?.toLowerCase().includes(searchQuery)),
             )
             .slice(0, limit)
             .map((b) => ({
@@ -58,7 +56,7 @@ export const globalSearch = query({
                     .filter((q) => q.eq(q.field("archived"), false))
                     .collect();
                 return cards;
-            })
+            }),
         );
 
         const flatCards = allCards.flat();
@@ -66,7 +64,7 @@ export const globalSearch = query({
             .filter(
                 (c) =>
                     c.title.toLowerCase().includes(searchQuery) ||
-                    c.description?.toLowerCase().includes(searchQuery)
+                    c.description?.toLowerCase().includes(searchQuery),
             )
             .slice(0, limit);
 
@@ -87,7 +85,7 @@ export const globalSearch = query({
                     completed: card.completed,
                     type: "card" as const,
                 };
-            })
+            }),
         );
 
         return {

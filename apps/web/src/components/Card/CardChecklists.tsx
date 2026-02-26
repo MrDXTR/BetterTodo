@@ -105,13 +105,13 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                 prev.map((checklist) =>
                     checklist._id === tempId
                         ? {
-                            _id: String(created?._id),
-                            title: created?.title ?? title,
-                            position: created?.position ?? checklist.position,
-                            items: [],
-                        }
-                        : checklist
-                )
+                              _id: String(created?._id),
+                              title: created?.title ?? title,
+                              position: created?.position ?? checklist.position,
+                              items: [],
+                          }
+                        : checklist,
+                ),
             );
         } catch (error) {
             setLocalChecklists((prev) => prev.filter((checklist) => checklist._id !== tempId));
@@ -172,7 +172,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                         },
                     ],
                 };
-            })
+            }),
         );
 
         try {
@@ -189,15 +189,15 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                         items: checklist.items.map((item) =>
                             item._id === tempId
                                 ? {
-                                    _id: String(created?._id),
-                                    title: created?.title ?? title,
-                                    completed: created?.completed ?? false,
-                                    position: created?.position ?? item.position,
-                                }
-                                : item
+                                      _id: String(created?._id),
+                                      title: created?.title ?? title,
+                                      completed: created?.completed ?? false,
+                                      position: created?.position ?? item.position,
+                                  }
+                                : item,
                         ),
                     };
-                })
+                }),
             );
         } catch (error) {
             setLocalChecklists((prev) =>
@@ -207,7 +207,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                         ...checklist,
                         items: checklist.items.filter((item) => item._id !== tempId),
                     };
-                })
+                }),
             );
             setNewItemTitles((prev) => ({ ...prev, [checklistId]: title }));
             toast.error("Failed to add checklist item");
@@ -220,11 +220,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
         }
     };
 
-    const handleToggleItem = async (
-        checklistId: string,
-        itemId: string,
-        completed: boolean
-    ) => {
+    const handleToggleItem = async (checklistId: string, itemId: string, completed: boolean) => {
         if (itemId.startsWith("temp-")) return;
 
         setTogglingItemIds((prev) => ({ ...prev, [itemId]: true }));
@@ -234,10 +230,10 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                 return {
                     ...checklist,
                     items: checklist.items.map((item) =>
-                        item._id === itemId ? { ...item, completed: !completed } : item
+                        item._id === itemId ? { ...item, completed: !completed } : item,
                     ),
                 };
-            })
+            }),
         );
 
         try {
@@ -252,10 +248,10 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                     return {
                         ...checklist,
                         items: checklist.items.map((item) =>
-                            item._id === itemId ? { ...item, completed } : item
+                            item._id === itemId ? { ...item, completed } : item,
                         ),
                     };
-                })
+                }),
             );
             toast.error("Failed to update checklist item");
             console.error("Error toggling item:", error);
@@ -278,7 +274,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                     ...checklist,
                     items: checklist.items.filter((item) => item._id !== itemId),
                 };
-            })
+            }),
         );
 
         try {
@@ -355,13 +351,20 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                         <Checkbox
                                             checked={item.completed}
                                             onCheckedChange={() =>
-                                                handleToggleItem(checklist._id, item._id, item.completed)
+                                                handleToggleItem(
+                                                    checklist._id,
+                                                    item._id,
+                                                    item.completed,
+                                                )
                                             }
                                             disabled={isToggling || isDeleting || item.isOptimistic}
                                         />
                                         <span
-                                            className={`flex-1 text-sm ${item.completed ? "line-through text-muted-foreground" : ""
-                                                }`}
+                                            className={`flex-1 text-sm ${
+                                                item.completed
+                                                    ? "line-through text-muted-foreground"
+                                                    : ""
+                                            }`}
                                         >
                                             <TextWithLinkPreviews text={item.title} />
                                         </span>
@@ -372,7 +375,9 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                             variant="ghost"
                                             size="sm"
                                             className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                                            onClick={() => handleDeleteItem(checklist._id, item._id)}
+                                            onClick={() =>
+                                                handleDeleteItem(checklist._id, item._id)
+                                            }
                                             disabled={isDeleting || isToggling}
                                         >
                                             {isDeleting ? (
@@ -411,7 +416,9 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                         checklist.isOptimistic
                                     }
                                 >
-                                    {isAddingItem && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                                    {isAddingItem && (
+                                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                    )}
                                     Add
                                 </Button>
                             </div>
@@ -440,7 +447,9 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                             onClick={handleCreateChecklist}
                             disabled={!newChecklistTitle.trim() || isCreatingChecklist}
                         >
-                            {isCreatingChecklist && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                            {isCreatingChecklist && (
+                                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                            )}
                             Add
                         </Button>
                         <Button

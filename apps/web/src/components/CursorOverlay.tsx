@@ -35,7 +35,9 @@ export function CursorOverlay({ users }: CursorOverlayProps) {
                 if (!user.cursor) return null;
 
                 // Generate a consistent color based on user ID
-                const colorIndex = user.userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % CURSOR_COLORS.length;
+                const colorIndex =
+                    user.userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+                    CURSOR_COLORS.length;
                 const color = CURSOR_COLORS[colorIndex];
 
                 return (
