@@ -233,4 +233,11 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_user", ["userId"])
     .index("by_workspace_user", ["workspaceId", "userId"]),
+
+  userRoles: defineTable({
+    userId: v.string(),
+    role: v.union(v.literal("admin"), v.literal("user")),
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+  }).index("by_user", ["userId"]),
 });
