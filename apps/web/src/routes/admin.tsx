@@ -9,6 +9,7 @@ import {
     ChevronLeft,
     Crown,
     User,
+    Loader2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -73,7 +74,8 @@ function AdminPanel() {
     const currentUser = useQuery(api.auth.getCurrentUser);
 
     const [pendingDeleteUserId, setPendingDeleteUserId] = useState<string | null>(null);
-    const [isUpdating, setIsUpdating] = useState<string | null>(null);
+    const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null);
+    const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
 
     const isLoading = users === undefined || users === null;
     const selectedForDelete = (users ?? []).find((u) => u.userId === pendingDeleteUserId) ?? null;
@@ -82,20 +84,20 @@ function AdminPanel() {
     const userCount = (users ?? []).filter((u) => u.role === "user").length;
 
     const handleToggleRole = async (userId: string, nextRole: "admin" | "user") => {
-        setIsUpdating(userId);
+        setIsUpdatingRole(userId);
         try {
             await setRole({ userId, role: nextRole });
             toast.success(`Role updated to ${nextRole}`);
         } catch (error: any) {
             toast.error(error?.message || "Failed to update role");
         } finally {
-            setIsUpdating(null);
+            setIsUpdatingRole(null);
         }
     };
 
     const handleDeleteUser = async () => {
         if (!pendingDeleteUserId) return;
-        setIsUpdating(pendingDeleteUserId);
+        setIsDeletingUser(pendingDeleteUserId);
         try {
             await deleteUser({ userId: pendingDeleteUserId });
             toast.success("User and all their data deleted");
@@ -103,7 +105,7 @@ function AdminPanel() {
         } catch (error: any) {
             toast.error(error?.message || "Failed to delete user");
         } finally {
-            setIsUpdating(null);
+            setIsDeletingUser(null);
         }
     };
 
@@ -245,24 +247,32 @@ function AdminPanel() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                disabled={isUpdating === user.userId || isSelf}
+                                                disabled={isUpdatingRole === user.userId || isDeletingUser === user.userId || isSelf}
                                                 onClick={() =>
                                                     handleToggleRole(user.userId, isAdmin ? "user" : "admin")
                                                 }
                                                 className="gap-1.5 h-8 text-xs"
                                             >
-                                                <UserCog className="h-3.5 w-3.5" />
+                                                {isUpdatingRole === user.userId ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <UserCog className="h-3.5 w-3.5" />
+                                                )}
                                                 {isAdmin ? "Demote" : "Promote"}
                                             </Button>
 
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                disabled={isUpdating === user.userId || isSelf}
+                                                disabled={isUpdatingRole === user.userId || isDeletingUser === user.userId || isSelf}
                                                 onClick={() => setPendingDeleteUserId(user.userId)}
                                                 className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                                             >
-                                                <Trash2 className="h-3.5 w-3.5" />
+                                                {isDeletingUser === user.userId ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                )}
                                                 Delete
                                             </Button>
                                         </div>

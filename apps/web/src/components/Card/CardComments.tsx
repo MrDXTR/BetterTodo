@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { MessageSquare, CornerUpRight, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageSquare, CornerUpRight, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,8 @@ export function CardComments({ cardId }: CardCommentsProps) {
 
   const [content, setContent] = useState("");
   const [replyToId, setReplyToId] = useState<Id<"comments"> | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<Id<"comments"> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Mentions autocomplete state
@@ -67,8 +69,9 @@ export function CardComments({ cardId }: CardCommentsProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = content.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       await createComment({
         cardId,
@@ -79,6 +82,8 @@ export function CardComments({ cardId }: CardCommentsProps) {
       setReplyToId(null);
     } catch (error) {
       console.error("Failed to create comment", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -142,10 +147,14 @@ export function CardComments({ cardId }: CardCommentsProps) {
   };
 
   const handleDelete = async (commentId: Id<"comments">) => {
+    if (deletingCommentId) return;
+    setDeletingCommentId(commentId);
     try {
       await deleteComment({ commentId });
     } catch (error) {
       console.error("Failed to delete comment", error);
+    } finally {
+      setDeletingCommentId(null);
     }
   };
 
@@ -187,6 +196,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
             onDelete={handleDelete}
             resolveAuthor={resolveAuthor}
             currentUserId={currentUser?._id}
+            deletingCommentId={deletingCommentId}
           />
         ))}
       </div>
@@ -200,8 +210,9 @@ export function CardComments({ cardId }: CardCommentsProps) {
             </div>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => setReplyToId(null)}
-              className="underline underline-offset-2"
+              className="underline underline-offset-2 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -214,6 +225,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
           onKeyDown={handleKeyDown}
           placeholder="Write a comment..."
           className="min-h-[60px] text-sm"
+          disabled={isSubmitting}
         />
 
         {mentionQuery?.active && matchingMembers.length > 0 && (
@@ -252,11 +264,15 @@ export function CardComments({ cardId }: CardCommentsProps) {
           <Button
             type="submit"
             size="sm"
-            disabled={!content.trim()}
+            disabled={!content.trim() || isSubmitting}
             className="inline-flex items-center gap-1"
           >
-            <MessageSquare className="h-3 w-3" />
-            Comment
+            {isSubmitting ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <MessageSquare className="h-3 w-3" />
+            )}
+            {isSubmitting ? "Comment" : "Comment"}
           </Button>
         </div>
       </form>
@@ -271,6 +287,7 @@ interface CommentThreadProps {
   onDelete: (commentId: Id<"comments">) => void;
   resolveAuthor: (userId: string) => { name: string; role?: string };
   currentUserId?: string;
+  deletingCommentId: Id<"comments"> | null;
 }
 
 function CommentThread({
@@ -280,6 +297,7 @@ function CommentThread({
   onDelete,
   resolveAuthor,
   currentUserId,
+  deletingCommentId,
 }: CommentThreadProps) {
   const replies = getReplies(comment._id);
   const [showAllReplies, setShowAllReplies] = useState(false);
@@ -314,6 +332,7 @@ function CommentThread({
         onDelete={onDelete}
         resolveAuthor={resolveAuthor}
         currentUserId={currentUserId}
+        deletingCommentId={deletingCommentId}
       />
 
       {/* Replies - Instagram style: all in single branch with consistent spacing */}
@@ -327,6 +346,7 @@ function CommentThread({
               onDelete={onDelete}
               resolveAuthor={resolveAuthor}
               currentUserId={currentUserId}
+              deletingCommentId={deletingCommentId}
               isReply
             />
           ))}
@@ -363,6 +383,7 @@ interface CommentItemProps {
   onDelete: (commentId: Id<"comments">) => void;
   resolveAuthor: (userId: string) => { name: string; role?: string };
   currentUserId?: string;
+  deletingCommentId: Id<"comments"> | null;
   isReply?: boolean;
 }
 
@@ -372,15 +393,18 @@ function CommentItem({
   onDelete,
   resolveAuthor,
   currentUserId,
+  deletingCommentId,
   isReply = false,
 }: CommentItemProps) {
   const { name, role } = resolveAuthor(comment.userId);
   const isOwn = currentUserId && currentUserId === comment.userId;
+  const isDeleting = deletingCommentId === comment._id;
+  const isGlobalDeleting = deletingCommentId !== null;
 
   const createdAt = new Date(comment.createdAt).toLocaleString();
 
   return (
-    <div className="rounded-md bg-muted/50 p-2 text-sm">
+    <div className={cn("rounded-md bg-muted/50 p-2 text-sm transition-opacity", isDeleting && "opacity-70")}>
       <div className="flex items-center justify-between gap-2 mb-1">
         <div>
           <div className="flex items-center gap-2">
@@ -398,19 +422,25 @@ function CommentItem({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            disabled={isGlobalDeleting}
             onClick={() => onReply(comment._id)}
-            className="text-[11px] text-muted-foreground hover:underline"
+            className="text-[11px] text-muted-foreground hover:underline disabled:opacity-50 disabled:no-underline"
           >
             Reply
           </button>
           {isOwn && (
             <button
               type="button"
+              disabled={isGlobalDeleting}
               onClick={() => onDelete(comment._id)}
-              className="text-[11px] text-destructive hover:underline inline-flex items-center gap-1"
+              className="text-[11px] text-destructive hover:underline inline-flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
             >
-              <Trash2 className="h-3 w-3" />
-              Delete
+              {isDeleting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="h-3 w-3" />
+              )}
+              {isDeleting ? "Delete" : "Delete"}
             </button>
           )}
         </div>

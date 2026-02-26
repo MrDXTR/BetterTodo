@@ -289,7 +289,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     maxLength={200}
                                                 />
                                             ) : (
-                                                <DialogTitle className="break-words text-2xl leading-tight">
+                                                <DialogTitle className="wrap-break-word text-2xl leading-tight">
                                                     {currentTitle}
                                                 </DialogTitle>
                                             )}
@@ -352,7 +352,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     placeholder="Add a detailed description..."
                                                 />
                                             ) : currentDescription ? (
-                                                <div className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                                                <div className="text-sm text-muted-foreground whitespace-pre-wrap [word-break:break-word]  ">
                                                     <TextWithLinkPreviews
                                                         text={currentDescription}
                                                     />
