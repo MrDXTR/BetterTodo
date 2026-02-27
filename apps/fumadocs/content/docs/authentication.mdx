@@ -16,18 +16,18 @@ BetterTodo uses [Better Auth](https://www.better-auth.com/) with [@convex-dev/be
 
 Set these via Convex Dashboard or CLI (`npx convex env set`):
 
-| Variable | Description | Example |
-| -------- | ----------- | ------- |
-| `SITE_URL` | Frontend URL (used for trusted origins) | `http://localhost:3001` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | From Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | From Google Cloud Console |
+| Variable               | Description                             | Example                   |
+| ---------------------- | --------------------------------------- | ------------------------- |
+| `SITE_URL`             | Frontend URL (used for trusted origins) | `http://localhost:3001`   |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                  | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret              | From Google Cloud Console |
 
 ## Google OAuth Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 2. Create an OAuth 2.0 Client ID (Web application)
 3. Add **Authorized redirect URIs**:
-   - `https://<your-deployment>.convex.site/api/auth/callback/google`
+    - `https://<your-deployment>.convex.site/api/auth/callback/google`
 
 Use your Convex deployment URL (same as `VITE_CONVEX_SITE_URL` in `.env`).
 
@@ -45,3 +45,16 @@ Auth is configured in `packages/backend/convex/auth.ts`:
 - `baseURL` – Convex site URL (where OAuth callbacks are received)
 - `trustedOrigins` – Frontend URL(s) for cross-domain cookies
 - `socialProviders.google` – Google OAuth client credentials
+
+## Admin Management
+
+To create the first admin user, you must use the Convex Dashboard. We use an `internalMutation` (`auth:createAdmin`) to ensure this operation is strictly isolated to server-side and dashboard usage.
+
+1. Sign in to your application to create a user account.
+2. Go to your [Convex Dashboard](https://dashboard.convex.dev).
+3. Navigate to **Data** -> `users` table and copy your `_id` (this is your `userId`).
+4. Switch to the **Functions** tab.
+5. Select the `auth:createAdmin` function.
+6. Enter `{ "userId": "your_copied_id" }` in the arguments and click **Run Function**.
+
+Once the first admin is created, they can securely manage other users' roles directly from the application UI, calling the secure `setUserRole` mutation (which checks for existing admin privileges).

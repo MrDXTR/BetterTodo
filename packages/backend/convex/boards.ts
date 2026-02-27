@@ -24,9 +24,7 @@ export const getAll = query({
         const boardIds = memberships.map((m) => m.boardId);
 
         // Fetch all boards
-        const boards = await Promise.all(
-            boardIds.map((id) => ctx.db.get(id))
-        );
+        const boards = await Promise.all(boardIds.map((id) => ctx.db.get(id)));
 
         // Filter out null boards and archived ones
         return boards
@@ -115,9 +113,7 @@ export const getById = query({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) return null;
@@ -177,15 +173,15 @@ export const getById = query({
                                 ctx.db
                                     .query("checklistItems")
                                     .withIndex("by_checklist", (q) =>
-                                        q.eq("checklistId", checklist._id)
+                                        q.eq("checklistId", checklist._id),
                                     )
-                                    .collect()
-                            )
+                                    .collect(),
+                            ),
                         );
 
                         const checklistItems = checklistItemsPerList.flat();
                         const checklistItemsCompleted = checklistItems.filter(
-                            (item) => item.completed
+                            (item) => item.completed,
                         ).length;
 
                         return {
@@ -195,14 +191,14 @@ export const getById = query({
                             checklistItemsCompleted,
                             checklistItemsTotal: checklistItems.length,
                         };
-                    })
+                    }),
                 );
 
                 return {
                     ...list,
                     cards: cardsWithTaskSummary,
                 };
-            })
+            }),
         );
 
         return {
@@ -225,9 +221,7 @@ export const getMembers = query({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) return [];
@@ -247,19 +241,18 @@ export const getMembers = query({
                     ...member,
                     user: authUser
                         ? {
-                            name: authUser.name ?? null,
-                            email: authUser.email ?? null,
-                            image: authUser.image ?? null,
-                        }
+                              name: authUser.name ?? null,
+                              email: authUser.email ?? null,
+                              image: authUser.image ?? null,
+                          }
                         : null,
                 };
-            })
+            }),
         );
 
         return membersWithUser;
     },
 });
-
 
 // ============================================
 // MUTATIONS
@@ -274,7 +267,7 @@ export const create = mutation({
         description: v.optional(v.string()),
         color: v.optional(v.string()),
         visibility: v.optional(
-            v.union(v.literal("private"), v.literal("team"), v.literal("public"))
+            v.union(v.literal("private"), v.literal("team"), v.literal("public")),
         ),
     },
     handler: async (ctx, args) => {
@@ -304,7 +297,6 @@ export const create = mutation({
             addedAt: now,
         });
 
-
         return await ctx.db.get(boardId);
     },
 });
@@ -319,7 +311,7 @@ export const update = mutation({
         description: v.optional(v.string()),
         color: v.optional(v.string()),
         visibility: v.optional(
-            v.union(v.literal("private"), v.literal("team"), v.literal("public"))
+            v.union(v.literal("private"), v.literal("team"), v.literal("public")),
         ),
     },
     handler: async (ctx, args) => {
@@ -329,9 +321,7 @@ export const update = mutation({
         // Check if user has admin or owner role
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || !["owner", "admin"].includes(membership.role)) {
@@ -345,7 +335,6 @@ export const update = mutation({
         if (args.visibility !== undefined) updates.visibility = args.visibility;
 
         await ctx.db.patch(args.boardId, updates);
-
 
         return await ctx.db.get(args.boardId);
     },
@@ -363,9 +352,7 @@ export const archive = mutation({
         // Check if user is owner
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role !== "owner") {
@@ -376,7 +363,6 @@ export const archive = mutation({
             archived: true,
             updatedAt: Date.now(),
         });
-
 
         return { success: true };
     },
@@ -394,9 +380,7 @@ export const restore = mutation({
         // Check if user is owner
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role !== "owner") {
@@ -407,7 +391,6 @@ export const restore = mutation({
             archived: false,
             updatedAt: Date.now(),
         });
-
 
         return { success: true };
     },
@@ -425,9 +408,7 @@ export const deleteBoard = mutation({
         // Check if user is owner
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role !== "owner") {
@@ -479,11 +460,7 @@ export const addMember = mutation({
     args: {
         boardId: v.id("boards"),
         userId: v.string(),
-        role: v.union(
-            v.literal("admin"),
-            v.literal("member"),
-            v.literal("viewer")
-        ),
+        role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
@@ -492,9 +469,7 @@ export const addMember = mutation({
         // Check if current user has admin or owner role
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || !["owner", "admin"].includes(membership.role)) {
@@ -505,7 +480,7 @@ export const addMember = mutation({
         const existingMember = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", args.userId)
+                q.eq("boardId", args.boardId).eq("userId", args.userId),
             )
             .first();
 
@@ -522,7 +497,6 @@ export const addMember = mutation({
             addedBy: user._id,
         });
 
-
         return { success: true };
     },
 });
@@ -536,11 +510,7 @@ export const addMemberByEmail = mutation({
     args: {
         boardId: v.id("boards"),
         email: v.string(),
-        role: v.union(
-            v.literal("admin"),
-            v.literal("member"),
-            v.literal("viewer")
-        ),
+        role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
@@ -549,9 +519,7 @@ export const addMemberByEmail = mutation({
         // Check if current user has admin or owner role
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || !["owner", "admin"].includes(membership.role)) {
@@ -566,7 +534,7 @@ export const addMemberByEmail = mutation({
         // ── Step 1: Search for a registered user by email ──────────────────────
         // We scan all board members across the system to find a matching auth user.
         const allMembers = await ctx.db.query("boardMembers").collect();
-        const uniqueUserIds = [...new Set(allMembers.map(m => m.userId))];
+        const uniqueUserIds = [...new Set(allMembers.map((m) => m.userId))];
 
         let targetUser = null;
         for (const uid of uniqueUserIds) {
@@ -583,7 +551,7 @@ export const addMemberByEmail = mutation({
             const existing = await ctx.db
                 .query("boardMembers")
                 .withIndex("by_board_user", (q) =>
-                    q.eq("boardId", args.boardId).eq("userId", targetUser!._id)
+                    q.eq("boardId", args.boardId).eq("userId", targetUser!._id),
                 )
                 .first();
 
@@ -598,8 +566,8 @@ export const addMemberByEmail = mutation({
                 .filter((q) =>
                     q.and(
                         q.eq(q.field("invitedUserId"), targetUser!._id),
-                        q.eq(q.field("status"), "pending")
-                    )
+                        q.eq(q.field("status"), "pending"),
+                    ),
                 )
                 .first();
 
@@ -648,10 +616,7 @@ export const addMemberByEmail = mutation({
             .query("boardInvites")
             .withIndex("by_email", (q) => q.eq("invitedEmail", args.email.toLowerCase()))
             .filter((q) =>
-                q.and(
-                    q.eq(q.field("boardId"), args.boardId),
-                    q.eq(q.field("status"), "pending")
-                )
+                q.and(q.eq(q.field("boardId"), args.boardId), q.eq(q.field("status"), "pending")),
             )
             .first();
 
@@ -786,7 +751,7 @@ export const acceptInviteByToken = mutation({
         const existingMember = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", invite.boardId).eq("userId", user._id)
+                q.eq("boardId", invite.boardId).eq("userId", user._id),
             )
             .first();
 
@@ -823,7 +788,7 @@ export const getPendingInvites = query({
         const invites = await ctx.db
             .query("boardInvites")
             .withIndex("by_user_status", (q) =>
-                q.eq("invitedUserId", user._id).eq("status", "pending")
+                q.eq("invitedUserId", user._id).eq("status", "pending"),
             )
             .collect();
 
@@ -838,7 +803,7 @@ export const getPendingInvites = query({
                     boardColor: board?.color,
                     inviterName: inviter?.name ?? "Someone",
                 };
-            })
+            }),
         );
 
         return enriched;
@@ -852,11 +817,7 @@ export const updateMemberRole = mutation({
     args: {
         boardId: v.id("boards"),
         userId: v.string(),
-        role: v.union(
-            v.literal("admin"),
-            v.literal("member"),
-            v.literal("viewer")
-        ),
+        role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
@@ -865,9 +826,7 @@ export const updateMemberRole = mutation({
         // Check if current user is owner
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role !== "owner") {
@@ -878,7 +837,7 @@ export const updateMemberRole = mutation({
         const targetMember = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", args.userId)
+                q.eq("boardId", args.boardId).eq("userId", args.userId),
             )
             .first();
 
@@ -891,7 +850,6 @@ export const updateMemberRole = mutation({
         }
 
         await ctx.db.patch(targetMember._id, { role: args.role });
-
 
         return { success: true };
     },
@@ -912,9 +870,7 @@ export const removeMember = mutation({
         // Check if current user has admin or owner role
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || !["owner", "admin"].includes(membership.role)) {
@@ -925,7 +881,7 @@ export const removeMember = mutation({
         const targetMember = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", args.userId)
+                q.eq("boardId", args.boardId).eq("userId", args.userId),
             )
             .first();
 
@@ -938,7 +894,6 @@ export const removeMember = mutation({
         }
 
         await ctx.db.delete(targetMember._id);
-
 
         return { success: true };
     },

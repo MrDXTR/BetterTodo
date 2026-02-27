@@ -35,18 +35,12 @@ interface BoardSettingsModalProps {
     board: Board;
 }
 
-export function BoardSettingsModal({
-    open,
-    onOpenChange,
-    board,
-}: BoardSettingsModalProps) {
+export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsModalProps) {
     const navigate = useNavigate();
     const [title, setTitle] = useState(board.title);
     const [description, setDescription] = useState(board.description ?? "");
     const [color, setColor] = useState(board.color ?? DEFAULT_BOARD_COLOR);
-    const [visibility, setVisibility] = useState<"private" | "team" | "public">(
-        board.visibility
-    );
+    const [visibility, setVisibility] = useState<"private" | "team" | "public">(board.visibility);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -148,12 +142,15 @@ export function BoardSettingsModal({
         <>
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent className="sm:max-w-[500px] w-[95vw] sm:w-full max-h-[90dvh] flex flex-col p-4 sm:p-6 rounded-xl">
-                    <form onSubmit={handleSave} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+                    <form
+                        onSubmit={handleSave}
+                        className="flex flex-col min-h-0 flex-1 overflow-hidden"
+                    >
                         <DialogHeader className="shrink-0 pb-2">
                             <DialogTitle>Board settings</DialogTitle>
                             <DialogDescription>
-                                Edit board details and manage visibility. Only
-                                owners can archive or delete.
+                                Edit board details and manage visibility. Only owners can archive or
+                                delete.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -194,14 +191,13 @@ export function BoardSettingsModal({
                                         <button
                                             key={boardColor.value}
                                             type="button"
-                                            onClick={() =>
-                                                canEdit && setColor(boardColor.value)
-                                            }
+                                            onClick={() => canEdit && setColor(boardColor.value)}
                                             disabled={!canEdit}
-                                            className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${color === boardColor.value
-                                                ? "ring-2 ring-primary ring-offset-2"
-                                                : ""
-                                                }`}
+                                            className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${
+                                                color === boardColor.value
+                                                    ? "ring-2 ring-primary ring-offset-2"
+                                                    : ""
+                                            }`}
                                             style={{
                                                 backgroundColor: boardColor.value,
                                             }}

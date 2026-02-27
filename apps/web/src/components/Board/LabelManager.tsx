@@ -35,7 +35,7 @@ export function LabelManager({ boardId }: LabelManagerProps) {
 
     const deletingLabelName = useMemo(
         () => labels?.find((label) => label._id === deletingLabelId)?.name ?? "this label",
-        [labels, deletingLabelId]
+        [labels, deletingLabelId],
     );
 
     const startEdit = (labelId: Id<"labels">, name: string, color: string) => {
@@ -144,7 +144,8 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                                 onClick={() => setNewLabelColor(color.value)}
                                 className={cn(
                                     "h-5 rounded transition-all",
-                                    newLabelColor === color.value && "ring-2 ring-primary ring-offset-2"
+                                    newLabelColor === color.value &&
+                                        "ring-2 ring-primary ring-offset-2",
                                 )}
                                 style={{ backgroundColor: color.value }}
                                 title={color.name}
@@ -188,7 +189,7 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                                                     className={cn(
                                                         "h-5 w-5 rounded",
                                                         editingColor === color.value &&
-                                                        "ring-2 ring-primary ring-offset-1"
+                                                            "ring-2 ring-primary ring-offset-1",
                                                     )}
                                                     style={{ backgroundColor: color.value }}
                                                     title={color.name}

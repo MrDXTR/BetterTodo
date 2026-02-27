@@ -19,12 +19,7 @@ import {
     Users,
 } from "lucide-react";
 
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
@@ -289,7 +284,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     maxLength={200}
                                                 />
                                             ) : (
-                                                <DialogTitle className="break-words text-2xl leading-tight">
+                                                <DialogTitle className="wrap-break-word text-2xl leading-tight">
                                                     {currentTitle}
                                                 </DialogTitle>
                                             )}
@@ -299,7 +294,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     <Badge
                                                         className={cn(
                                                             priorityConfig.color,
-                                                            "text-white"
+                                                            "text-white",
                                                         )}
                                                     >
                                                         {priorityConfig.label}
@@ -352,7 +347,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     placeholder="Add a detailed description..."
                                                 />
                                             ) : currentDescription ? (
-                                                <div className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                                                <div className="text-sm text-muted-foreground whitespace-pre-wrap [word-break:break-word]  ">
                                                     <TextWithLinkPreviews
                                                         text={currentDescription}
                                                     />
@@ -470,9 +465,15 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="low">Low</SelectItem>
-                                                            <SelectItem value="medium">Medium</SelectItem>
-                                                            <SelectItem value="high">High</SelectItem>
-                                                            <SelectItem value="urgent">Urgent</SelectItem>
+                                                            <SelectItem value="medium">
+                                                                Medium
+                                                            </SelectItem>
+                                                            <SelectItem value="high">
+                                                                High
+                                                            </SelectItem>
+                                                            <SelectItem value="urgent">
+                                                                Urgent
+                                                            </SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -548,7 +549,8 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     Editing Mode
                                                 </div>
                                                 <p className="text-xs text-muted-foreground">
-                                                    You are editing details. Save or discard changes at the bottom.
+                                                    You are editing details. Save or discard changes
+                                                    at the bottom.
                                                 </p>
                                             </section>
                                         )}

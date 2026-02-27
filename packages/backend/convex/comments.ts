@@ -21,9 +21,7 @@ export const getByCard = query({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) throw new Error("Access denied");
@@ -63,9 +61,7 @@ export const create = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         if (!membership) throw new Error("Access denied");
@@ -181,9 +177,7 @@ export const deleteComment = mutation({
         // Check if user is the comment author or has admin/owner role
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", card.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
         const canDelete =
@@ -195,7 +189,6 @@ export const deleteComment = mutation({
         }
 
         await ctx.db.delete(args.commentId);
-
 
         return { success: true };
     },

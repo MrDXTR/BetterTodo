@@ -80,7 +80,10 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
     const cardCount = (list as any).cards?.length || 0;
 
     return (
-        <div className="flex items-center justify-between gap-2 p-4 pb-3 border-b" style={{ borderColor: `${boardColor}20` }}>
+        <div
+            className="flex items-center justify-between gap-2 p-4 pb-3 border-b"
+            style={{ borderColor: `${boardColor}20` }}
+        >
             {isEditingTitle ? (
                 <Input
                     autoFocus
@@ -96,7 +99,7 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                     }}
                     className="h-9 font-semibold border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
                     style={{
-                        boxShadow: `0 0 0 1px ${boardColor}40`
+                        boxShadow: `0 0 0 1px ${boardColor}40`,
                     }}
                     maxLength={100}
                 />
@@ -113,7 +116,7 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                             className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full"
                             style={{
                                 background: `${boardColor}15`,
-                                color: boardColor
+                                color: boardColor,
                             }}
                         >
                             {cardCount}
@@ -133,7 +136,11 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="backdrop-blur-md">
-                    <DropdownMenuItem onClick={() => setShowArchiveDialog(true)} className="cursor-pointer" disabled={isArchiving}>
+                    <DropdownMenuItem
+                        onClick={() => setShowArchiveDialog(true)}
+                        className="cursor-pointer"
+                        disabled={isArchiving}
+                    >
                         {isArchiving ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -141,7 +148,10 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                         )}
                         Archive List
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive cursor-pointer">
+                    <DropdownMenuItem
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="text-destructive cursor-pointer"
+                    >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete List
                     </DropdownMenuItem>

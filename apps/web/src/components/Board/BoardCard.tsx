@@ -11,11 +11,7 @@ export function BoardCard({ board }: BoardCardProps) {
     const backgroundColor = board.color || "#0079BF";
 
     return (
-        <Link
-            to="/boards/$boardId"
-            params={{ boardId: board._id }}
-            className="group block"
-        >
+        <Link to="/boards/$boardId" params={{ boardId: board._id }} className="group block">
             <div className="overflow-hidden rounded-lg border bg-card transition-all hover:shadow-lg">
                 {/* Board Color Header */}
                 <div
@@ -25,9 +21,7 @@ export function BoardCard({ board }: BoardCardProps) {
 
                 {/* Board Info */}
                 <div className="p-4">
-                    <h3 className="font-semibold text-lg line-clamp-2 mb-2">
-                        {board.title}
-                    </h3>
+                    <h3 className="font-semibold text-lg line-clamp-2 mb-2">{board.title}</h3>
 
                     {board.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">

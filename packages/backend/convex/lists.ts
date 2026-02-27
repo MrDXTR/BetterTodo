@@ -21,9 +21,7 @@ export const create = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", args.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -36,10 +34,7 @@ export const create = mutation({
             .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
             .collect();
 
-        const maxPosition = existingLists.reduce(
-            (max, list) => Math.max(max, list.position),
-            -1
-        );
+        const maxPosition = existingLists.reduce((max, list) => Math.max(max, list.position), -1);
 
         const now = Date.now();
         const listId = await ctx.db.insert("lists", {
@@ -49,7 +44,6 @@ export const create = mutation({
             archived: false,
             createdAt: now,
         });
-
 
         return await ctx.db.get(listId);
     },
@@ -74,9 +68,7 @@ export const update = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", list.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -88,7 +80,6 @@ export const update = mutation({
         if (args.cardLimit !== undefined) updates.cardLimit = args.cardLimit;
 
         await ctx.db.patch(args.listId, updates);
-
 
         return await ctx.db.get(args.listId);
     },
@@ -112,9 +103,7 @@ export const updatePosition = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", list.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || membership.role === "viewer") {
@@ -148,7 +137,6 @@ export const updatePosition = mutation({
             }
         }
 
-
         return { success: true };
     },
 });
@@ -168,9 +156,7 @@ export const archive = mutation({
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", list.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
@@ -178,7 +164,6 @@ export const archive = mutation({
         }
 
         await ctx.db.patch(args.listId, { archived: true });
-
 
         return { success: true };
     },
@@ -199,9 +184,7 @@ export const deleteList = mutation({
         // Check if user has admin or owner role
         const membership = await ctx.db
             .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", list.boardId).eq("userId", user._id)
-            )
+            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
             .first();
 
         if (!membership || !["owner", "admin"].includes(membership.role)) {
@@ -220,7 +203,6 @@ export const deleteList = mutation({
 
         // Delete the list
         await ctx.db.delete(args.listId);
-
 
         return { success: true };
     },

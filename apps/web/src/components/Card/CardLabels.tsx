@@ -6,11 +6,7 @@ import { Plus, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { LABEL_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -37,7 +33,7 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
 
     const serverCardLabelIds = useMemo(
         () => card?.labels?.map((l: any) => l._id) ?? [],
-        [card?.labels]
+        [card?.labels],
     );
 
     useEffect(() => {
@@ -47,7 +43,7 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
     if (!card || !boardLabels) return null;
 
     const filteredLabels = boardLabels.filter((label) =>
-        label.name.toLowerCase().includes(searchTerm.trim().toLowerCase())
+        label.name.toLowerCase().includes(searchTerm.trim().toLowerCase()),
     );
 
     const selectedLabels = boardLabels.filter((label) => localLabelIds.includes(label._id));
@@ -58,7 +54,7 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
 
         setPendingLabelIds((prev) => ({ ...prev, [labelId]: true }));
         setLocalLabelIds((prev) =>
-            isSelected ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+            isSelected ? prev.filter((id) => id !== labelId) : [...prev, labelId],
         );
 
         try {
@@ -91,7 +87,9 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
             });
 
             if (created?._id) {
-                setLocalLabelIds((prev) => (prev.includes(created._id) ? prev : [...prev, created._id]));
+                setLocalLabelIds((prev) =>
+                    prev.includes(created._id) ? prev : [...prev, created._id],
+                );
                 await addLabel({ cardId, labelId: created._id });
             }
 
@@ -162,7 +160,9 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                             className="w-8 h-4 rounded"
                                             style={{ backgroundColor: label.color }}
                                         />
-                                        <span className="flex-1 text-left text-sm">{label.name}</span>
+                                        <span className="flex-1 text-left text-sm">
+                                            {label.name}
+                                        </span>
                                         {isPending ? (
                                             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                                         ) : (
@@ -172,7 +172,9 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                 );
                             })}
                             {filteredLabels.length === 0 && (
-                                <p className="text-xs text-muted-foreground px-2 py-1">No labels found.</p>
+                                <p className="text-xs text-muted-foreground px-2 py-1">
+                                    No labels found.
+                                </p>
                             )}
                         </div>
 
@@ -184,7 +186,8 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                     onChange={(e) => setNewLabelName(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") handleCreateLabel();
-                                        if (e.key === "Escape" && !isCreatingLabel) setIsCreating(false);
+                                        if (e.key === "Escape" && !isCreatingLabel)
+                                            setIsCreating(false);
                                     }}
                                     className="h-8 text-sm"
                                     autoFocus
@@ -198,7 +201,8 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                             disabled={isCreatingLabel}
                                             className={cn(
                                                 "w-full h-6 rounded transition-all disabled:opacity-50",
-                                                selectedColor === color.value && "ring-2 ring-primary ring-offset-2"
+                                                selectedColor === color.value &&
+                                                    "ring-2 ring-primary ring-offset-2",
                                             )}
                                             style={{ backgroundColor: color.value }}
                                             title={color.name}
@@ -212,7 +216,9 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                         className="flex-1"
                                         disabled={!newLabelName.trim() || isCreatingLabel}
                                     >
-                                        {isCreatingLabel && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+                                        {isCreatingLabel && (
+                                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                        )}
                                         Create & Add
                                     </Button>
                                     <Button

@@ -48,7 +48,7 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                 onSubmit={handleSubmit}
                 className="space-y-2 p-2 rounded-lg backdrop-blur-sm"
                 style={{
-                    background: `${boardColor}08`
+                    background: `${boardColor}08`,
                 }}
             >
                 <Input
@@ -69,7 +69,7 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                     }}
                     className="border-0 bg-background/80 backdrop-blur-sm focus-visible:ring-1 shadow-sm"
                     style={{
-                        boxShadow: `0 0 0 1px ${boardColor}30`
+                        boxShadow: `0 0 0 1px ${boardColor}30`,
                     }}
                     maxLength={200}
                 />
@@ -80,8 +80,10 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                         disabled={!title.trim() || isCreating}
                         className="transition-all gap-2"
                         style={{
-                            background: !title.trim() ? undefined : `linear-gradient(135deg, ${boardColor} 0%, ${boardColor}dd 100%)`,
-                            color: !title.trim() ? undefined : 'white'
+                            background: !title.trim()
+                                ? undefined
+                                : `linear-gradient(135deg, ${boardColor} 0%, ${boardColor}dd 100%)`,
+                            color: !title.trim() ? undefined : "white",
                         }}
                     >
                         {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -113,7 +115,10 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                 background: `${boardColor}05`,
             }}
         >
-            <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" style={{ color: boardColor }} />
+            <Plus
+                className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
+                style={{ color: boardColor }}
+            />
             <span className="font-medium">Add a card</span>
         </Button>
     );

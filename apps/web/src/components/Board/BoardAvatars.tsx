@@ -1,11 +1,6 @@
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface BoardMember {
     _id: Id<"boardMembers">;
@@ -42,7 +37,9 @@ export function BoardAvatars({ users }: BoardAvatarsProps) {
                         </TooltipTrigger>
                         <TooltipContent>
                             <p className="font-semibold">{member.user?.name || "Unknown"}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                                {member.role}
+                            </p>
                         </TooltipContent>
                     </Tooltip>
                 ))}

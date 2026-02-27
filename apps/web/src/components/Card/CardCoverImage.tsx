@@ -2,12 +2,7 @@ import { useState, useRef } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import {
-    Image as ImageIcon,
-    Upload,
-    X,
-    Loader2,
-} from "lucide-react";
+import { Image as ImageIcon, Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CardCoverImageProps {
@@ -81,11 +76,7 @@ export function CardCoverImage({ cardId, coverImage }: CardCoverImageProps) {
             {coverImage ? (
                 <>
                     <div className="relative rounded-md overflow-hidden">
-                        <img
-                            src={coverImage}
-                            alt="Cover"
-                            className="h-20 w-full object-cover"
-                        />
+                        <img src={coverImage} alt="Cover" className="h-20 w-full object-cover" />
                     </div>
                     <div className="flex gap-1">
                         <Button

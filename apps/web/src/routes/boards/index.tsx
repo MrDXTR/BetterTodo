@@ -130,7 +130,9 @@ function BoardsRoute() {
                                         className="mb-3 h-16 rounded-md"
                                         style={{ backgroundColor: board.color ?? "#0079BF" }}
                                     />
-                                    <h3 className="line-clamp-2 text-base font-semibold">{board.title}</h3>
+                                    <h3 className="line-clamp-2 text-base font-semibold">
+                                        {board.title}
+                                    </h3>
                                     <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                                         {board.description || "No description"}
                                     </p>
@@ -160,10 +162,7 @@ function BoardsRoute() {
                 </TabsContent>
             </Tabs>
 
-            <CreateBoardModal
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-            />
+            <CreateBoardModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
         </div>
     );
 }

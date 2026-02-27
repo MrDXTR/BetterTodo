@@ -2,16 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import {
-    Crown,
-    Shield,
-    User,
-    Eye,
-    UserMinus,
-    UserPlus,
-    ChevronDown,
-    Loader2,
-} from "lucide-react";
+import { Crown, Shield, User, Eye, UserMinus, UserPlus, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -87,14 +78,10 @@ export function BoardMembersPanel({
     const [isInviting, setIsInviting] = useState(false);
     const addMemberByEmail = useMutation(api.boards.addMemberByEmail);
 
-    const canManageMembers =
-        currentUserRole === "owner" || currentUserRole === "admin";
+    const canManageMembers = currentUserRole === "owner" || currentUserRole === "admin";
     const isOwner = currentUserRole === "owner";
 
-    const handleRoleChange = async (
-        userId: string,
-        newRole: "admin" | "member" | "viewer"
-    ) => {
+    const handleRoleChange = async (userId: string, newRole: "admin" | "member" | "viewer") => {
         setLoadingAction(userId);
         try {
             await updateRole({ boardId, userId, role: newRole });
@@ -152,13 +139,11 @@ export function BoardMembersPanel({
                                             role: inviteRole,
                                         });
                                         toast.success(
-                                            `Invitation sent to ${result.userName || inviteEmail}`
+                                            `Invitation sent to ${result.userName || inviteEmail}`,
                                         );
                                         setInviteEmail("");
                                     } catch (error: any) {
-                                        toast.error(
-                                            error.message || "Failed to add member"
-                                        );
+                                        toast.error(error.message || "Failed to add member");
                                     } finally {
                                         setIsInviting(false);
                                     }
@@ -186,16 +171,14 @@ export function BoardMembersPanel({
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
-                                            {(["admin", "member", "viewer"] as const).map(
-                                                (r) => (
-                                                    <DropdownMenuItem
-                                                        key={r}
-                                                        onClick={() => setInviteRole(r)}
-                                                    >
-                                                        {ROLE_CONFIG[r].label}
-                                                    </DropdownMenuItem>
-                                                )
-                                            )}
+                                            {(["admin", "member", "viewer"] as const).map((r) => (
+                                                <DropdownMenuItem
+                                                    key={r}
+                                                    onClick={() => setInviteRole(r)}
+                                                >
+                                                    {ROLE_CONFIG[r].label}
+                                                </DropdownMenuItem>
+                                            ))}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <Button
@@ -220,10 +203,7 @@ export function BoardMembersPanel({
                         {members === undefined ? (
                             // Skeleton loader
                             Array.from({ length: 3 }).map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="flex items-center gap-3 p-3 rounded-lg"
-                                >
+                                <div key={i} className="flex items-center gap-3 p-3 rounded-lg">
                                     <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
                                     <div className="flex-1 space-y-1.5">
                                         <div className="h-4 w-32 bg-muted animate-pulse rounded" />
@@ -238,12 +218,10 @@ export function BoardMembersPanel({
                         ) : (
                             members.map((member: any) => {
                                 const role =
-                                    ROLE_CONFIG[
-                                    member.role as keyof typeof ROLE_CONFIG
-                                    ] ?? ROLE_CONFIG.member;
+                                    ROLE_CONFIG[member.role as keyof typeof ROLE_CONFIG] ??
+                                    ROLE_CONFIG.member;
                                 const RoleIcon = role.icon;
-                                const isLoading =
-                                    loadingAction === member.userId;
+                                const isLoading = loadingAction === member.userId;
 
                                 return (
                                     <div
@@ -252,21 +230,16 @@ export function BoardMembersPanel({
                                     >
                                         {/* Avatar */}
                                         <Avatar className="h-10 w-10 border-2 border-background">
-                                            <AvatarImage
-                                                src={member.user?.image}
-                                            />
+                                            <AvatarImage src={member.user?.image} />
                                             <AvatarFallback className="text-sm font-medium">
-                                                {member.user?.name
-                                                    ?.charAt(0)
-                                                    .toUpperCase() ?? "?"}
+                                                {member.user?.name?.charAt(0).toUpperCase() ?? "?"}
                                             </AvatarFallback>
                                         </Avatar>
 
                                         {/* Name & Email */}
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate">
-                                                {member.user?.name ??
-                                                    "Unknown User"}
+                                                {member.user?.name ?? "Unknown User"}
                                             </p>
                                             <p className="text-xs text-muted-foreground truncate">
                                                 {member.user?.email ?? ""}
@@ -277,10 +250,7 @@ export function BoardMembersPanel({
                                         {isLoading ? (
                                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                         ) : member.role === "owner" ? (
-                                            <Badge
-                                                variant="secondary"
-                                                className="gap-1 shrink-0"
-                                            >
+                                            <Badge variant="secondary" className="gap-1 shrink-0">
                                                 <Crown className="h-3 w-3 text-yellow-500" />
                                                 Owner
                                             </Badge>
@@ -300,52 +270,42 @@ export function BoardMembersPanel({
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    {(
-                                                        [
-                                                            "admin",
-                                                            "member",
-                                                            "viewer",
-                                                        ] as const
-                                                    ).map((r) => {
-                                                        const rc =
-                                                            ROLE_CONFIG[r];
-                                                        const Icon = rc.icon;
-                                                        return (
-                                                            <DropdownMenuItem
-                                                                key={r}
-                                                                onClick={() =>
-                                                                    handleRoleChange(
-                                                                        member.userId,
-                                                                        r
-                                                                    )
-                                                                }
-                                                                className="gap-2"
-                                                            >
-                                                                <Icon
-                                                                    className={`h-4 w-4 ${rc.color}`}
-                                                                />
-                                                                <div>
-                                                                    <p className="font-medium">
-                                                                        {
-                                                                            rc.label
-                                                                        }
-                                                                    </p>
-                                                                    <p className="text-xs text-muted-foreground">
-                                                                        {
-                                                                            rc.description
-                                                                        }
-                                                                    </p>
-                                                                </div>
-                                                            </DropdownMenuItem>
-                                                        );
-                                                    })}
+                                                    {(["admin", "member", "viewer"] as const).map(
+                                                        (r) => {
+                                                            const rc = ROLE_CONFIG[r];
+                                                            const Icon = rc.icon;
+                                                            return (
+                                                                <DropdownMenuItem
+                                                                    key={r}
+                                                                    onClick={() =>
+                                                                        handleRoleChange(
+                                                                            member.userId,
+                                                                            r,
+                                                                        )
+                                                                    }
+                                                                    className="gap-2"
+                                                                >
+                                                                    <Icon
+                                                                        className={`h-4 w-4 ${rc.color}`}
+                                                                    />
+                                                                    <div>
+                                                                        <p className="font-medium">
+                                                                            {rc.label}
+                                                                        </p>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {rc.description}
+                                                                        </p>
+                                                                    </div>
+                                                                </DropdownMenuItem>
+                                                            );
+                                                        },
+                                                    )}
                                                     <DropdownMenuItem
                                                         onClick={() =>
                                                             setRemovingMember({
                                                                 userId: member.userId,
                                                                 name:
-                                                                    member.user
-                                                                        ?.name ??
+                                                                    member.user?.name ??
                                                                     "this member",
                                                             })
                                                         }
@@ -358,8 +318,7 @@ export function BoardMembersPanel({
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
-                                        ) : canManageMembers &&
-                                            member.role !== "owner" ? (
+                                        ) : canManageMembers && member.role !== "owner" ? (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -367,9 +326,7 @@ export function BoardMembersPanel({
                                                 onClick={() =>
                                                     setRemovingMember({
                                                         userId: member.userId,
-                                                        name:
-                                                            member.user?.name ??
-                                                            "this member",
+                                                        name: member.user?.name ?? "this member",
                                                     })
                                                 }
                                             >
@@ -377,13 +334,8 @@ export function BoardMembersPanel({
                                                 Remove
                                             </Button>
                                         ) : (
-                                            <Badge
-                                                variant="secondary"
-                                                className="gap-1 shrink-0"
-                                            >
-                                                <RoleIcon
-                                                    className={`h-3 w-3 ${role.color}`}
-                                                />
+                                            <Badge variant="secondary" className="gap-1 shrink-0">
+                                                <RoleIcon className={`h-3 w-3 ${role.color}`} />
                                                 {role.label}
                                             </Badge>
                                         )}

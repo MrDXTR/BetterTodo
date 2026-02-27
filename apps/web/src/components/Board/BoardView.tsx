@@ -1,7 +1,7 @@
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Plus, Loader2, SlidersHorizontal, X } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -10,8 +10,6 @@ import { BoardHeader } from "./BoardHeader";
 import { ListColumn } from "../List/ListColumn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface BoardViewProps {
     board: BoardWithLists;
@@ -29,7 +27,7 @@ export function BoardView({ board }: BoardViewProps) {
     const [freshListId, setFreshListId] = useState<NewListId | null>(null);
 
     // Used to detect the newly-added list after the board updates
-    const prevListIdsRef = useRef<Set<string>>(new Set(board.lists.map(l => l._id)));
+    const prevListIdsRef = useRef<Set<string>>(new Set(board.lists.map((l) => l._id)));
 
     // Optimistic state for drag-and-drop
     const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
@@ -44,18 +42,18 @@ export function BoardView({ board }: BoardViewProps) {
     // Sync optimistic state with actual board data when it changes
     useEffect(() => {
         const prevIds = prevListIdsRef.current;
-        const newList = board.lists.find(l => !prevIds.has(l._id));
+        const newList = board.lists.find((l) => !prevIds.has(l._id));
 
         if (newList) {
             setFreshListId(newList._id);
             // Clear the "fresh" flag after the animation finishes (~700ms)
             const timer = setTimeout(() => setFreshListId(null), 700);
-            prevListIdsRef.current = new Set(board.lists.map(l => l._id));
+            prevListIdsRef.current = new Set(board.lists.map((l) => l._id));
             setOptimisticBoard(board);
             return () => clearTimeout(timer);
         }
 
-        prevListIdsRef.current = new Set(board.lists.map(l => l._id));
+        prevListIdsRef.current = new Set(board.lists.map((l) => l._id));
         setOptimisticBoard(board);
     }, [board]);
 
@@ -90,13 +88,13 @@ export function BoardView({ board }: BoardViewProps) {
 
     const toggleLabelFilter = (labelId: string) => {
         setActiveLabelIds((prev) =>
-            prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+            prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId],
         );
     };
 
     const togglePriorityFilter = (priority: CardPriority) => {
         setActivePriorities((prev) =>
-            prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority]
+            prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority],
         );
     };
 
@@ -130,10 +128,8 @@ export function BoardView({ board }: BoardViewProps) {
         const { destination, source, type } = result;
 
         if (!destination) return;
-        if (
-            destination.droppableId === source.droppableId &&
-            destination.index === source.index
-        ) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index)
+            return;
 
         if (type === "list") {
             const newLists = Array.from(optimisticBoard.lists);
@@ -155,11 +151,18 @@ export function BoardView({ board }: BoardViewProps) {
         }
 
         if (type === "card") {
-            const sourceListIndex = optimisticBoard.lists.findIndex(l => l._id === source.droppableId);
-            const destListIndex = optimisticBoard.lists.findIndex(l => l._id === destination.droppableId);
+            const sourceListIndex = optimisticBoard.lists.findIndex(
+                (l) => l._id === source.droppableId,
+            );
+            const destListIndex = optimisticBoard.lists.findIndex(
+                (l) => l._id === destination.droppableId,
+            );
             if (sourceListIndex === -1 || destListIndex === -1) return;
 
-            const newLists = optimisticBoard.lists.map(list => ({ ...list, cards: [...list.cards] }));
+            const newLists = optimisticBoard.lists.map((list) => ({
+                ...list,
+                cards: [...list.cards],
+            }));
             const [movedCard] = newLists[sourceListIndex].cards.splice(source.index, 1);
             newLists[destListIndex].cards.splice(destination.index, 0, {
                 ...movedCard,
@@ -212,7 +215,7 @@ export function BoardView({ board }: BoardViewProps) {
                     radial-gradient(circle at 90% 80%, ${backgroundColor}10 0%, transparent 50%),
                     linear-gradient(180deg, ${backgroundColor}08 0%, transparent 100%),
                     hsl(var(--background))
-                `
+                `,
             }}
         >
             {/* Subtle dot-grid pattern */}
@@ -220,90 +223,24 @@ export function BoardView({ board }: BoardViewProps) {
                 className="absolute inset-0 opacity-[0.03] pointer-events-none"
                 style={{
                     backgroundImage: `radial-gradient(circle at 1px 1px, ${backgroundColor} 1px, transparent 0)`,
-                    backgroundSize: '40px 40px'
+                    backgroundSize: "40px 40px",
                 }}
             />
 
-            <BoardHeader board={board} members={boardMembers || []} stats={boardStats} />
-
-            {/* Filter toolbar */}
-            <div
-                className="relative z-10 flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-background/70 backdrop-blur-sm flex-wrap"
-            >
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("h-7 gap-1.5 text-xs", showFilters && "bg-accent text-accent-foreground")}
-                    onClick={() => setShowFilters(!showFilters)}
-                >
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
-                    Filter
-                    {hasActiveFilters && (
-                        <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                            {activeLabelIds.length + activePriorities.length}
-                        </Badge>
-                    )}
-                </Button>
-
-                {showFilters && (
-                    <>
-                        {/* Priority filters */}
-                        {(["urgent", "high", "medium", "low"] as CardPriority[]).map((priority) => (
-                            <button
-                                key={priority}
-                                onClick={() => togglePriorityFilter(priority)}
-                                className={cn(
-                                    "h-7 px-2.5 rounded-full text-xs font-medium border transition-all",
-                                    activePriorities.includes(priority)
-                                        ? "border-transparent text-white shadow-sm"
-                                        : "border-border bg-background/80 text-muted-foreground hover:bg-muted"
-                                )}
-                                style={activePriorities.includes(priority) ? {
-                                    background: priority === "urgent" ? "#ef4444" : priority === "high" ? "#f97316" : priority === "medium" ? "#eab308" : "#22c55e"
-                                } : {}}
-                            >
-                                {priority}
-                            </button>
-                        ))}
-
-                        {/* Separator if both label and priority filters possible */}
-                        {boardLabels && boardLabels.length > 0 && (
-                            <span className="h-4 w-px bg-border/60" />
-                        )}
-
-                        {/* Label filters */}
-                        {boardLabels?.map((label) => (
-                            <button
-                                key={label._id}
-                                onClick={() => toggleLabelFilter(label._id)}
-                                className={cn(
-                                    "h-7 px-2.5 rounded-full text-xs font-medium border transition-all",
-                                    activeLabelIds.includes(label._id)
-                                        ? "border-transparent text-white shadow-sm"
-                                        : "border-border bg-background/80 text-muted-foreground hover:bg-muted"
-                                )}
-                                style={activeLabelIds.includes(label._id) ? { background: label.color } : { borderColor: label.color + "80" }}
-                            >
-                                <span
-                                    className="inline-block h-2 w-2 rounded-full mr-1.5"
-                                    style={{ background: label.color }}
-                                />
-                                {label.name}
-                            </button>
-                        ))}
-
-                        {hasActiveFilters && (
-                            <button
-                                onClick={clearFilters}
-                                className="h-7 px-2 rounded-full text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                            >
-                                <X className="h-3 w-3" />
-                                Clear
-                            </button>
-                        )}
-                    </>
-                )}
-            </div>
+            <BoardHeader
+                board={board}
+                members={boardMembers || []}
+                stats={boardStats}
+                showFilters={showFilters}
+                setShowFilters={setShowFilters}
+                activeLabelIds={activeLabelIds}
+                activePriorities={activePriorities}
+                toggleLabelFilter={toggleLabelFilter}
+                togglePriorityFilter={togglePriorityFilter}
+                clearFilters={clearFilters}
+                boardLabels={boardLabels ?? undefined}
+                hasActiveFilters={hasActiveFilters}
+            />
 
             {/* CSS for the "border-expand" animation on newly created lists */}
             <style>{`
@@ -382,7 +319,8 @@ export function BoardView({ board }: BoardViewProps) {
                                             background: `${backgroundColor}08`,
                                         }}
                                     >
-                                        Create your first list to start adding cards and checklist tasks.
+                                        Create your first list to start adding cards and checklist
+                                        tasks.
                                     </div>
                                 )}
 
@@ -414,7 +352,9 @@ export function BoardView({ board }: BoardViewProps) {
                                                     }
                                                 }}
                                                 className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
-                                                style={{ boxShadow: `0 0 0 1px ${backgroundColor}20` }}
+                                                style={{
+                                                    boxShadow: `0 0 0 1px ${backgroundColor}20`,
+                                                }}
                                                 maxLength={100}
                                                 disabled={isCreatingList}
                                             />
@@ -422,16 +362,22 @@ export function BoardView({ board }: BoardViewProps) {
                                                 <Button
                                                     type="submit"
                                                     size="sm"
-                                                    disabled={!newListTitle.trim() || isCreatingList}
+                                                    disabled={
+                                                        !newListTitle.trim() || isCreatingList
+                                                    }
                                                     className="transition-all gap-2"
                                                     style={{
                                                         background: newListTitle.trim()
                                                             ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`
                                                             : undefined,
-                                                        color: newListTitle.trim() ? 'white' : undefined,
+                                                        color: newListTitle.trim()
+                                                            ? "white"
+                                                            : undefined,
                                                     }}
                                                 >
-                                                    {isCreatingList && <Loader2 className="h-4 w-4 animate-spin" />}
+                                                    {isCreatingList && (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    )}
                                                     Add List
                                                 </Button>
                                                 <Button
@@ -463,7 +409,10 @@ export function BoardView({ board }: BoardViewProps) {
                                                 className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
                                                 style={{ color: backgroundColor }}
                                             />
-                                            <span style={{ color: backgroundColor }} className="font-medium">
+                                            <span
+                                                style={{ color: backgroundColor }}
+                                                className="font-medium"
+                                            >
                                                 Add List
                                             </span>
                                         </Button>

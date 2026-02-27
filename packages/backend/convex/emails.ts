@@ -9,13 +9,13 @@ import { Resend } from "resend";
 // ============================================
 
 function getResend() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY environment variable is not set");
-  return new Resend(apiKey);
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) throw new Error("RESEND_API_KEY environment variable is not set");
+    return new Resend(apiKey);
 }
 
 function getFromEmail() {
-  return process.env.FROM_EMAIL ?? "onboarding@resend.dev";
+    return process.env.FROM_EMAIL ?? "onboarding@resend.dev";
 }
 
 const BRAND_ACCENT = "#6366f1"; // indigo-500
@@ -25,7 +25,7 @@ const BRAND_ACCENT = "#6366f1"; // indigo-500
 // ============================================
 
 function baseTemplate(content: string, previewText: string): string {
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -81,27 +81,27 @@ function baseTemplate(content: string, previewText: string): string {
 }
 
 function ctaButton(href: string, label: string): string {
-  return `<a href="${href}" target="_blank"
+    return `<a href="${href}" target="_blank"
       style="display:inline-block;padding:14px 32px;background:${BRAND_ACCENT};color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px;letter-spacing:0.1px;">
       ${label}
     </a>`;
 }
 
 function secondaryButton(href: string, label: string): string {
-  return `<a href="${href}" target="_blank"
+    return `<a href="${href}" target="_blank"
       style="display:inline-block;padding:11px 24px;background:transparent;color:#a1a1aa;font-size:13px;font-weight:500;text-decoration:none;border-radius:8px;border:1px solid #3f3f46;letter-spacing:0.1px;">
       ${label}
     </a>`;
 }
 
 function roleBadge(role: string): string {
-  const colors: Record<string, string> = {
-    admin: "#7c3aed",
-    member: "#0284c7",
-    viewer: "#059669",
-  };
-  const bg = colors[role] ?? "#6366f1";
-  return `<span style="display:inline-block;padding:3px 10px;background:${bg}22;color:${bg};font-size:11px;font-weight:600;border-radius:20px;border:1px solid ${bg}44;letter-spacing:0.5px;text-transform:uppercase;">${role}</span>`;
+    const colors: Record<string, string> = {
+        admin: "#7c3aed",
+        member: "#0284c7",
+        viewer: "#059669",
+    };
+    const bg = colors[role] ?? "#6366f1";
+    return `<span style="display:inline-block;padding:3px 10px;background:${bg}22;color:${bg};font-size:11px;font-weight:600;border-radius:20px;border:1px solid ${bg}44;letter-spacing:0.5px;text-transform:uppercase;">${role}</span>`;
 }
 
 // ============================================
@@ -112,23 +112,23 @@ function roleBadge(role: string): string {
  * Send a board invite email to a REGISTERED user.
  */
 export const sendBoardInviteEmail = internalAction({
-  args: {
-    to: v.string(),
-    recipientName: v.optional(v.string()),
-    inviterName: v.string(),
-    boardTitle: v.string(),
-    boardId: v.string(),
-    role: v.string(),
-    inviteId: v.string(),
-  },
-  handler: async (_ctx, args) => {
-    const resend = getResend();
-    const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
-    const acceptUrl = `${siteUrl}/boards/${args.boardId}?acceptInvite=${args.inviteId}`;
+    args: {
+        to: v.string(),
+        recipientName: v.optional(v.string()),
+        inviterName: v.string(),
+        boardTitle: v.string(),
+        boardId: v.string(),
+        role: v.string(),
+        inviteId: v.string(),
+    },
+    handler: async (_ctx, args) => {
+        const resend = getResend();
+        const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
+        const acceptUrl = `${siteUrl}/boards/${args.boardId}?acceptInvite=${args.inviteId}`;
 
-    const greeting = args.recipientName ? `Hi ${args.recipientName},` : "Hello,";
+        const greeting = args.recipientName ? `Hi ${args.recipientName},` : "Hello,";
 
-    const content = `
+        const content = `
       <!-- GRADIENT TOP BAR -->
       <div style="height:4px;background:linear-gradient(90deg,${BRAND_ACCENT},#8b5cf6,#ec4899);"></div>
 
@@ -142,7 +142,7 @@ export const sendBoardInviteEmail = internalAction({
 
         <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f4f4f5;text-align:center;letter-spacing:-0.5px;">You've been invited!</h1>
         <p style="margin:0 0 28px;font-size:15px;color:#a1a1aa;text-align:center;line-height:1.6;">
-          ${greeting.replace(/^Hi |Hello,/, '')}
+          ${greeting.replace(/^Hi |Hello,/, "")}
           <strong style="color:#e4e4e7;">${args.inviterName}</strong> has invited you to collaborate on a board.
         </p>
 
@@ -171,33 +171,36 @@ export const sendBoardInviteEmail = internalAction({
         </p>
       </div>`;
 
-    await resend.emails.send({
-      from: getFromEmail(),
-      to: args.to,
-      subject: `${args.inviterName} invited you to "${args.boardTitle}" on BetterTodo`,
-      html: baseTemplate(content, `${args.inviterName} invited you to join "${args.boardTitle}"`),
-    });
-  },
+        await resend.emails.send({
+            from: getFromEmail(),
+            to: args.to,
+            subject: `${args.inviterName} invited you to "${args.boardTitle}" on BetterTodo`,
+            html: baseTemplate(
+                content,
+                `${args.inviterName} invited you to join "${args.boardTitle}"`,
+            ),
+        });
+    },
 });
 
 /**
  * Send a board invite email to an UNREGISTERED user (with signup CTA).
  */
 export const sendBoardInviteEmailExternal = internalAction({
-  args: {
-    to: v.string(),
-    inviterName: v.string(),
-    boardTitle: v.string(),
-    role: v.string(),
-    token: v.string(),
-  },
-  handler: async (_ctx, args) => {
-    const resend = getResend();
-    const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
-    // After signing up/in, they'll be redirected and the invite auto-accepted
-    const inviteUrl = `${siteUrl}/sign-in?inviteToken=${args.token}`;
+    args: {
+        to: v.string(),
+        inviterName: v.string(),
+        boardTitle: v.string(),
+        role: v.string(),
+        token: v.string(),
+    },
+    handler: async (_ctx, args) => {
+        const resend = getResend();
+        const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
+        // After signing up/in, they'll be redirected and the invite auto-accepted
+        const inviteUrl = `${siteUrl}/sign-in?inviteToken=${args.token}`;
 
-    const content = `
+        const content = `
       <!-- GRADIENT TOP BAR -->
       <div style="height:4px;background:linear-gradient(90deg,${BRAND_ACCENT},#8b5cf6,#ec4899);"></div>
 
@@ -272,40 +275,39 @@ export const sendBoardInviteEmailExternal = internalAction({
         </p>
       </div>`;
 
-    await resend.emails.send({
-      from: getFromEmail(),
-      to: args.to,
-      subject: `${args.inviterName} invited you to collaborate on BetterTodo`,
-      html: baseTemplate(
-        content,
-        `${args.inviterName} invited you to join "${args.boardTitle}" on BetterTodo`
-      ),
-    });
-  },
+        await resend.emails.send({
+            from: getFromEmail(),
+            to: args.to,
+            subject: `${args.inviterName} invited you to collaborate on BetterTodo`,
+            html: baseTemplate(
+                content,
+                `${args.inviterName} invited you to join "${args.boardTitle}" on BetterTodo`,
+            ),
+        });
+    },
 });
-
 
 /**
  * Send a board assignment email when a user is assigned to a card.
  */
 export const sendCardAssignmentEmail = internalAction({
-  args: {
-    to: v.string(),
-    recipientName: v.optional(v.string()),
-    assignerName: v.string(),
-    cardTitle: v.string(),
-    boardTitle: v.string(),
-    boardId: v.string(),
-    cardId: v.string(),
-  },
-  handler: async (_ctx, args) => {
-    const resend = getResend();
-    const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
-    const cardUrl = `${siteUrl}/boards/${args.boardId}?card=${args.cardId}`;
+    args: {
+        to: v.string(),
+        recipientName: v.optional(v.string()),
+        assignerName: v.string(),
+        cardTitle: v.string(),
+        boardTitle: v.string(),
+        boardId: v.string(),
+        cardId: v.string(),
+    },
+    handler: async (_ctx, args) => {
+        const resend = getResend();
+        const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
+        const cardUrl = `${siteUrl}/boards/${args.boardId}?card=${args.cardId}`;
 
-    const greeting = args.recipientName ? `Hi ${args.recipientName}` : "Hello";
+        const greeting = args.recipientName ? `Hi ${args.recipientName}` : "Hello";
 
-    const content = `
+        const content = `
       <!-- GRADIENT TOP BAR -->
       <div style="height:4px;background:linear-gradient(90deg,${BRAND_ACCENT},#8b5cf6,#ec4899);"></div>
 
@@ -347,14 +349,11 @@ export const sendCardAssignmentEmail = internalAction({
         </p>
       </div>`;
 
-    await resend.emails.send({
-      from: getFromEmail(),
-      to: args.to,
-      subject: `${args.assignerName} assigned you to "${args.cardTitle}"`,
-      html: baseTemplate(
-        content,
-        `You were assigned to "${args.cardTitle}"`
-      ),
-    });
-  },
+        await resend.emails.send({
+            from: getFromEmail(),
+            to: args.to,
+            subject: `${args.assignerName} assigned you to "${args.cardTitle}"`,
+            html: baseTemplate(content, `You were assigned to "${args.cardTitle}"`),
+        });
+    },
 });
