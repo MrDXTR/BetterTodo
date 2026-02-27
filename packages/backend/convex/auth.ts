@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import type { DataModel } from "./_generated/dataModel";
 
 import { components } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import authConfig from "./auth.config";
 
 const siteUrl = process.env.SITE_URL!;
@@ -264,16 +264,12 @@ export const setUserRole = mutation({
     },
 });
 
-export const createAdmin = mutation({
+export const createAdmin = internalMutation({
     args: {
         userId: v.string(),
     },
     handler: async (ctx, args) => {
-        // No auth check here — this is a bootstrap mutation intended to be called
-        // from the Convex dashboard to set the first admin. After that, use
-        // setUserRole (which requires admin) for all role changes.
-        const caller = await authComponent.safeGetAuthUser(ctx);
-        const callerIdOrSystem = caller?._id ?? "system";
+        const callerIdOrSystem = "system";
 
         const authUser = await authComponent.getAnyUserById(ctx, args.userId);
         if (!authUser) {
