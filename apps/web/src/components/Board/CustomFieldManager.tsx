@@ -35,8 +35,7 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
     const [options, setOptions] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreate = async () => {
         if (!name.trim()) return;
 
         setIsSubmitting(true);
@@ -49,9 +48,9 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
                 options:
                     type === "select"
                         ? options
-                              .split(",")
-                              .map((option) => option.trim())
-                              .filter(Boolean)
+                            .split(",")
+                            .map((option) => option.trim())
+                            .filter(Boolean)
                         : undefined,
             });
             setName("");
@@ -81,12 +80,18 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
         <section className="rounded-lg border border-border/60 bg-card p-3 space-y-3">
             <h3 className="text-sm font-semibold">Custom fields</h3>
 
-            <form onSubmit={handleCreate} className="space-y-2">
+            <div className="space-y-2">
                 <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Field name"
                     maxLength={60}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleCreate();
+                        }
+                    }}
                 />
                 <div className="grid grid-cols-2 gap-2">
                     <Select value={type} onValueChange={(next) => setType(next as CustomFieldType)}>
@@ -121,14 +126,15 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
                     />
                 )}
                 <Button
-                    type="submit"
+                    type="button"
+                    onClick={handleCreate}
                     disabled={isSubmitting || !name.trim()}
                     className="w-full"
                     size="sm"
                 >
                     <Plus className="h-4 w-4 mr-1" /> Add field
                 </Button>
-            </form>
+            </div>
 
             <div className="space-y-2">
                 {(fields ?? []).length === 0 ? (
