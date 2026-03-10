@@ -1,3 +1,16 @@
+export const WORKSPACE_PALETTE = [
+    "#0079BF",
+    "#D29034",
+    "#519839",
+    "#B04632",
+    "#89609E",
+    "#CD5A91",
+    "#4BBF6B",
+    "#00AECC",
+    "#E6492D",
+    "#838C91",
+];
+
 export const BOARD_COLORS = [
     { name: "Blue", value: "#0079BF", light: "#E4F0F6" },
     { name: "Green", value: "#61BD4F", light: "#E3F6DB" },
