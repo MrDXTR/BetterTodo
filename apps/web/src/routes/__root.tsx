@@ -20,11 +20,27 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
                 name: "description",
                 content: "BetterTodo is a web application",
             },
+            {
+                name: "theme-color",
+                content: "#0c0c0c",
+            },
+            {
+                name: "apple-mobile-web-app-capable",
+                content: "yes",
+            },
         ],
         links: [
             {
                 rel: "icon",
                 href: "/favicon.ico",
+            },
+            {
+                rel: "manifest",
+                href: "/manifest.webmanifest",
+            },
+            {
+                rel: "apple-touch-icon",
+                href: "/apple-touch-icon-180x180.png",
             },
         ],
     }),
@@ -46,7 +62,7 @@ function RootComponent() {
                 </div>
                 <Toaster richColors />
             </ThemeProvider>
-            <TanStackRouterDevtools position="bottom-left" />
+            {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-left" /> : null}
         </>
     );
 }

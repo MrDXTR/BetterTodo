@@ -1,5 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import { Archive, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -28,6 +29,9 @@ import {
 } from "@/components/ui/select";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { LabelManager } from "@/components/Board/LabelManager";
+import { CustomFieldManager } from "@/components/Board/CustomFieldManager";
+import { AutomationSettings } from "@/components/Board/AutomationSettings";
+import { ImportExportPanel } from "@/components/Board/ImportExportPanel";
 
 interface BoardSettingsModalProps {
     open: boolean;
@@ -41,6 +45,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
     const [description, setDescription] = useState(board.description ?? "");
     const [color, setColor] = useState(board.color ?? DEFAULT_BOARD_COLOR);
     const [visibility, setVisibility] = useState<"private" | "team" | "public">(board.visibility);
+    const [workspaceId, setWorkspaceId] = useState<string>(board.workspaceId ?? "none");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -48,6 +53,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
     const archiveBoard = useMutation(api.boards.archive);
     const restoreBoard = useMutation(api.boards.restore);
     const deleteBoard = useMutation(api.boards.deleteBoard);
+    const workspaces = useQuery(api.workspaces.getMyWorkspaces);
 
     const isOwner = board.role === "owner";
     const canEdit = board.role === "owner" || board.role === "admin";
@@ -59,6 +65,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
             setDescription(board.description ?? "");
             setColor(board.color ?? DEFAULT_BOARD_COLOR);
             setVisibility(board.visibility);
+            setWorkspaceId(board.workspaceId ?? "none");
         }
         onOpenChange(next);
     };
@@ -79,6 +86,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                 description: description.trim() || undefined,
                 color,
                 visibility,
+                workspaceId: workspaceId !== "none" ? (workspaceId as Id<"workspaces">) : undefined,
             });
             toast.success("Board settings saved!");
             onOpenChange(false);
@@ -249,7 +257,33 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                 </Select>
                             </div>
 
+                            <div className="grid gap-2">
+                                <Label htmlFor="settings-workspace">Workspace</Label>
+                                <Select
+                                    value={workspaceId}
+                                    onValueChange={setWorkspaceId}
+                                    disabled={!canEdit}
+                                >
+                                    <SelectTrigger id="settings-workspace">
+                                        <SelectValue placeholder="No workspace" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">No workspace</SelectItem>
+                                        {(workspaces ?? []).map((workspace) => (
+                                            <SelectItem key={workspace._id} value={workspace._id}>
+                                                {workspace.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             {canEdit && <LabelManager boardId={board._id} />}
+                            {canEdit && <CustomFieldManager boardId={board._id} />}
+                            {canEdit && <AutomationSettings boardId={board._id} />}
+                            {canEdit && (
+                                <ImportExportPanel boardId={board._id} boardTitle={board.title} />
+                            )}
                         </div>
 
                         <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between pt-4 shrink-0 mt-2 border-t">

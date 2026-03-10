@@ -25,7 +25,22 @@ export const getById = query({
             .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
-        if (!membership) throw new Error("Access denied");
+        if (!membership) {
+            const board = await ctx.db.get(card.boardId);
+            if (!board) throw new Error("Board not found");
+
+            if (board.visibility === "team" && board.workspaceId) {
+                const workspaceMembership = await ctx.db
+                    .query("workspaceMembers")
+                    .withIndex("by_workspace_user", (q) =>
+                        q.eq("workspaceId", board.workspaceId!).eq("userId", user._id),
+                    )
+                    .first();
+                if (!workspaceMembership) throw new Error("Access denied");
+            } else if (board.visibility !== "public") {
+                throw new Error("Access denied");
+            }
+        }
 
         // Get card labels
         const cardLabelLinks = await ctx.db
@@ -58,11 +73,27 @@ export const getById = query({
             }),
         );
 
+        const customFields = await ctx.db
+            .query("customFields")
+            .withIndex("by_board", (q) => q.eq("boardId", card.boardId))
+            .collect();
+        customFields.sort((a, b) => a.position - b.position);
+
+        const customValues = await ctx.db
+            .query("cardCustomFieldValues")
+            .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
+            .collect();
+        const valueByField = new Map(customValues.map((value) => [value.fieldId, value]));
+
         return {
             ...card,
             labels: labels.filter((l) => l !== null),
             assignments,
             checklists: checklistsWithItems,
+            customFields: customFields.map((field) => ({
+                ...field,
+                value: valueByField.get(field._id) ?? null,
+            })),
         };
     },
 });
@@ -85,7 +116,22 @@ export const getAssignments = query({
             .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
             .first();
 
-        if (!membership) throw new Error("Access denied");
+        if (!membership) {
+            const board = await ctx.db.get(card.boardId);
+            if (!board) throw new Error("Board not found");
+
+            if (board.visibility === "team" && board.workspaceId) {
+                const workspaceMembership = await ctx.db
+                    .query("workspaceMembers")
+                    .withIndex("by_workspace_user", (q) =>
+                        q.eq("workspaceId", board.workspaceId!).eq("userId", user._id),
+                    )
+                    .first();
+                if (!workspaceMembership) throw new Error("Access denied");
+            } else if (board.visibility !== "public") {
+                throw new Error("Access denied");
+            }
+        }
 
         return await ctx.db
             .query("cardAssignments")

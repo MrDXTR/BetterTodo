@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { BoardCard } from "@/components/Board/BoardCard";
 import { CreateBoardModal } from "@/components/Board/CreateBoardModal";
+import { WorkspacePanel } from "@/components/Board/WorkspacePanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,6 +73,10 @@ function BoardsRoute() {
                     <Plus className="mr-2 h-4 w-4" />
                     Create Board
                 </Button>
+            </div>
+
+            <div className="mb-6">
+                <WorkspacePanel />
             </div>
 
             <Tabs defaultValue="active" className="space-y-5">

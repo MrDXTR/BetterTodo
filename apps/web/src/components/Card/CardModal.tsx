@@ -17,6 +17,7 @@ import {
     Tag,
     Trash2,
     Users,
+    Wrench,
 } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,6 +44,7 @@ import { CardChecklists } from "./CardChecklists";
 import { CardComments } from "./CardComments";
 import { CardAttachments } from "./CardAttachments";
 import { CardCoverImage } from "./CardCoverImage";
+import { CardCustomFields } from "./CardCustomFields";
 import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -388,6 +390,17 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                     No labels.
                                                 </p>
                                             )}
+                                        </section>
+
+                                        <section className="space-y-2 rounded-lg border bg-card p-4">
+                                            <div className="flex items-center gap-2 text-sm font-semibold">
+                                                <Wrench className="h-4 w-4 text-muted-foreground" />
+                                                Custom Fields
+                                            </div>
+                                            <CardCustomFields
+                                                cardId={card._id}
+                                                isEditable={isEditMode}
+                                            />
                                         </section>
 
                                         <section className="space-y-2 rounded-lg border bg-card p-4">

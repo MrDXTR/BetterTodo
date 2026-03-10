@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LayoutTemplate, Check, ArrowLeft } from "lucide-react";
@@ -101,10 +101,12 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
     const [description, setDescription] = useState("");
     const [color, setColor] = useState(DEFAULT_BOARD_COLOR);
     const [visibility, setVisibility] = useState<"private" | "team" | "public">("private");
+    const [workspaceId, setWorkspaceId] = useState<string>("none");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const createBoard = useMutation(api.boards.create);
     const createList = useMutation(api.lists.create);
+    const workspaces = useQuery(api.workspaces.getMyWorkspaces);
 
     const handleTemplateSelect = (template: BoardTemplate) => {
         setSelectedTemplate(template);
@@ -118,6 +120,7 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
         setDescription("");
         setColor(DEFAULT_BOARD_COLOR);
         setVisibility("private");
+        setWorkspaceId("none");
         setSelectedTemplate(BOARD_TEMPLATES[0]);
     };
 
@@ -142,6 +145,7 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                 description: description.trim() || undefined,
                 color,
                 visibility,
+                workspaceId: workspaceId !== "none" ? (workspaceId as Id<"workspaces">) : undefined,
             });
 
             // Create template lists if any
@@ -328,6 +332,23 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                                 </div>
                                             </div>
                                         </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="workspace">Workspace</Label>
+                                <Select value={workspaceId} onValueChange={setWorkspaceId}>
+                                    <SelectTrigger id="workspace">
+                                        <SelectValue placeholder="Choose workspace (optional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">No workspace</SelectItem>
+                                        {(workspaces ?? []).map((workspace) => (
+                                            <SelectItem key={workspace._id} value={workspace._id}>
+                                                {workspace.name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -21,19 +21,51 @@ export const getAll = query({
             .withIndex("by_user", (q) => q.eq("userId", user._id))
             .collect();
 
-        const boardIds = memberships.map((m) => m.boardId);
+        const directBoardIds = memberships.map((m) => m.boardId);
+        const directBoards = await Promise.all(directBoardIds.map((id) => ctx.db.get(id)));
 
-        // Fetch all boards
-        const boards = await Promise.all(boardIds.map((id) => ctx.db.get(id)));
+        const workspaceMemberships = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect();
 
-        // Filter out null boards and archived ones
-        return boards
-            .filter((board) => board !== null && !board.archived)
-            .map((board) => ({
-                ...board!,
-                // Add member role
-                role: memberships.find((m) => m.boardId === board!._id)?.role,
-            }));
+        const workspaceBoards = (
+            await Promise.all(
+                workspaceMemberships.map((membership) =>
+                    ctx.db
+                        .query("boards")
+                        .withIndex("by_workspace", (q) =>
+                            q.eq("workspaceId", membership.workspaceId),
+                        )
+                        .filter((q) =>
+                            q.and(
+                                q.eq(q.field("visibility"), "team"),
+                                q.eq(q.field("archived"), false),
+                            ),
+                        )
+                        .collect(),
+                ),
+            )
+        ).flat();
+
+        const merged = new Map<string, any>();
+        for (const board of directBoards) {
+            if (!board || board.archived) continue;
+            merged.set(board._id, {
+                ...board,
+                role: memberships.find((m) => m.boardId === board._id)?.role ?? "viewer",
+            });
+        }
+
+        for (const board of workspaceBoards) {
+            if (merged.has(board._id)) continue;
+            merged.set(board._id, {
+                ...board,
+                role: "viewer",
+            });
+        }
+
+        return Array.from(merged.values()).sort((a, b) => b.updatedAt - a.updatedAt);
     },
 });
 
@@ -110,16 +142,30 @@ export const getById = query({
         const user = await authComponent.safeGetAuthUser(ctx);
         if (!user) return null;
 
+        const board = await ctx.db.get(args.boardId);
+        if (!board) return null;
+
         // Check if user has access to this board
         const membership = await ctx.db
             .query("boardMembers")
             .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
             .first();
 
-        if (!membership) return null;
+        let role = membership?.role ?? "viewer";
 
-        const board = await ctx.db.get(args.boardId);
-        if (!board) return null;
+        if (!membership) {
+            if (board.visibility === "team" && board.workspaceId) {
+                const workspaceMembership = await ctx.db
+                    .query("workspaceMembers")
+                    .withIndex("by_workspace_user", (q) =>
+                        q.eq("workspaceId", board.workspaceId!).eq("userId", user._id),
+                    )
+                    .first();
+                if (!workspaceMembership) return null;
+            } else if (board.visibility !== "public") {
+                return null;
+            }
+        }
 
         // Get lists for this board
         const lists = await ctx.db
@@ -203,7 +249,7 @@ export const getById = query({
 
         return {
             ...board,
-            role: membership.role,
+            role,
             lists: listsWithCards,
         };
     },
@@ -266,6 +312,7 @@ export const create = mutation({
         title: v.string(),
         description: v.optional(v.string()),
         color: v.optional(v.string()),
+        workspaceId: v.optional(v.id("workspaces")),
         visibility: v.optional(
             v.union(v.literal("private"), v.literal("team"), v.literal("public")),
         ),
@@ -273,6 +320,19 @@ export const create = mutation({
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
         if (!user) throw new Error("Unauthorized");
+
+        if (args.workspaceId) {
+            const workspaceMembership = await ctx.db
+                .query("workspaceMembers")
+                .withIndex("by_workspace_user", (q) =>
+                    q.eq("workspaceId", args.workspaceId!).eq("userId", user._id),
+                )
+                .first();
+
+            if (!workspaceMembership) {
+                throw new Error("You must be a workspace member to create a board in it");
+            }
+        }
 
         const now = Date.now();
 
@@ -282,6 +342,7 @@ export const create = mutation({
             description: args.description,
             color: args.color,
             visibility: args.visibility || "private",
+            workspaceId: args.workspaceId,
             createdBy: user._id,
             archived: false,
             createdAt: now,
@@ -310,6 +371,7 @@ export const update = mutation({
         title: v.optional(v.string()),
         description: v.optional(v.string()),
         color: v.optional(v.string()),
+        workspaceId: v.optional(v.id("workspaces")),
         visibility: v.optional(
             v.union(v.literal("private"), v.literal("team"), v.literal("public")),
         ),
@@ -333,6 +395,20 @@ export const update = mutation({
         if (args.description !== undefined) updates.description = args.description;
         if (args.color !== undefined) updates.color = args.color;
         if (args.visibility !== undefined) updates.visibility = args.visibility;
+        if (args.workspaceId !== undefined) {
+            if (args.workspaceId) {
+                const workspaceMembership = await ctx.db
+                    .query("workspaceMembers")
+                    .withIndex("by_workspace_user", (q) =>
+                        q.eq("workspaceId", args.workspaceId!).eq("userId", user._id),
+                    )
+                    .first();
+                if (!workspaceMembership) {
+                    throw new Error("You must be a workspace member to move this board");
+                }
+            }
+            updates.workspaceId = args.workspaceId;
+        }
 
         await ctx.db.patch(args.boardId, updates);
 
@@ -418,7 +494,7 @@ export const deleteBoard = mutation({
         // Delete all related data
         // Note: In production, consider soft delete or archiving instead
 
-        // Delete lists and cards
+        // Delete lists, cards, and card-scoped relations
         const lists = await ctx.db
             .query("lists")
             .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
@@ -431,10 +507,77 @@ export const deleteBoard = mutation({
                 .collect();
 
             for (const card of cards) {
+                const [cardLabels, assignments, checklists, comments, attachments, customValues] =
+                    await Promise.all([
+                        ctx.db
+                            .query("cardLabels")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect(),
+                        ctx.db
+                            .query("cardAssignments")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect(),
+                        ctx.db
+                            .query("checklists")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect(),
+                        ctx.db
+                            .query("comments")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect(),
+                        ctx.db
+                            .query("attachments")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect(),
+                        ctx.db
+                            .query("cardCustomFieldValues")
+                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                            .collect(),
+                    ]);
+
+                for (const link of cardLabels) await ctx.db.delete(link._id);
+                for (const assignment of assignments) await ctx.db.delete(assignment._id);
+                for (const comment of comments) await ctx.db.delete(comment._id);
+                for (const attachment of attachments) await ctx.db.delete(attachment._id);
+                for (const value of customValues) await ctx.db.delete(value._id);
+
+                for (const checklist of checklists) {
+                    const items = await ctx.db
+                        .query("checklistItems")
+                        .withIndex("by_checklist", (q) => q.eq("checklistId", checklist._id))
+                        .collect();
+                    for (const item of items) await ctx.db.delete(item._id);
+                    await ctx.db.delete(checklist._id);
+                }
+
                 await ctx.db.delete(card._id);
             }
             await ctx.db.delete(list._id);
         }
+
+        const [labels, invites, customFields, automations] = await Promise.all([
+            ctx.db
+                .query("labels")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect(),
+            ctx.db
+                .query("boardInvites")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect(),
+            ctx.db
+                .query("customFields")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect(),
+            ctx.db
+                .query("automationRules")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect(),
+        ]);
+
+        for (const label of labels) await ctx.db.delete(label._id);
+        for (const invite of invites) await ctx.db.delete(invite._id);
+        for (const field of customFields) await ctx.db.delete(field._id);
+        for (const rule of automations) await ctx.db.delete(rule._id);
 
         // Delete board members
         const members = await ctx.db
@@ -625,7 +768,11 @@ export const addMemberByEmail = mutation({
         }
 
         // Generate a unique secure token
-        const token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+        const randomBytes = new Uint8Array(18);
+        crypto.getRandomValues(randomBytes);
+        const token = `${Date.now().toString(36)}-${Array.from(randomBytes, (byte) =>
+            byte.toString(16).padStart(2, "0"),
+        ).join("")}`;
 
         // Create the token-based invite (no userId yet)
         await ctx.db.insert("boardInvites", {

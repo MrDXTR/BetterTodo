@@ -26,6 +26,10 @@
         "dev:web": "turbo -F web dev",
         "dev:server": "turbo -F @BetterTodo/backend dev",
         "dev:setup": "turbo -F @BetterTodo/backend dev:setup",
+        "test": "bun test",
+        "test:unit": "bun test tests/unit",
+        "test:integration": "bun test tests/integration",
+        "test:e2e": "bun test tests/e2e",
         "format": "prettier --write .",
         "format:check": "prettier --check ."
     },
