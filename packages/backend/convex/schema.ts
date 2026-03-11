@@ -293,4 +293,10 @@ export default defineSchema({
         .index("by_board", ["boardId"])
         .index("by_board_trigger", ["boardId", "trigger"])
         .index("by_enabled_trigger", ["enabled", "trigger"]),
+
+    rateLimit: defineTable({
+        key: v.string(),
+        count: v.number(),
+        lastRequest: v.number(),
+    }).index("by_key", ["key"]),
 });

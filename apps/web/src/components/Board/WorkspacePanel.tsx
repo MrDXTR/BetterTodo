@@ -220,7 +220,7 @@ export function WorkspaceMobileStrip({ selectedId, onSelect }: WorkspaceSelectPr
                             className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: color }}
                         />
-                        <span className="max-w-[120px] truncate">{ws.name}</span>
+                        <span className="max-w-30 truncate">{ws.name}</span>
                     </button>
                 );
             })}

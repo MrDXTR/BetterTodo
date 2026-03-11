@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
-import { authComponent } from "./auth";
+import { ensureBoardRole, ensureListWriteAccess } from "./permissions";
 
 // ============================================
 // MUTATIONS
@@ -15,18 +15,7 @@ export const create = mutation({
         title: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, args.boardId, "member");
 
         // Get the current max position
         const existingLists = await ctx.db
@@ -59,21 +48,7 @@ export const update = mutation({
         cardLimit: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const list = await ctx.db.get(args.listId);
-        if (!list) throw new Error("List not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureListWriteAccess(ctx, args.listId, "member");
 
         const updates: any = {};
         if (args.title !== undefined) updates.title = args.title;
@@ -94,21 +69,7 @@ export const updatePosition = mutation({
         newPosition: v.number(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const list = await ctx.db.get(args.listId);
-        if (!list) throw new Error("List not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        const { list } = await ensureListWriteAccess(ctx, args.listId, "member");
 
         const oldPosition = list.position;
 
@@ -147,21 +108,7 @@ export const updatePosition = mutation({
 export const archive = mutation({
     args: { listId: v.id("lists") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const list = await ctx.db.get(args.listId);
-        if (!list) throw new Error("List not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureListWriteAccess(ctx, args.listId, "member");
 
         await ctx.db.patch(args.listId, { archived: true });
 
@@ -175,21 +122,7 @@ export const archive = mutation({
 export const deleteList = mutation({
     args: { listId: v.id("lists") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const list = await ctx.db.get(args.listId);
-        if (!list) throw new Error("List not found");
-
-        // Check if user has admin or owner role
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || !["owner", "admin"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        const { list } = await ensureListWriteAccess(ctx, args.listId, "admin");
 
         // Delete all cards in this list
         const cards = await ctx.db

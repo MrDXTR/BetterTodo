@@ -1,12 +1,33 @@
 import { ConvexError } from "convex/values";
 
-import type { Id } from "./_generated/dataModel";
+import type { DataModel, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { authComponent } from "./auth";
 
 type Ctx = QueryCtx | MutationCtx;
+type DbCtx = MutationCtx["db"];
 
 export type BoardRole = "owner" | "admin" | "member" | "viewer";
+
+const BOARD_ROLE_WEIGHT: Record<BoardRole, number> = {
+    viewer: 0,
+    member: 1,
+    admin: 2,
+    owner: 3,
+};
+
+type BoardReadAccessResult = {
+    user: NonNullable<Awaited<ReturnType<typeof authComponent.safeGetAuthUser>>>;
+    board: DataModel["boards"]["document"];
+    role: BoardRole;
+    isDirectMember: boolean;
+};
+
+type BoardWriteAccessResult = {
+    user: NonNullable<Awaited<ReturnType<typeof authComponent.safeGetAuthUser>>>;
+    board: DataModel["boards"]["document"];
+    role: BoardRole;
+};
 
 export async function requireAuth(ctx: Ctx) {
     const user = await authComponent.safeGetAuthUser(ctx);
@@ -16,7 +37,38 @@ export async function requireAuth(ctx: Ctx) {
     return user;
 }
 
-export async function ensureBoardReadAccess(ctx: Ctx, boardId: Id<"boards">) {
+export async function getBoardForCard(ctx: Ctx, cardId: Id<"cards">) {
+    const card = await ctx.db.get(cardId);
+    if (!card) {
+        throw new ConvexError("Card not found");
+    }
+
+    const board = await ctx.db.get(card.boardId);
+    if (!board) {
+        throw new ConvexError("Board not found");
+    }
+
+    return { card, board };
+}
+
+export async function getBoardForList(ctx: Ctx, listId: Id<"lists">) {
+    const list = await ctx.db.get(listId);
+    if (!list) {
+        throw new ConvexError("List not found");
+    }
+
+    const board = await ctx.db.get(list.boardId);
+    if (!board) {
+        throw new ConvexError("Board not found");
+    }
+
+    return { list, board };
+}
+
+export async function ensureBoardReadAccess(
+    ctx: Ctx,
+    boardId: Id<"boards">,
+): Promise<BoardReadAccessResult> {
     const user = await requireAuth(ctx);
     const board = await ctx.db.get(boardId);
     if (!board) {
@@ -33,7 +85,7 @@ export async function ensureBoardReadAccess(ctx: Ctx, boardId: Id<"boards">) {
     }
 
     if (board.visibility === "public") {
-        return { user, board, role: "viewer" as BoardRole, isDirectMember: false };
+        return { user, board, role: "viewer", isDirectMember: false };
     }
 
     if (board.visibility === "team" && board.workspaceId) {
@@ -45,14 +97,17 @@ export async function ensureBoardReadAccess(ctx: Ctx, boardId: Id<"boards">) {
             .first();
 
         if (workspaceMember) {
-            return { user, board, role: "viewer" as BoardRole, isDirectMember: false };
+            return { user, board, role: "viewer", isDirectMember: false };
         }
     }
 
     throw new ConvexError("Access denied");
 }
 
-export async function ensureBoardWriteAccess(ctx: Ctx, boardId: Id<"boards">) {
+export async function ensureBoardWriteAccess(
+    ctx: Ctx,
+    boardId: Id<"boards">,
+): Promise<BoardWriteAccessResult> {
     const user = await requireAuth(ctx);
 
     const membership = await ctx.db
@@ -70,6 +125,58 @@ export async function ensureBoardWriteAccess(ctx: Ctx, boardId: Id<"boards">) {
     }
 
     return { user, board, role: membership.role as BoardRole };
+}
+
+export async function ensureBoardRole(
+    ctx: Ctx,
+    boardId: Id<"boards">,
+    minimumRole: "member" | "admin" | "owner" = "member",
+): Promise<BoardWriteAccessResult> {
+    const access = await ensureBoardWriteAccess(ctx, boardId);
+
+    if (BOARD_ROLE_WEIGHT[access.role] < BOARD_ROLE_WEIGHT[minimumRole]) {
+        throw new ConvexError("Insufficient permissions");
+    }
+
+    return access;
+}
+
+export async function ensureCardReadAccess(ctx: Ctx, cardId: Id<"cards">) {
+    const { card, board } = await getBoardForCard(ctx, cardId);
+    const boardAccess = await ensureBoardReadAccess(ctx, board._id);
+
+    return {
+        ...boardAccess,
+        card,
+    };
+}
+
+export async function ensureCardWriteAccess(
+    ctx: Ctx,
+    cardId: Id<"cards">,
+    minimumRole: "member" | "admin" | "owner" = "member",
+) {
+    const { card, board } = await getBoardForCard(ctx, cardId);
+    const boardAccess = await ensureBoardRole(ctx, board._id, minimumRole);
+
+    return {
+        ...boardAccess,
+        card,
+    };
+}
+
+export async function ensureListWriteAccess(
+    ctx: Ctx,
+    listId: Id<"lists">,
+    minimumRole: "member" | "admin" | "owner" = "member",
+) {
+    const { list, board } = await getBoardForList(ctx, listId);
+    const boardAccess = await ensureBoardRole(ctx, board._id, minimumRole);
+
+    return {
+        ...boardAccess,
+        list,
+    };
 }
 
 export async function ensureWorkspaceAccess(
@@ -99,4 +206,82 @@ export async function ensureWorkspaceAccess(
     }
 
     return { user, role: member.role };
+}
+
+export async function assertNotRateLimited(
+    ctx: MutationCtx,
+    args: {
+        key: string;
+        windowMs: number;
+        max: number;
+        now?: number;
+    },
+) {
+    const now = args.now ?? Date.now();
+
+    if (!Number.isFinite(args.windowMs) || args.windowMs <= 0) {
+        throw new ConvexError("Invalid rate limit window");
+    }
+    if (!Number.isFinite(args.max) || args.max <= 0) {
+        throw new ConvexError("Invalid rate limit max");
+    }
+
+    const rows = await ctx.db
+        .query("rateLimit")
+        .filter((q) => q.eq(q.field("key"), args.key))
+        .collect();
+
+    const existing = rows[0] ?? null;
+    if (!existing) {
+        await ctx.db.insert("rateLimit", {
+            key: args.key,
+            count: 1,
+            lastRequest: now,
+        });
+        return { allowed: true, remaining: args.max - 1, resetAt: now + args.windowMs };
+    }
+
+    const resetAt = existing.lastRequest + args.windowMs;
+    if (now >= resetAt) {
+        await ctx.db.patch(existing._id, {
+            count: 1,
+            lastRequest: now,
+        });
+        return { allowed: true, remaining: args.max - 1, resetAt: now + args.windowMs };
+    }
+
+    if (existing.count >= args.max) {
+        throw new ConvexError("Rate limit exceeded");
+    }
+
+    const newCount = existing.count + 1;
+    await ctx.db.patch(existing._id, {
+        count: newCount,
+        lastRequest: now,
+    });
+
+    return { allowed: true, remaining: Math.max(0, args.max - newCount), resetAt };
+}
+
+export async function purgeExpiredRateLimitEntries(
+    db: DbCtx,
+    olderThanMs: number,
+    now: number = Date.now(),
+) {
+    if (!Number.isFinite(olderThanMs) || olderThanMs <= 0) {
+        throw new ConvexError("Invalid expiry window");
+    }
+
+    const cutoff = now - olderThanMs;
+    const rows = await db.query("rateLimit").collect();
+
+    let deleted = 0;
+    for (const row of rows) {
+        if (row.lastRequest < cutoff) {
+            await db.delete(row._id);
+            deleted += 1;
+        }
+    }
+
+    return { deleted };
 }

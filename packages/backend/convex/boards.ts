@@ -1,7 +1,14 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { authComponent } from "./auth";
+import {
+    assertNotRateLimited,
+    ensureBoardReadAccess,
+    ensureBoardRole,
+    ensureWorkspaceAccess,
+    requireAuth,
+} from "./permissions";
 
 // ============================================
 // QUERIES
@@ -139,119 +146,97 @@ export const getArchived = query({
 export const getById = query({
     args: { boardId: v.id("boards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) return null;
+        try {
+            const access = await ensureBoardReadAccess(ctx, args.boardId);
 
-        const board = await ctx.db.get(args.boardId);
-        if (!board) return null;
+            // Get lists for this board
+            const lists = await ctx.db
+                .query("lists")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .filter((q) => q.eq(q.field("archived"), false))
+                .collect();
 
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
+            // Sort lists by position
+            lists.sort((a, b) => a.position - b.position);
 
-        let role = membership?.role ?? "viewer";
+            // Get cards for each list
+            const listsWithCards = await Promise.all(
+                lists.map(async (list) => {
+                    const cards = await ctx.db
+                        .query("cards")
+                        .withIndex("by_list", (q) => q.eq("listId", list._id))
+                        .filter((q) => q.eq(q.field("archived"), false))
+                        .collect();
 
-        if (!membership) {
-            if (board.visibility === "team" && board.workspaceId) {
-                const workspaceMembership = await ctx.db
-                    .query("workspaceMembers")
-                    .withIndex("by_workspace_user", (q) =>
-                        q.eq("workspaceId", board.workspaceId!).eq("userId", user._id),
-                    )
-                    .first();
-                if (!workspaceMembership) return null;
-            } else if (board.visibility !== "public") {
-                return null;
-            }
-        }
+                    // Sort cards by position
+                    cards.sort((a, b) => a.position - b.position);
 
-        // Get lists for this board
-        const lists = await ctx.db
-            .query("lists")
-            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-            .filter((q) => q.eq(q.field("archived"), false))
-            .collect();
+                    const cardsWithTaskSummary = await Promise.all(
+                        cards.map(async (card) => {
+                            const checklists = await ctx.db
+                                .query("checklists")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
 
-        // Sort lists by position
-        lists.sort((a, b) => a.position - b.position);
+                            // Fetch label IDs for this card
+                            const cardLabelLinks = await ctx.db
+                                .query("cardLabels")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
 
-        // Get cards for each list
-        const listsWithCards = await Promise.all(
-            lists.map(async (list) => {
-                const cards = await ctx.db
-                    .query("cards")
-                    .withIndex("by_list", (q) => q.eq("listId", list._id))
-                    .filter((q) => q.eq(q.field("archived"), false))
-                    .collect();
+                            const labelIds = cardLabelLinks.map((l) => l.labelId);
 
-                // Sort cards by position
-                cards.sort((a, b) => a.position - b.position);
+                            if (checklists.length === 0) {
+                                return {
+                                    ...card,
+                                    labelIds,
+                                    checklistCount: 0,
+                                    checklistItemsCompleted: 0,
+                                    checklistItemsTotal: 0,
+                                };
+                            }
 
-                const cardsWithTaskSummary = await Promise.all(
-                    cards.map(async (card) => {
-                        const checklists = await ctx.db
-                            .query("checklists")
-                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
-                            .collect();
+                            const checklistItemsPerList = await Promise.all(
+                                checklists.map((checklist) =>
+                                    ctx.db
+                                        .query("checklistItems")
+                                        .withIndex("by_checklist", (q) =>
+                                            q.eq("checklistId", checklist._id),
+                                        )
+                                        .collect(),
+                                ),
+                            );
 
-                        // Fetch label IDs for this card
-                        const cardLabelLinks = await ctx.db
-                            .query("cardLabels")
-                            .withIndex("by_card", (q) => q.eq("cardId", card._id))
-                            .collect();
+                            const checklistItems = checklistItemsPerList.flat();
+                            const checklistItemsCompleted = checklistItems.filter(
+                                (item) => item.completed,
+                            ).length;
 
-                        const labelIds = cardLabelLinks.map((l) => l.labelId);
-
-                        if (checklists.length === 0) {
                             return {
                                 ...card,
                                 labelIds,
-                                checklistCount: 0,
-                                checklistItemsCompleted: 0,
-                                checklistItemsTotal: 0,
+                                checklistCount: checklists.length,
+                                checklistItemsCompleted,
+                                checklistItemsTotal: checklistItems.length,
                             };
-                        }
+                        }),
+                    );
 
-                        const checklistItemsPerList = await Promise.all(
-                            checklists.map((checklist) =>
-                                ctx.db
-                                    .query("checklistItems")
-                                    .withIndex("by_checklist", (q) =>
-                                        q.eq("checklistId", checklist._id),
-                                    )
-                                    .collect(),
-                            ),
-                        );
+                    return {
+                        ...list,
+                        cards: cardsWithTaskSummary,
+                    };
+                }),
+            );
 
-                        const checklistItems = checklistItemsPerList.flat();
-                        const checklistItemsCompleted = checklistItems.filter(
-                            (item) => item.completed,
-                        ).length;
-
-                        return {
-                            ...card,
-                            labelIds,
-                            checklistCount: checklists.length,
-                            checklistItemsCompleted,
-                            checklistItemsTotal: checklistItems.length,
-                        };
-                    }),
-                );
-
-                return {
-                    ...list,
-                    cards: cardsWithTaskSummary,
-                };
-            }),
-        );
-
-        return {
-            ...board,
-            role,
-            lists: listsWithCards,
-        };
+            return {
+                ...access.board,
+                role: access.role,
+                lists: listsWithCards,
+            };
+        } catch {
+            return null;
+        }
     },
 });
 
@@ -318,20 +303,10 @@ export const create = mutation({
         ),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        const user = await requireAuth(ctx);
 
         if (args.workspaceId) {
-            const workspaceMembership = await ctx.db
-                .query("workspaceMembers")
-                .withIndex("by_workspace_user", (q) =>
-                    q.eq("workspaceId", args.workspaceId!).eq("userId", user._id),
-                )
-                .first();
-
-            if (!workspaceMembership) {
-                throw new Error("You must be a workspace member to create a board in it");
-            }
+            await ensureWorkspaceAccess(ctx, args.workspaceId, "member");
         }
 
         const now = Date.now();
@@ -377,18 +352,7 @@ export const update = mutation({
         ),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        // Check if user has admin or owner role
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || !["owner", "admin"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, args.boardId, "admin");
 
         const updates: any = { updatedAt: Date.now() };
         if (args.title !== undefined) updates.title = args.title;
@@ -397,15 +361,7 @@ export const update = mutation({
         if (args.visibility !== undefined) updates.visibility = args.visibility;
         if (args.workspaceId !== undefined) {
             if (args.workspaceId) {
-                const workspaceMembership = await ctx.db
-                    .query("workspaceMembers")
-                    .withIndex("by_workspace_user", (q) =>
-                        q.eq("workspaceId", args.workspaceId!).eq("userId", user._id),
-                    )
-                    .first();
-                if (!workspaceMembership) {
-                    throw new Error("You must be a workspace member to move this board");
-                }
+                await ensureWorkspaceAccess(ctx, args.workspaceId, "member");
             }
             updates.workspaceId = args.workspaceId;
         }
@@ -606,18 +562,13 @@ export const addMember = mutation({
         role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        const { user } = await ensureBoardRole(ctx, args.boardId, "admin");
 
-        // Check if current user has admin or owner role
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || !["owner", "admin"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        await assertNotRateLimited(ctx, {
+            key: `board:addMember:${args.boardId}:${user._id}`,
+            windowMs: 60_000,
+            max: 20,
+        });
 
         // Check if user is already a member
         const existingMember = await ctx.db
@@ -628,7 +579,7 @@ export const addMember = mutation({
             .first();
 
         if (existingMember) {
-            throw new Error("User is already a member");
+            throw new ConvexError("User is already a member");
         }
 
         const now = Date.now();
@@ -656,34 +607,30 @@ export const addMemberByEmail = mutation({
         role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        const { user } = await ensureBoardRole(ctx, args.boardId, "admin");
 
-        // Check if current user has admin or owner role
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || !["owner", "admin"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        await assertNotRateLimited(ctx, {
+            key: `board:addMemberByEmail:${args.boardId}:${user._id}`,
+            windowMs: 60_000,
+            max: 10,
+        });
 
         const board = await ctx.db.get(args.boardId);
         const now = Date.now();
         const inviterName = user.name ?? user.email ?? "Someone";
         const boardTitle = board?.title ?? "a board";
-
-        // ── Step 1: Search for a registered user by email ──────────────────────
-        // We scan all board members across the system to find a matching auth user.
-        const allMembers = await ctx.db.query("boardMembers").collect();
-        const uniqueUserIds = [...new Set(allMembers.map((m) => m.userId))];
+        const normalizedEmail = args.email.trim().toLowerCase();
 
         let targetUser = null;
-        for (const uid of uniqueUserIds) {
-            const u = await authComponent.getAnyUserById(ctx, uid);
-            if (u && u.email?.toLowerCase() === args.email.toLowerCase()) {
-                targetUser = u;
+        const boardMembers = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+            .collect();
+
+        for (const member of boardMembers) {
+            const memberUser = await authComponent.getAnyUserById(ctx, member.userId);
+            if (memberUser?.email?.toLowerCase() === normalizedEmail) {
+                targetUser = memberUser;
                 break;
             }
         }
@@ -699,7 +646,7 @@ export const addMemberByEmail = mutation({
                 .first();
 
             if (existing) {
-                throw new Error("This user is already a member of this board");
+                throw new ConvexError("This user is already a member of this board");
             }
 
             // Check if there's already a pending invite
@@ -715,7 +662,7 @@ export const addMemberByEmail = mutation({
                 .first();
 
             if (existingInvite) {
-                throw new Error("An invite is already pending for this user");
+                throw new ConvexError("An invite is already pending for this user");
             }
 
             // Create the invite record
@@ -741,7 +688,7 @@ export const addMemberByEmail = mutation({
 
             // Schedule the invite email
             await ctx.scheduler.runAfter(0, internal.emails.sendBoardInviteEmail, {
-                to: targetUser.email ?? args.email,
+                to: targetUser.email ?? normalizedEmail,
                 recipientName: targetUser.name ?? undefined,
                 inviterName,
                 boardTitle,
@@ -757,14 +704,14 @@ export const addMemberByEmail = mutation({
         // Check if there's already a pending external invite for this email
         const existingEmailInvite = await ctx.db
             .query("boardInvites")
-            .withIndex("by_email", (q) => q.eq("invitedEmail", args.email.toLowerCase()))
+            .withIndex("by_email", (q) => q.eq("invitedEmail", normalizedEmail))
             .filter((q) =>
                 q.and(q.eq(q.field("boardId"), args.boardId), q.eq(q.field("status"), "pending")),
             )
             .first();
 
         if (existingEmailInvite) {
-            throw new Error("An invite is already pending for this email");
+            throw new ConvexError("An invite is already pending for this email");
         }
 
         // Generate a unique secure token
@@ -777,7 +724,7 @@ export const addMemberByEmail = mutation({
         // Create the token-based invite (no userId yet)
         await ctx.db.insert("boardInvites", {
             boardId: args.boardId,
-            invitedEmail: args.email.toLowerCase(),
+            invitedEmail: normalizedEmail,
             invitedByUserId: user._id,
             role: args.role,
             status: "pending",
@@ -787,7 +734,7 @@ export const addMemberByEmail = mutation({
 
         // Schedule the external signup email
         await ctx.scheduler.runAfter(0, internal.emails.sendBoardInviteEmailExternal, {
-            to: args.email,
+            to: normalizedEmail,
             inviterName,
             boardTitle,
             role: args.role,
