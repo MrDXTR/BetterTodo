@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { ensureCardReadAccess, ensureCardWriteAccess, ensureListWriteAccess } from "./permissions";
 
 // ============================================
 // QUERIES
@@ -13,19 +14,7 @@ import { authComponent } from "./auth";
 export const getById = query({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership) throw new Error("Access denied");
+        const { card } = await ensureCardReadAccess(ctx, args.cardId);
 
         // Get card labels
         const cardLabelLinks = await ctx.db
@@ -58,11 +47,27 @@ export const getById = query({
             }),
         );
 
+        const customFields = await ctx.db
+            .query("customFields")
+            .withIndex("by_board", (q) => q.eq("boardId", card.boardId))
+            .collect();
+        customFields.sort((a, b) => a.position - b.position);
+
+        const customValues = await ctx.db
+            .query("cardCustomFieldValues")
+            .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
+            .collect();
+        const valueByField = new Map(customValues.map((value) => [value.fieldId, value]));
+
         return {
             ...card,
             labels: labels.filter((l) => l !== null),
             assignments,
             checklists: checklistsWithItems,
+            customFields: customFields.map((field) => ({
+                ...field,
+                value: valueByField.get(field._id) ?? null,
+            })),
         };
     },
 });
@@ -73,19 +78,7 @@ export const getById = query({
 export const getAssignments = query({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership) throw new Error("Access denied");
+        await ensureCardReadAccess(ctx, args.cardId);
 
         return await ctx.db
             .query("cardAssignments")
@@ -107,21 +100,7 @@ export const create = mutation({
         title: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const list = await ctx.db.get(args.listId);
-        if (!list) throw new Error("List not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", list.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        const { user, list } = await ensureListWriteAccess(ctx, args.listId, "member");
 
         // Get the current max position in this list
         const existingCards = await ctx.db
@@ -166,21 +145,7 @@ export const update = mutation({
         completed: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         const updates: any = { updatedAt: Date.now() };
         if (args.title !== undefined) updates.title = args.title;
@@ -208,24 +173,10 @@ export const move = mutation({
         newPosition: v.number(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
+        const { card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         const targetList = await ctx.db.get(args.targetListId);
         if (!targetList) throw new Error("Target list not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
 
         const oldListId = card.listId;
         const oldPosition = card.position;
@@ -302,21 +253,7 @@ export const move = mutation({
 export const archive = mutation({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         await ctx.db.patch(args.cardId, {
             archived: true,
@@ -333,21 +270,7 @@ export const archive = mutation({
 export const restore = mutation({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         await ctx.db.patch(args.cardId, {
             archived: false,
@@ -364,21 +287,7 @@ export const restore = mutation({
 export const duplicate = mutation({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        const { user, card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         // Get the current max position in the list
         const existingCards = await ctx.db
@@ -410,21 +319,7 @@ export const duplicate = mutation({
 export const deleteCard = mutation({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        const { card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         // Delete all attachments and their storage files
         const attachments = await ctx.db
@@ -465,21 +360,7 @@ export const assignUser = mutation({
         userId: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        const { user, card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         // Check if already assigned
         const existing = await ctx.db
@@ -548,21 +429,7 @@ export const unassignUser = mutation({
         userId: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         const assignment = await ctx.db
             .query("cardAssignments")

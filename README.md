@@ -7,6 +7,10 @@ A Trello-like collaborative task management app built with React, TanStack Route
 - **Kanban Boards** – Drag-and-drop cards across lists. Visualize your workflow at a glance.
 - **Collaboration** – Invite teammates, assign cards, and work together in real time.
 - **Cards** – Titles, descriptions, due dates, priorities, labels, checklists, and member assignments.
+- **Workspaces** – Group boards by team workspace and assign boards to workspaces.
+- **Custom Fields** – Add board-level custom fields and fill them per card.
+- **Automation Rules** – Due date reminder automation with scheduled notification processing.
+- **Import/Export** – Export boards to JSON and import backups into new boards.
 - **Authentication** – Email/password and Google OAuth via Better Auth.
 - **Email Notifications** – Transactional emails for board invites and @mentions via Resend.
 - **Real-time** – Convex-powered reactive updates across all clients.
@@ -110,6 +114,10 @@ BetterTodo/
 | `bun run dev:web`                            | Start only the web app             |
 | `bun run dev:setup`                          | Setup and configure Convex project |
 | `bun run check-types`                        | Type-check all packages            |
+| `bun run test`                               | Run all tests                      |
+| `bun run test:unit`                          | Run unit tests                     |
+| `bun run test:integration`                   | Run integration tests              |
+| `bun run test:e2e`                           | Run e2e smoke tests                |
 | `cd apps/web && bun run generate-pwa-assets` | Generate PWA assets                |
 
 ## Documentation
@@ -121,6 +129,10 @@ cd apps/fumadocs && bun run dev
 ```
 
 Open [http://localhost:4000](http://localhost:4000) for the docs.
+
+## Security
+
+A project security review and remediation summary is available in [`SECURITY_AUDIT.md`](/Users/manav/Developer/BetterTodo/SECURITY_AUDIT.md).
 
 ## License
 

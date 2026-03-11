@@ -111,11 +111,13 @@ export function CardItem({ card, index }: CardItemProps) {
                 )}
             </Draggable>
 
-            <CardModal
-                cardId={card._id}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
+            {isModalOpen && (
+                <CardModal
+                    cardId={card._id}
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                />
+            )}
         </>
     );
 }

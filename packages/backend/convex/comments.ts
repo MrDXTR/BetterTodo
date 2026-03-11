@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { ensureCardReadAccess, ensureCardWriteAccess } from "./permissions";
 
 // ============================================
 // QUERIES
@@ -12,19 +13,7 @@ import { authComponent } from "./auth";
 export const getByCard = query({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership) throw new Error("Access denied");
+        await ensureCardReadAccess(ctx, args.cardId);
 
         const comments = await ctx.db
             .query("comments")
@@ -52,19 +41,7 @@ export const create = mutation({
         parentCommentId: v.optional(v.id("comments")),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership) throw new Error("Access denied");
+        const { user, card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         const now = Date.now();
         const commentId = await ctx.db.insert("comments", {
@@ -149,6 +126,8 @@ export const update = mutation({
             throw new Error("You can only edit your own comments");
         }
 
+        await ensureCardWriteAccess(ctx, comment.cardId, "member");
+
         await ctx.db.patch(args.commentId, {
             content: args.content,
             edited: true,
@@ -171,23 +150,13 @@ export const deleteComment = mutation({
         const comment = await ctx.db.get(args.commentId);
         if (!comment) throw new Error("Comment not found");
 
-        const card = await ctx.db.get(comment.cardId);
-        if (!card) throw new Error("Card not found");
-
-        // Check if user is the comment author or has admin/owner role
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        const canDelete =
-            comment.userId === user._id ||
-            (membership && ["owner", "admin"].includes(membership.role));
-
-        if (!canDelete) {
-            throw new Error("Insufficient permissions");
+        if (comment.userId === user._id) {
+            await ensureCardWriteAccess(ctx, comment.cardId, "member");
+            await ctx.db.delete(args.commentId);
+            return { success: true };
         }
 
+        await ensureCardWriteAccess(ctx, comment.cardId, "admin");
         await ctx.db.delete(args.commentId);
 
         return { success: true };

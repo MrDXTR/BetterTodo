@@ -18,8 +18,9 @@ BetterTodo organizes work with Kanban-style boards, lists, and cards.
 ### Boards
 
 - Create, edit, archive, and delete boards
-- Board settings modal: title, description, color, visibility
+- Board settings modal: title, description, color, visibility, workspace
 - Member management (owner, admin, member, viewer)
+- Team workspaces for grouping boards
 
 ### Lists
 
@@ -34,8 +35,20 @@ BetterTodo organizes work with Kanban-style boards, lists, and cards.
 - Labels (board-level, assignable to cards)
 - Checklists with progress tracking
 - Member assignments
+- Custom fields (text, number, date, select, checkbox)
 - Move between lists via drag and drop
 - Archive, copy, and delete
+
+### Automation
+
+- Board-level due date reminder rule
+- Background cron processor runs every 15 minutes
+- Reminder notifications are deduplicated
+
+### Import / Export
+
+- Export complete board data as JSON
+- Import board backups into a fresh board
 
 ## Drag & Drop
 
@@ -46,6 +59,6 @@ Uses [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (react-beautiful-d
 
 ## Convex Schema
 
-Core tables: `boards`, `lists`, `cards`, `labels`, `cardLabels`, `boardMembers`, `cardAssignments`, `checklists`, `checklistItems`, `comments`, `boardInvites`, `notifications`.
+Core tables: `boards`, `lists`, `cards`, `labels`, `cardLabels`, `boardMembers`, `cardAssignments`, `checklists`, `checklistItems`, `comments`, `boardInvites`, `notifications`, `workspaces`, `workspaceMembers`, `customFields`, `cardCustomFieldValues`, `automationRules`.
 
 See `packages/backend/convex/schema.ts` for the full schema.

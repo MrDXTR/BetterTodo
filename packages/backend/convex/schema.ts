@@ -176,11 +176,13 @@ export default defineSchema({
         message: v.string(),
         linkUrl: v.optional(v.string()), // Deep link to relevant item
         read: v.boolean(),
+        dedupeKey: v.optional(v.string()),
         createdAt: v.number(),
     })
         .index("by_user", ["userId"])
         .index("by_user_read", ["userId", "read"])
-        .index("by_user_time", ["userId", "createdAt"]),
+        .index("by_user_time", ["userId", "createdAt"])
+        .index("by_dedupe", ["dedupeKey"]),
 
     // ============================================
     // PRESENCE & SYNC
@@ -231,4 +233,70 @@ export default defineSchema({
         updatedAt: v.number(),
         updatedBy: v.string(),
     }).index("by_user", ["userId"]),
+
+    // ============================================
+    // CUSTOM FIELDS
+    // ============================================
+
+    customFields: defineTable({
+        boardId: v.id("boards"),
+        name: v.string(),
+        type: v.union(
+            v.literal("text"),
+            v.literal("number"),
+            v.literal("date"),
+            v.literal("select"),
+            v.literal("checkbox"),
+        ),
+        required: v.boolean(),
+        options: v.optional(v.array(v.string())),
+        position: v.number(),
+        createdBy: v.string(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index("by_board", ["boardId"])
+        .index("by_board_position", ["boardId", "position"]),
+
+    cardCustomFieldValues: defineTable({
+        cardId: v.id("cards"),
+        fieldId: v.id("customFields"),
+        textValue: v.optional(v.string()),
+        numberValue: v.optional(v.number()),
+        dateValue: v.optional(v.number()),
+        checkboxValue: v.optional(v.boolean()),
+        selectValue: v.optional(v.string()),
+        updatedBy: v.string(),
+        updatedAt: v.number(),
+    })
+        .index("by_card", ["cardId"])
+        .index("by_field", ["fieldId"])
+        .index("by_card_field", ["cardId", "fieldId"]),
+
+    // ============================================
+    // AUTOMATIONS
+    // ============================================
+
+    automationRules: defineTable({
+        boardId: v.id("boards"),
+        name: v.string(),
+        trigger: v.union(v.literal("due_date_reminder")),
+        enabled: v.boolean(),
+        config: v.object({
+            hoursBefore: v.number(),
+        }),
+        createdBy: v.string(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        lastRunAt: v.optional(v.number()),
+    })
+        .index("by_board", ["boardId"])
+        .index("by_board_trigger", ["boardId", "trigger"])
+        .index("by_enabled_trigger", ["enabled", "trigger"]),
+
+    rateLimit: defineTable({
+        key: v.string(),
+        count: v.number(),
+        lastRequest: v.number(),
+    }).index("by_key", ["key"]),
 });
