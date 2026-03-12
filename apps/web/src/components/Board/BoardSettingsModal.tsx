@@ -158,13 +158,19 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         </DialogDescription>
                     </DialogHeader>
 
-                    <Tabs defaultValue="general" className="flex flex-col min-h-0 flex-1 overflow-hidden">
+                    <Tabs
+                        defaultValue="general"
+                        className="flex flex-col min-h-0 flex-1 overflow-hidden"
+                    >
                         <TabsList className="shrink-0 w-full grid grid-cols-2">
                             <TabsTrigger value="general">General</TabsTrigger>
                             {canEdit && <TabsTrigger value="advanced">Advanced</TabsTrigger>}
                         </TabsList>
 
-                        <TabsContent value="general" className="overflow-y-auto flex-1 min-h-0 mt-3">
+                        <TabsContent
+                            value="general"
+                            className="overflow-y-auto flex-1 min-h-0 mt-3"
+                        >
                             <div className="grid gap-4 px-1 pb-1">
                                 {/* Title */}
                                 <div className="grid gap-2">
@@ -202,12 +208,15 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             <button
                                                 key={boardColor.value}
                                                 type="button"
-                                                onClick={() => canEdit && setColor(boardColor.value)}
+                                                onClick={() =>
+                                                    canEdit && setColor(boardColor.value)
+                                                }
                                                 disabled={!canEdit}
-                                                className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${color === boardColor.value
+                                                className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${
+                                                    color === boardColor.value
                                                         ? "ring-2 ring-primary ring-offset-2"
                                                         : ""
-                                                    }`}
+                                                }`}
                                                 style={{
                                                     backgroundColor: boardColor.value,
                                                 }}
@@ -272,7 +281,10 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         <SelectContent>
                                             <SelectItem value="none">No workspace</SelectItem>
                                             {(workspaces ?? []).map((workspace) => (
-                                                <SelectItem key={workspace._id} value={workspace._id}>
+                                                <SelectItem
+                                                    key={workspace._id}
+                                                    value={workspace._id}
+                                                >
                                                     {workspace.name}
                                                 </SelectItem>
                                             ))}
@@ -283,12 +295,18 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         </TabsContent>
 
                         {canEdit && (
-                            <TabsContent value="advanced" className="overflow-y-auto flex-1 min-h-0 mt-3">
+                            <TabsContent
+                                value="advanced"
+                                className="overflow-y-auto flex-1 min-h-0 mt-3"
+                            >
                                 <div className="grid gap-4 px-1 pb-1">
                                     <LabelManager boardId={board._id} />
                                     <CustomFieldManager boardId={board._id} />
                                     <AutomationSettings boardId={board._id} />
-                                    <ImportExportPanel boardId={board._id} boardTitle={board.title} />
+                                    <ImportExportPanel
+                                        boardId={board._id}
+                                        boardTitle={board.title}
+                                    />
                                 </div>
                             </TabsContent>
                         )}

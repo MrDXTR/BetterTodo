@@ -48,9 +48,9 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
                 options:
                     type === "select"
                         ? options
-                            .split(",")
-                            .map((option) => option.trim())
-                            .filter(Boolean)
+                              .split(",")
+                              .map((option) => option.trim())
+                              .filter(Boolean)
                         : undefined,
             });
             setName("");
