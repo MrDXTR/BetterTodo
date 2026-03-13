@@ -50,14 +50,16 @@ export default function AppNav() {
                 {/* Logo */}
                 <Link
                     to="/"
-                    className="flex items-center gap-2 shrink-0 font-semibold text-lg tracking-tight"
+                    className="flex items-center gap-1 shrink-0 font-semibold text-lg tracking-tight"
                 >
                     <img
-                        src="/logo.png"
+                        src="/logo/logo.svg"
                         alt="BetterTodo"
-                        className="h-8 w-8 rounded-md object-contain"
+                        className="h-12 w-12 rounded-md object-contain"
                     />
-                    <span className="hidden sm:inline">BetterTodo</span>
+                    <span className=" font-bold sm:inline text-blue-500 dark:text-blue-400">
+                        Better<span className="text-blue-700 dark:text-blue-500">Todo</span>
+                    </span>
                 </Link>
 
                 {/* Desktop nav — only when signed in */}
