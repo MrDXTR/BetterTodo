@@ -41,6 +41,7 @@ export default defineConfig({
             },
             includeAssets: ["logo/favicon.ico", "logo/logo.svg"],
             workbox: {
+                maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
                 navigateFallback: "/index.html",
                 globPatterns: ["**/*.{js,css,html,png,svg,ico,woff2}"],
                 runtimeCaching: [
