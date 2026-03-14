@@ -39,7 +39,7 @@ export default defineConfig({
                     },
                 ],
             },
-            includeAssets: ["logo/favicon.ico", "logo/logo.svg"],
+            includeAssets: ["favicon.ico", "logo.svg"],
             workbox: {
                 navigateFallback: "/index.html",
                 globPatterns: ["**/*.{js,css,html,png,svg,ico,woff2}"],

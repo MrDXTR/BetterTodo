@@ -53,8 +53,8 @@ export default function AppNav() {
                     className="flex items-center gap-1 shrink-0 font-semibold text-lg tracking-tight"
                 >
                     <img
-                        src="/logo/logo.svg"
-                        alt="BetterTodo"
+                        src="/logo.svg"
+                        alt=""
                         className="h-12 w-12 rounded-md object-contain"
                     />
                     <span className=" font-bold sm:inline text-blue-500 dark:text-blue-400">
