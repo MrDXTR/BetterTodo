@@ -53,13 +53,10 @@ export default function AppNav() {
                     className="flex items-center gap-1 shrink-0 font-semibold text-lg tracking-tight"
                 >
                     <img
-                        src="/logo.svg"
+                        src="/mainlogo.svg"
                         alt=""
-                        className="h-12 w-12 rounded-md object-contain"
+                        className="h-16 w-[200px] rounded-md object-contain dark:invert"
                     />
-                    <span className=" font-bold sm:inline text-blue-500 dark:text-blue-400">
-                        Better<span className="text-blue-700 dark:text-blue-500">Todo</span>
-                    </span>
                 </Link>
 
                 {/* Desktop nav — only when signed in */}
