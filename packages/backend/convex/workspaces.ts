@@ -270,7 +270,7 @@ export const addMemberByEmail = mutation({
 
         await ctx.db.insert("notifications", {
             userId: targetUser._id,
-            type: "board_invite",
+            type: "workspace_invite",
             title: "Workspace Invitation",
             message: `You've been added to the workspace "${workspace?.name ?? "a workspace"}"`,
             linkUrl: `/workspaces/${args.workspaceId}`,
