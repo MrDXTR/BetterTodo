@@ -54,7 +54,11 @@ export function ListColumn({
                     >
                         {/* Drag handle wraps only the header */}
                         <div {...provided.dragHandleProps}>
-                            <ListHeader list={list} boardColor={boardColor} isReadOnly={isReadOnly} />
+                            <ListHeader
+                                list={list}
+                                boardColor={boardColor}
+                                isReadOnly={isReadOnly}
+                            />
                         </div>
 
                         {/* Cards */}

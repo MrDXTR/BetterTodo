@@ -419,7 +419,10 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
                                                 <CheckSquare className="h-4 w-4 text-muted-foreground" />
                                                 Checklists
                                             </div>
-                                            <CardChecklists cardId={card._id} isReadOnly={isReadOnly} />
+                                            <CardChecklists
+                                                cardId={card._id}
+                                                isReadOnly={isReadOnly}
+                                            />
                                         </section>
 
                                         <section className="space-y-2 rounded-lg border bg-card p-4">
@@ -427,7 +430,10 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
                                                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
                                                 Comments
                                             </div>
-                                            <CardComments cardId={card._id} isReadOnly={isReadOnly} />
+                                            <CardComments
+                                                cardId={card._id}
+                                                isReadOnly={isReadOnly}
+                                            />
                                         </section>
 
                                         <section className="space-y-2 rounded-lg border bg-card p-4">
@@ -435,7 +441,10 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
                                                 <Paperclip className="h-4 w-4 text-muted-foreground" />
                                                 Attachments
                                             </div>
-                                            <CardAttachments cardId={card._id} isReadOnly={isReadOnly} />
+                                            <CardAttachments
+                                                cardId={card._id}
+                                                isReadOnly={isReadOnly}
+                                            />
                                         </section>
                                     </div>
 

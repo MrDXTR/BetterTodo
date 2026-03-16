@@ -328,7 +328,9 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteChecklist(checklist._id)}
-                                disabled={isDeletingChecklist || checklist.isOptimistic || isReadOnly}
+                                disabled={
+                                    isDeletingChecklist || checklist.isOptimistic || isReadOnly
+                                }
                             >
                                 {isDeletingChecklist ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />

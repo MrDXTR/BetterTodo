@@ -111,11 +111,7 @@ function RenameSection({
     );
 }
 
-function InviteForm({
-    workspaceId,
-}: {
-    workspaceId: Id<"workspaces">;
-}) {
+function InviteForm({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
     const addMemberByEmail = useMutation(api.workspaces.addMemberByEmail);
     const [email, setEmail] = useState("");
     const [role, setRole] = useState<"admin" | "member">("member");
@@ -170,12 +166,7 @@ function InviteForm({
                         ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <Button
-                    type="submit"
-                    size="sm"
-                    disabled={busy || !email.trim()}
-                    className="gap-1"
-                >
+                <Button type="submit" size="sm" disabled={busy || !email.trim()} className="gap-1">
                     {busy ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
@@ -289,13 +280,12 @@ function MembersSection({
                                         : "member";
                                 const rc = ROLE_CONFIG[roleKey];
                                 const RoleIcon = rc.icon;
-                                const initials =
-                                    (member.user?.name ?? member.user?.email ?? "?")
-                                        .split(" ")
-                                        .map((p: string) => p[0])
-                                        .join("")
-                                        .toUpperCase()
-                                        .slice(0, 2);
+                                const initials = (member.user?.name ?? member.user?.email ?? "?")
+                                    .split(" ")
+                                    .map((p: string) => p[0])
+                                    .join("")
+                                    .toUpperCase()
+                                    .slice(0, 2);
 
                                 return (
                                     <div

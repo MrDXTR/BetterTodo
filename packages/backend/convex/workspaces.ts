@@ -59,10 +59,10 @@ export const getById = query({
                     ...member,
                     user: authUser
                         ? {
-                            name: authUser.name ?? null,
-                            email: authUser.email ?? null,
-                            image: authUser.image ?? null,
-                        }
+                              name: authUser.name ?? null,
+                              email: authUser.email ?? null,
+                              image: authUser.image ?? null,
+                          }
                         : null,
                 };
             }),
@@ -247,9 +247,7 @@ export const addMemberByEmail = mutation({
         }
 
         if (!targetUser) {
-            throw new ConvexError(
-                "No account found with that email. Ask them to sign up first.",
-            );
+            throw new ConvexError("No account found with that email. Ask them to sign up first.");
         }
 
         const existing = await ctx.db
