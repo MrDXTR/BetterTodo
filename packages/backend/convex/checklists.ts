@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { ensureBoardReadAccessForQuery } from "./permissions";
 
 // ============================================
 // QUERIES
@@ -12,19 +13,12 @@ import { authComponent } from "./auth";
 export const getByCard = query({
     args: { cardId: v.id("cards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
         const card = await ctx.db.get(args.cardId);
         if (!card) throw new Error("Card not found");
 
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership) throw new Error("Access denied");
+        // Allow public/anonymous read for public boards,
+        // while enforcing normal access rules otherwise.
+        await ensureBoardReadAccessForQuery(ctx, card.boardId);
 
         const checklists = await ctx.db
             .query("checklists")

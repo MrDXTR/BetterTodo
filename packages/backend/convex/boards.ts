@@ -5,6 +5,7 @@ import { authComponent } from "./auth";
 import {
     assertNotRateLimited,
     ensureBoardReadAccess,
+    ensureBoardReadAccessForQuery,
     ensureBoardRole,
     ensureWorkspaceAccess,
     requireAuth,
@@ -147,7 +148,7 @@ export const getById = query({
     args: { boardId: v.id("boards") },
     handler: async (ctx, args) => {
         try {
-            const access = await ensureBoardReadAccess(ctx, args.boardId);
+            const access = await ensureBoardReadAccessForQuery(ctx, args.boardId);
 
             // Get lists for this board
             const lists = await ctx.db

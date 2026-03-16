@@ -1,7 +1,8 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, LayoutGrid, Plus } from "lucide-react";
+import { Building2, LayoutGrid, Plus, Settings } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -145,28 +146,38 @@ export function WorkspaceSidebar({ selectedId, onSelect }: WorkspaceSelectProps)
                     const initials = ws.name.slice(0, 2).toUpperCase();
                     const active = selectedId === ws._id;
                     return (
-                        <button
-                            key={ws._id}
-                            type="button"
-                            onClick={() => onSelect(ws._id)}
-                            className={cn(
-                                "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
-                                active
-                                    ? "bg-accent font-medium text-accent-foreground"
-                                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                            )}
-                        >
-                            <span
-                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
-                                style={{ backgroundColor: color }}
+                        <div key={ws._id} className="group/ws flex items-center gap-0.5">
+                            <button
+                                type="button"
+                                onClick={() => onSelect(ws._id)}
+                                className={cn(
+                                    "flex flex-1 min-w-0 items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
+                                    active
+                                        ? "bg-accent font-medium text-accent-foreground"
+                                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                                )}
                             >
-                                {initials}
-                            </span>
-                            <span className="flex-1 truncate text-left">{ws.name}</span>
-                            <span className="shrink-0 tabular-nums text-xs opacity-50">
-                                {ws.boardsCount}
-                            </span>
-                        </button>
+                                <span
+                                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
+                                    style={{ backgroundColor: color }}
+                                >
+                                    {initials}
+                                </span>
+                                <span className="flex-1 truncate text-left">{ws.name}</span>
+                                <span className="shrink-0 tabular-nums text-xs opacity-50">
+                                    {ws.boardsCount}
+                                </span>
+                            </button>
+                            <Link
+                                to="/workspaces/$workspaceId"
+                                params={{ workspaceId: ws._id }}
+                                className="opacity-0 group-hover/ws:opacity-100 shrink-0 p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all"
+                                title="Workspace settings"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Settings className="h-3.5 w-3.5" />
+                            </Link>
+                        </div>
                     );
                 })
             )}

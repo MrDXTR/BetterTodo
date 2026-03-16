@@ -13,6 +13,7 @@ interface ListColumnProps {
     isFresh?: boolean;
     /** True when board-level filters are active */
     isFiltered?: boolean;
+    isReadOnly?: boolean;
 }
 
 export function ListColumn({
@@ -21,9 +22,10 @@ export function ListColumn({
     boardColor,
     isFresh = false,
     isFiltered = false,
+    isReadOnly = false,
 }: ListColumnProps) {
     return (
-        <Draggable draggableId={list._id} index={index}>
+        <Draggable draggableId={list._id} index={index} isDragDisabled={isReadOnly}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -52,11 +54,15 @@ export function ListColumn({
                     >
                         {/* Drag handle wraps only the header */}
                         <div {...provided.dragHandleProps}>
-                            <ListHeader list={list} boardColor={boardColor} />
+                            <ListHeader
+                                list={list}
+                                boardColor={boardColor}
+                                isReadOnly={isReadOnly}
+                            />
                         </div>
 
                         {/* Cards */}
-                        <Droppable droppableId={list._id} type="card">
+                        <Droppable droppableId={list._id} type="card" isDropDisabled={isReadOnly}>
                             {(provided, snapshot) => (
                                 <div
                                     ref={provided.innerRef}
@@ -71,7 +77,12 @@ export function ListColumn({
                                     }}
                                 >
                                     {list.cards.map((card, cardIndex) => (
-                                        <CardItem key={card._id} card={card} index={cardIndex} />
+                                        <CardItem
+                                            key={card._id}
+                                            card={card}
+                                            index={cardIndex}
+                                            isReadOnly={isReadOnly}
+                                        />
                                     ))}
                                     {provided.placeholder}
                                 </div>
@@ -79,9 +90,11 @@ export function ListColumn({
                         </Droppable>
 
                         {/* Add Card */}
-                        <div className="p-3 pt-0">
-                            <AddCardButton listId={list._id} boardColor={boardColor} />
-                        </div>
+                        {!isReadOnly && (
+                            <div className="p-3 pt-0">
+                                <AddCardButton listId={list._id} boardColor={boardColor} />
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

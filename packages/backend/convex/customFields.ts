@@ -1,7 +1,12 @@
 import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
-import { ensureBoardReadAccess, ensureBoardWriteAccess, requireAuth } from "./permissions";
+import {
+    ensureBoardReadAccess,
+    ensureBoardReadAccessForQuery,
+    ensureBoardWriteAccess,
+    requireAuth,
+} from "./permissions";
 
 const customFieldType = v.union(
     v.literal("text"),
@@ -14,7 +19,7 @@ const customFieldType = v.union(
 export const getByBoard = query({
     args: { boardId: v.id("boards") },
     handler: async (ctx, args) => {
-        await ensureBoardReadAccess(ctx, args.boardId);
+        await ensureBoardReadAccessForQuery(ctx, args.boardId);
 
         const fields = await ctx.db
             .query("customFields")
@@ -34,7 +39,7 @@ export const getForCard = query({
             throw new ConvexError("Card not found");
         }
 
-        await ensureBoardReadAccess(ctx, card.boardId);
+        await ensureBoardReadAccessForQuery(ctx, card.boardId);
 
         const fields = await ctx.db
             .query("customFields")

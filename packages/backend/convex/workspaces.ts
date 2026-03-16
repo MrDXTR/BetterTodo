@@ -184,3 +184,100 @@ export const removeMember = mutation({
         return { success: true };
     },
 });
+
+export const updateMemberRole = mutation({
+    args: {
+        workspaceId: v.id("workspaces"),
+        userId: v.string(),
+        role: v.union(v.literal("admin"), v.literal("member")),
+    },
+    handler: async (ctx, args) => {
+        await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
+
+        const member = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_workspace_user", (q) =>
+                q.eq("workspaceId", args.workspaceId).eq("userId", args.userId),
+            )
+            .first();
+
+        if (!member) {
+            throw new ConvexError("Member not found");
+        }
+
+        if (member.role === "owner") {
+            throw new ConvexError("Cannot change the role of the workspace owner");
+        }
+
+        await ctx.db.patch(member._id, { role: args.role });
+
+        return { success: true };
+    },
+});
+
+export const addMemberByEmail = mutation({
+    args: {
+        workspaceId: v.id("workspaces"),
+        email: v.string(),
+        role: v.union(v.literal("admin"), v.literal("member")),
+    },
+    handler: async (ctx, args) => {
+        const { user } = await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
+
+        const workspace = await ctx.db.get(args.workspaceId);
+        const normalizedEmail = args.email.trim().toLowerCase();
+        const now = Date.now();
+
+        const [boardMemberRows, wsMemberRows] = await Promise.all([
+            ctx.db.query("boardMembers").collect(),
+            ctx.db.query("workspaceMembers").collect(),
+        ]);
+
+        const allUserIds = new Set<string>();
+        for (const r of boardMemberRows) allUserIds.add(r.userId);
+        for (const r of wsMemberRows) allUserIds.add(r.userId);
+
+        let targetUser: Awaited<ReturnType<typeof authComponent.getAnyUserById>> | null = null;
+        for (const uid of allUserIds) {
+            const authUser = await authComponent.getAnyUserById(ctx, uid);
+            if (authUser?.email?.toLowerCase() === normalizedEmail) {
+                targetUser = authUser;
+                break;
+            }
+        }
+
+        if (!targetUser) {
+            throw new ConvexError("No account found with that email. Ask them to sign up first.");
+        }
+
+        const existing = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_workspace_user", (q) =>
+                q.eq("workspaceId", args.workspaceId).eq("userId", targetUser!._id),
+            )
+            .first();
+
+        if (existing) {
+            throw new ConvexError("This user is already a member of this workspace");
+        }
+
+        await ctx.db.insert("workspaceMembers", {
+            workspaceId: args.workspaceId,
+            userId: targetUser._id,
+            role: args.role,
+            addedAt: now,
+        });
+
+        await ctx.db.insert("notifications", {
+            userId: targetUser._id,
+            type: "board_invite",
+            title: "Workspace Invitation",
+            message: `You've been added to the workspace "${workspace?.name ?? "a workspace"}"`,
+            linkUrl: `/workspaces/${args.workspaceId}`,
+            read: false,
+            createdAt: now,
+        });
+
+        return { success: true, userName: targetUser.name };
+    },
+});

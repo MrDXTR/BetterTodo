@@ -23,6 +23,14 @@ type BoardReadAccessResult = {
     isDirectMember: boolean;
 };
 
+type BoardReadAccessForQueryResult = {
+    user: Awaited<ReturnType<typeof authComponent.safeGetAuthUser>> | null;
+    board: DataModel["boards"]["document"];
+    role: BoardRole;
+    isDirectMember: boolean;
+    isAnonymous: boolean;
+};
+
 type BoardWriteAccessResult = {
     user: NonNullable<Awaited<ReturnType<typeof authComponent.safeGetAuthUser>>>;
     board: DataModel["boards"]["document"];
@@ -69,11 +77,27 @@ export async function ensureBoardReadAccess(
     ctx: Ctx,
     boardId: Id<"boards">,
 ): Promise<BoardReadAccessResult> {
-    const user = await requireAuth(ctx);
+    const user = await authComponent.safeGetAuthUser(ctx);
     const board = await ctx.db.get(boardId);
     if (!board) {
         throw new ConvexError("Board not found");
     }
+
+    if (board.visibility === "public") {
+        if (!user) throw new ConvexError("Unauthorized");
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) => q.eq("boardId", boardId).eq("userId", user._id))
+            .first();
+        return {
+            user,
+            board,
+            role: (membership?.role ?? "viewer") as BoardRole,
+            isDirectMember: !!membership,
+        };
+    }
+
+    if (!user) throw new ConvexError("Unauthorized");
 
     const membership = await ctx.db
         .query("boardMembers")
@@ -82,10 +106,6 @@ export async function ensureBoardReadAccess(
 
     if (membership) {
         return { user, board, role: membership.role as BoardRole, isDirectMember: true };
-    }
-
-    if (board.visibility === "public") {
-        return { user, board, role: "viewer", isDirectMember: false };
     }
 
     if (board.visibility === "team" && board.workspaceId) {
@@ -98,6 +118,80 @@ export async function ensureBoardReadAccess(
 
         if (workspaceMember) {
             return { user, board, role: "viewer", isDirectMember: false };
+        }
+    }
+
+    throw new ConvexError("Access denied");
+}
+
+export async function ensureBoardReadAccessForQuery(
+    ctx: Ctx,
+    boardId: Id<"boards">,
+): Promise<BoardReadAccessForQueryResult> {
+    const user = await authComponent.safeGetAuthUser(ctx);
+    const board = await ctx.db.get(boardId);
+    if (!board) {
+        throw new ConvexError("Board not found");
+    }
+
+    if (board.visibility === "public") {
+        if (!user) {
+            return {
+                user: null,
+                board,
+                role: "viewer",
+                isDirectMember: false,
+                isAnonymous: true,
+            };
+        }
+
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) => q.eq("boardId", boardId).eq("userId", user._id))
+            .first();
+
+        return {
+            user,
+            board,
+            role: (membership?.role ?? "viewer") as BoardRole,
+            isDirectMember: !!membership,
+            isAnonymous: false,
+        };
+    }
+
+    const authUser = await requireAuth(ctx);
+
+    const membership = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_board_user", (q) => q.eq("boardId", boardId).eq("userId", authUser._id))
+        .first();
+
+    if (membership) {
+        return {
+            user: authUser,
+            board,
+            role: membership.role as BoardRole,
+            isDirectMember: true,
+            isAnonymous: false,
+        };
+    }
+
+    if (board.visibility === "team" && board.workspaceId) {
+        const workspaceMember = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_workspace_user", (q) =>
+                q.eq("workspaceId", board.workspaceId!).eq("userId", authUser._id),
+            )
+            .first();
+
+        if (workspaceMember) {
+            return {
+                user: authUser,
+                board,
+                role: "viewer",
+                isDirectMember: false,
+                isAnonymous: false,
+            };
         }
     }
 

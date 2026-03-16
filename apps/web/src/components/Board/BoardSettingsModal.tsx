@@ -162,9 +162,19 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         defaultValue="general"
                         className="flex flex-col min-h-0 flex-1 overflow-hidden"
                     >
-                        <TabsList className="shrink-0 w-full grid grid-cols-2">
-                            <TabsTrigger value="general">General</TabsTrigger>
-                            {canEdit && <TabsTrigger value="advanced">Advanced</TabsTrigger>}
+                        <TabsList
+                            className={`shrink-0 w-full ${
+                                canEdit ? "grid grid-cols-2" : "grid grid-cols-1"
+                            }`}
+                        >
+                            <TabsTrigger value="general" className="w-full">
+                                General
+                            </TabsTrigger>
+                            {canEdit && (
+                                <TabsTrigger value="advanced" className="w-full">
+                                    Advanced
+                                </TabsTrigger>
+                            )}
                         </TabsList>
 
                         <TabsContent

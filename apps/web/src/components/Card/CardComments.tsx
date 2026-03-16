@@ -19,9 +19,10 @@ import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 
 interface CardCommentsProps {
     cardId: Id<"cards">;
+    isReadOnly?: boolean;
 }
 
-export function CardComments({ cardId }: CardCommentsProps) {
+export function CardComments({ cardId, isReadOnly = false }: CardCommentsProps) {
     const comments = useQuery(api.comments.getByCard, { cardId });
     const currentUser = useQuery(api.auth.getCurrentUser);
     const card = useQuery(api.cards.getById, { cardId });
@@ -79,6 +80,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isReadOnly) return;
         const trimmed = content.trim();
         if (!trimmed || isSubmitting) return;
 
@@ -99,6 +101,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
     };
 
     const handleReply = (commentId: Id<"comments">) => {
+        if (isReadOnly) return;
         setReplyToId(commentId);
         textareaRef.current?.focus();
     };
@@ -160,6 +163,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
     };
 
     const handleDelete = async (commentId: Id<"comments">) => {
+        if (isReadOnly) return;
         if (deletingCommentId) return;
         setDeletingCommentId(commentId);
         try {
@@ -208,87 +212,90 @@ export function CardComments({ cardId }: CardCommentsProps) {
                         resolveAuthor={resolveAuthor}
                         currentUserId={currentUser?._id}
                         deletingCommentId={deletingCommentId}
+                        isReadOnly={isReadOnly}
                     />
                 ))}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-2 relative">
-                {replyToId && replyToAuthor && (
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                            <CornerUpRight className="h-3 w-3" />
-                            <span>Replying to @{replyToAuthor.name}</span>
+            {!isReadOnly && (
+                <form onSubmit={handleSubmit} className="space-y-2 relative">
+                    {replyToId && replyToAuthor && (
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                                <CornerUpRight className="h-3 w-3" />
+                                <span>Replying to @{replyToAuthor.name}</span>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={() => setReplyToId(null)}
+                                className="underline underline-offset-2 disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => setReplyToId(null)}
-                            className="underline underline-offset-2 disabled:opacity-50"
+                    )}
+                    <Textarea
+                        ref={textareaRef}
+                        value={content}
+                        onChange={handleContentChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Write a comment..."
+                        className="min-h-[60px] text-sm"
+                        disabled={isSubmitting}
+                    />
+
+                    {mentionQuery?.active && matchingMembers.length > 0 && (
+                        <div
+                            className="absolute z-10 w-[240px] bg-popover text-popover-foreground border border-border/50 shadow-md rounded-md overflow-hidden"
+                            style={{ bottom: "100%", left: "0", marginBottom: "8px" }}
                         >
-                            Cancel
-                        </button>
-                    </div>
-                )}
-                <Textarea
-                    ref={textareaRef}
-                    value={content}
-                    onChange={handleContentChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Write a comment..."
-                    className="min-h-[60px] text-sm"
-                    disabled={isSubmitting}
-                />
+                            <ul className="max-h-[200px] overflow-auto py-1">
+                                {matchingMembers.map((m: any, idx: number) => {
+                                    const name = m.user?.name || m.user?.email || "Member";
+                                    const isActive = idx === mentionSelectedIndex;
+                                    return (
+                                        <li
+                                            key={m.userId}
+                                            className={cn(
+                                                "px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2",
+                                                isActive
+                                                    ? "bg-accent text-accent-foreground"
+                                                    : "hover:bg-muted/50 text-foreground",
+                                            )}
+                                            onClick={() => insertMention(name)}
+                                            onMouseEnter={() => setMentionSelectedIndex(idx)}
+                                        >
+                                            <span className="truncate flex-1">{name}</span>
+                                            {m.role && (
+                                                <span className="text-[10px] uppercase text-muted-foreground tracking-wider shrink-0">
+                                                    {m.role}
+                                                </span>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
 
-                {mentionQuery?.active && matchingMembers.length > 0 && (
-                    <div
-                        className="absolute z-10 w-[240px] bg-popover text-popover-foreground border border-border/50 shadow-md rounded-md overflow-hidden"
-                        style={{ bottom: "100%", left: "0", marginBottom: "8px" }}
-                    >
-                        <ul className="max-h-[200px] overflow-auto py-1">
-                            {matchingMembers.map((m: any, idx: number) => {
-                                const name = m.user?.name || m.user?.email || "Member";
-                                const isActive = idx === mentionSelectedIndex;
-                                return (
-                                    <li
-                                        key={m.userId}
-                                        className={cn(
-                                            "px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2",
-                                            isActive
-                                                ? "bg-accent text-accent-foreground"
-                                                : "hover:bg-muted/50 text-foreground",
-                                        )}
-                                        onClick={() => insertMention(name)}
-                                        onMouseEnter={() => setMentionSelectedIndex(idx)}
-                                    >
-                                        <span className="truncate flex-1">{name}</span>
-                                        {m.role && (
-                                            <span className="text-[10px] uppercase text-muted-foreground tracking-wider shrink-0">
-                                                {m.role}
-                                            </span>
-                                        )}
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                    <div className="flex justify-end">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={!content.trim() || isSubmitting}
+                            className="inline-flex items-center gap-1"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <MessageSquare className="h-3 w-3" />
+                            )}
+                            {isSubmitting ? "Comment" : "Comment"}
+                        </Button>
                     </div>
-                )}
-
-                <div className="flex justify-end">
-                    <Button
-                        type="submit"
-                        size="sm"
-                        disabled={!content.trim() || isSubmitting}
-                        className="inline-flex items-center gap-1"
-                    >
-                        {isSubmitting ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                            <MessageSquare className="h-3 w-3" />
-                        )}
-                        {isSubmitting ? "Comment" : "Comment"}
-                    </Button>
-                </div>
-            </form>
+                </form>
+            )}
         </div>
     );
 }
@@ -301,6 +308,7 @@ interface CommentThreadProps {
     resolveAuthor: (userId: string) => { name: string; role?: string };
     currentUserId?: string;
     deletingCommentId: Id<"comments"> | null;
+    isReadOnly?: boolean;
 }
 
 function CommentThread({
@@ -311,6 +319,7 @@ function CommentThread({
     resolveAuthor,
     currentUserId,
     deletingCommentId,
+    isReadOnly = false,
 }: CommentThreadProps) {
     const replies = getReplies(comment._id);
     const [showAllReplies, setShowAllReplies] = useState(false);
@@ -346,6 +355,7 @@ function CommentThread({
                 resolveAuthor={resolveAuthor}
                 currentUserId={currentUserId}
                 deletingCommentId={deletingCommentId}
+                isReadOnly={isReadOnly}
             />
 
             {/* Replies - Instagram style: all in single branch with consistent spacing */}
@@ -361,6 +371,7 @@ function CommentThread({
                             currentUserId={currentUserId}
                             deletingCommentId={deletingCommentId}
                             isReply
+                            isReadOnly={isReadOnly}
                         />
                     ))}
 
@@ -399,6 +410,7 @@ interface CommentItemProps {
     currentUserId?: string;
     deletingCommentId: Id<"comments"> | null;
     isReply?: boolean;
+    isReadOnly?: boolean;
 }
 
 function CommentItem({
@@ -409,6 +421,7 @@ function CommentItem({
     currentUserId,
     deletingCommentId,
     isReply = false,
+    isReadOnly = false,
 }: CommentItemProps) {
     const { name, role } = resolveAuthor(comment.userId);
     const isOwn = currentUserId && currentUserId === comment.userId;
@@ -437,15 +450,17 @@ function CommentItem({
                     <p className="text-[11px] text-muted-foreground">{createdAt}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        disabled={isGlobalDeleting}
-                        onClick={() => onReply(comment._id)}
-                        className="text-[11px] text-muted-foreground hover:underline disabled:opacity-50 disabled:no-underline"
-                    >
-                        Reply
-                    </button>
-                    {isOwn && (
+                    {!isReadOnly && (
+                        <button
+                            type="button"
+                            disabled={isGlobalDeleting}
+                            onClick={() => onReply(comment._id)}
+                            className="text-[11px] text-muted-foreground hover:underline disabled:opacity-50 disabled:no-underline"
+                        >
+                            Reply
+                        </button>
+                    )}
+                    {isOwn && !isReadOnly && (
                         <button
                             type="button"
                             disabled={isGlobalDeleting}

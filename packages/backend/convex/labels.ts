@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { ensureBoardReadAccessForQuery, ensureBoardRole } from "./permissions";
 
 // ============================================
 // QUERIES
@@ -12,16 +13,7 @@ import { authComponent } from "./auth";
 export const getByBoard = query({
     args: { boardId: v.id("boards") },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership) throw new Error("Access denied");
+        await ensureBoardReadAccessForQuery(ctx, args.boardId);
 
         return await ctx.db
             .query("labels")
@@ -44,18 +36,7 @@ export const create = mutation({
         color: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
-
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", args.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, args.boardId, "member");
 
         const labelId = await ctx.db.insert("labels", {
             boardId: args.boardId,
@@ -83,17 +64,7 @@ export const update = mutation({
         const label = await ctx.db.get(args.labelId);
         if (!label) throw new Error("Label not found");
 
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", label.boardId).eq("userId", user._id),
-            )
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, label.boardId, "member");
 
         const updates: any = {};
         if (args.name !== undefined) updates.name = args.name;
@@ -117,17 +88,7 @@ export const deleteLabel = mutation({
         const label = await ctx.db.get(args.labelId);
         if (!label) throw new Error("Label not found");
 
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) =>
-                q.eq("boardId", label.boardId).eq("userId", user._id),
-            )
-            .first();
-
-        if (!membership || !["owner", "admin"].includes(membership.role)) {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, label.boardId, "admin");
 
         // Remove all card-label associations
         const cardLabels = await ctx.db
@@ -160,15 +121,7 @@ export const addToCard = mutation({
         const card = await ctx.db.get(args.cardId);
         if (!card) throw new Error("Card not found");
 
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, card.boardId, "member");
 
         // Check if label already added
         const existing = await ctx.db
@@ -205,15 +158,7 @@ export const removeFromCard = mutation({
         const card = await ctx.db.get(args.cardId);
         if (!card) throw new Error("Card not found");
 
-        // Check if user has access to this board
-        const membership = await ctx.db
-            .query("boardMembers")
-            .withIndex("by_board_user", (q) => q.eq("boardId", card.boardId).eq("userId", user._id))
-            .first();
-
-        if (!membership || membership.role === "viewer") {
-            throw new Error("Insufficient permissions");
-        }
+        await ensureBoardRole(ctx, card.boardId, "member");
 
         const cardLabel = await ctx.db
             .query("cardLabels")
