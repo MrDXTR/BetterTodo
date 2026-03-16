@@ -19,9 +19,10 @@ import { ConfirmationDialog } from "@/components/confirmation-dialog";
 interface ListHeaderProps {
     list: List;
     boardColor?: string;
+    isReadOnly?: boolean;
 }
 
-export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
+export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }: ListHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(list.title);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -84,7 +85,7 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
             className="flex items-center justify-between gap-2 p-4 pb-3 border-b"
             style={{ borderColor: `${boardColor}20` }}
         >
-            {isEditingTitle ? (
+            {isEditingTitle && !isReadOnly ? (
                 <Input
                     autoFocus
                     value={title}
@@ -105,8 +106,11 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                 />
             ) : (
                 <button
-                    onClick={() => setIsEditingTitle(true)}
-                    className="flex-1 text-left rounded-lg px-3 py-2 font-semibold hover:bg-muted/50 transition-all group"
+                    onClick={() => {
+                        if (!isReadOnly) setIsEditingTitle(true);
+                    }}
+                    className="flex-1 text-left rounded-lg px-3 py-2 font-semibold hover:bg-muted/50 transition-all group disabled:opacity-60"
+                    disabled={isReadOnly}
                 >
                     <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                         {list.title}
@@ -125,38 +129,40 @@ export function ListHeader({ list, boardColor = "#0079BF" }: ListHeaderProps) {
                 </button>
             )}
 
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-muted/50 transition-all"
-                    >
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="backdrop-blur-md">
-                    <DropdownMenuItem
-                        onClick={() => setShowArchiveDialog(true)}
-                        className="cursor-pointer"
-                        disabled={isArchiving}
-                    >
-                        {isArchiving ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Archive className="mr-2 h-4 w-4" />
-                        )}
-                        Archive List
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        onClick={() => setShowDeleteDialog(true)}
-                        className="text-destructive cursor-pointer"
-                    >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete List
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            {!isReadOnly && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-muted/50 transition-all"
+                        >
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="backdrop-blur-md">
+                        <DropdownMenuItem
+                            onClick={() => setShowArchiveDialog(true)}
+                            className="cursor-pointer"
+                            disabled={isArchiving}
+                        >
+                            {isArchiving ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Archive className="mr-2 h-4 w-4" />
+                            )}
+                            Archive List
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => setShowDeleteDialog(true)}
+                            className="text-destructive cursor-pointer"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete List
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
 
             <DeleteConfirmationDialog
                 open={showDeleteDialog}

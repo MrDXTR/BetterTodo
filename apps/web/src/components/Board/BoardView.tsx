@@ -19,6 +19,8 @@ interface BoardViewProps {
 type NewListId = string;
 
 export function BoardView({ board }: BoardViewProps) {
+    const isReadOnly = board.role === "viewer";
+
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState("");
     const [isCreatingList, setIsCreatingList] = useState(false);
@@ -105,6 +107,7 @@ export function BoardView({ board }: BoardViewProps) {
 
     const handleCreateList = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isReadOnly) return;
         if (!newListTitle.trim()) return;
 
         setIsCreatingList(true);
@@ -125,6 +128,7 @@ export function BoardView({ board }: BoardViewProps) {
     };
 
     const handleDragEnd = async (result: DropResult) => {
+        if (isReadOnly) return;
         const { destination, source, type } = result;
 
         if (!destination) return;
@@ -293,7 +297,12 @@ export function BoardView({ board }: BoardViewProps) {
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-8 custom-scrollbar h-full">
                 <DragDropContext onDragEnd={handleDragEnd}>
-                    <Droppable droppableId="board" direction="horizontal" type="list">
+                    <Droppable
+                        droppableId="board"
+                        direction="horizontal"
+                        type="list"
+                        isDropDisabled={isReadOnly}
+                    >
                         {(provided) => (
                             <div
                                 ref={provided.innerRef}
@@ -308,6 +317,7 @@ export function BoardView({ board }: BoardViewProps) {
                                         boardColor={backgroundColor}
                                         isFresh={list._id === freshListId}
                                         isFiltered={hasActiveFilters}
+                                        isReadOnly={isReadOnly}
                                     />
                                 ))}
                                 {provided.placeholder}
@@ -325,99 +335,106 @@ export function BoardView({ board }: BoardViewProps) {
                                 )}
 
                                 {/* Add List Button / Form */}
-                                <div className="flex-shrink-0 w-72">
-                                    {isAddingList ? (
-                                        <form
-                                            onSubmit={handleCreateList}
-                                            className="rounded-xl p-3 backdrop-blur-sm border shadow-lg"
-                                            style={{
-                                                background: `linear-gradient(135deg, hsl(var(--background)) 0%, ${backgroundColor}08 100%)`,
-                                                borderColor: `${backgroundColor}30`,
-                                            }}
-                                        >
-                                            <Input
-                                                autoFocus
-                                                placeholder="Enter list title..."
-                                                value={newListTitle}
-                                                onChange={(e) => setNewListTitle(e.target.value)}
-                                                onBlur={() => {
-                                                    if (!newListTitle.trim() && !isCreatingList) {
-                                                        setIsAddingList(false);
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Escape") {
-                                                        setIsAddingList(false);
-                                                        setNewListTitle("");
-                                                    }
-                                                }}
-                                                className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
+                                {!isReadOnly && (
+                                    <div className="flex-shrink-0 w-72">
+                                        {isAddingList ? (
+                                            <form
+                                                onSubmit={handleCreateList}
+                                                className="rounded-xl p-3 backdrop-blur-sm border shadow-lg"
                                                 style={{
-                                                    boxShadow: `0 0 0 1px ${backgroundColor}20`,
+                                                    background: `linear-gradient(135deg, hsl(var(--background)) 0%, ${backgroundColor}08 100%)`,
+                                                    borderColor: `${backgroundColor}30`,
                                                 }}
-                                                maxLength={100}
-                                                disabled={isCreatingList}
-                                            />
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    type="submit"
-                                                    size="sm"
-                                                    disabled={
-                                                        !newListTitle.trim() || isCreatingList
-                                                    }
-                                                    className="transition-all gap-2"
-                                                    style={{
-                                                        background: newListTitle.trim()
-                                                            ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`
-                                                            : undefined,
-                                                        color: newListTitle.trim()
-                                                            ? "white"
-                                                            : undefined,
-                                                    }}
-                                                >
-                                                    {isCreatingList && (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    )}
-                                                    Add List
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => {
-                                                        setIsAddingList(false);
-                                                        setNewListTitle("");
-                                                    }}
-                                                    className="hover:bg-background/80"
-                                                    disabled={isCreatingList}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </div>
-                                        </form>
-                                    ) : (
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full justify-start h-auto py-3 px-4 border-2 border-dashed rounded-xl transition-all hover:scale-[1.02] hover:shadow-md group"
-                                            onClick={() => setIsAddingList(true)}
-                                            style={{
-                                                borderColor: `${backgroundColor}40`,
-                                                background: `${backgroundColor}05`,
-                                            }}
-                                        >
-                                            <Plus
-                                                className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
-                                                style={{ color: backgroundColor }}
-                                            />
-                                            <span
-                                                style={{ color: backgroundColor }}
-                                                className="font-medium"
                                             >
-                                                Add List
-                                            </span>
-                                        </Button>
-                                    )}
-                                </div>
+                                                <Input
+                                                    autoFocus
+                                                    placeholder="Enter list title..."
+                                                    value={newListTitle}
+                                                    onChange={(e) =>
+                                                        setNewListTitle(e.target.value)
+                                                    }
+                                                    onBlur={() => {
+                                                        if (
+                                                            !newListTitle.trim() &&
+                                                            !isCreatingList
+                                                        ) {
+                                                            setIsAddingList(false);
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Escape") {
+                                                            setIsAddingList(false);
+                                                            setNewListTitle("");
+                                                        }
+                                                    }}
+                                                    className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
+                                                    style={{
+                                                        boxShadow: `0 0 0 1px ${backgroundColor}20`,
+                                                    }}
+                                                    maxLength={100}
+                                                    disabled={isCreatingList}
+                                                />
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        type="submit"
+                                                        size="sm"
+                                                        disabled={
+                                                            !newListTitle.trim() || isCreatingList
+                                                        }
+                                                        className="transition-all gap-2"
+                                                        style={{
+                                                            background: newListTitle.trim()
+                                                                ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`
+                                                                : undefined,
+                                                            color: newListTitle.trim()
+                                                                ? "white"
+                                                                : undefined,
+                                                        }}
+                                                    >
+                                                        {isCreatingList && (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        )}
+                                                        Add List
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => {
+                                                            setIsAddingList(false);
+                                                            setNewListTitle("");
+                                                        }}
+                                                        className="hover:bg-background/80"
+                                                        disabled={isCreatingList}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </form>
+                                        ) : (
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start h-auto py-3 px-4 border-2 border-dashed rounded-xl transition-all hover:scale-[1.02] hover:shadow-md group"
+                                                onClick={() => setIsAddingList(true)}
+                                                style={{
+                                                    borderColor: `${backgroundColor}40`,
+                                                    background: `${backgroundColor}05`,
+                                                }}
+                                            >
+                                                <Plus
+                                                    className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
+                                                    style={{ color: backgroundColor }}
+                                                />
+                                                <span
+                                                    style={{ color: backgroundColor }}
+                                                    className="font-medium"
+                                                >
+                                                    Add List
+                                                </span>
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </Droppable>

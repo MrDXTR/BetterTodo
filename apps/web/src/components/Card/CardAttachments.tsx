@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface CardAttachmentsProps {
     cardId: Id<"cards">;
+    isReadOnly?: boolean;
 }
 
 const FILE_ICONS: Record<string, typeof FileIcon> = {
@@ -41,7 +42,7 @@ function formatFileSize(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function CardAttachments({ cardId }: CardAttachmentsProps) {
+export function CardAttachments({ cardId, isReadOnly = false }: CardAttachmentsProps) {
     const attachments = useQuery(api.attachments.getByCard, { cardId });
     const generateUploadUrl = useMutation(api.files.generateUploadUrl);
     const addAttachment = useMutation(api.attachments.addAttachment);
@@ -142,7 +143,7 @@ export function CardAttachments({ cardId }: CardAttachmentsProps) {
                         size="sm"
                         className="gap-2"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
+                        disabled={isUploading || isReadOnly}
                     >
                         {isUploading ? (
                             <>
@@ -195,7 +196,7 @@ export function CardAttachments({ cardId }: CardAttachmentsProps) {
                             </div>
 
                             <div className="flex shrink-0 items-center gap-1">
-                                {isImage && (
+                                {isImage && !isReadOnly && (
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -228,24 +229,26 @@ export function CardAttachments({ cardId }: CardAttachmentsProps) {
                                         <TooltipContent side="top">Download</TooltipContent>
                                     </Tooltip>
                                 )}
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                            onClick={() => handleDelete(attachment._id)}
-                                            disabled={isDeleting}
-                                        >
-                                            {isDeleting ? (
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            ) : (
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">Delete</TooltipContent>
-                                </Tooltip>
+                                {!isReadOnly && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                                onClick={() => handleDelete(attachment._id)}
+                                                disabled={isDeleting}
+                                            >
+                                                {isDeleting ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                )}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">Delete</TooltipContent>
+                                    </Tooltip>
+                                )}
                             </div>
                         </div>
                     );

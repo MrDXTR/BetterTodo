@@ -9,9 +9,10 @@ import { CardModal } from "./CardModal";
 interface CardItemProps {
     card: Card;
     index: number;
+    isReadOnly?: boolean;
 }
 
-export function CardItem({ card, index }: CardItemProps) {
+export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const hasDueDate = !!card.dueDate;
@@ -22,7 +23,7 @@ export function CardItem({ card, index }: CardItemProps) {
 
     return (
         <>
-            <Draggable draggableId={card._id} index={index}>
+            <Draggable draggableId={card._id} index={index} isDragDisabled={isReadOnly}>
                 {(provided, snapshot) => (
                     <div
                         ref={provided.innerRef}
@@ -116,6 +117,7 @@ export function CardItem({ card, index }: CardItemProps) {
                     cardId={card._id}
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
+                    isReadOnly={isReadOnly}
                 />
             )}
         </>

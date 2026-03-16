@@ -52,6 +52,7 @@ interface CardModalProps {
     cardId: Id<"cards"> | null;
     isOpen: boolean;
     onClose: () => void;
+    isReadOnly?: boolean;
 }
 
 interface PendingChanges {
@@ -86,7 +87,7 @@ function CardModalSkeleton() {
     );
 }
 
-export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
+export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardModalProps) {
     const card = useQuery(api.cards.getById, cardId ? { cardId } : "skip");
     const updateCard = useMutation(api.cards.update);
     const archiveCard = useMutation(api.cards.archive);
@@ -113,6 +114,13 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
             setIsEditMode(false);
         }
     }, [card?._id]);
+
+    useEffect(() => {
+        if (isReadOnly) {
+            setPendingChanges({});
+            setIsEditMode(false);
+        }
+    }, [isReadOnly]);
 
     const hasUnsavedChanges = useMemo(() => {
         if (!card) return false;
@@ -321,7 +329,10 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                             variant={isEditMode ? "secondary" : "default"}
                                             size="sm"
                                             className="gap-2"
-                                            onClick={() => setIsEditMode((prev) => !prev)}
+                                            onClick={() => {
+                                                if (!isReadOnly) setIsEditMode((prev) => !prev);
+                                            }}
+                                            disabled={isReadOnly}
                                         >
                                             <PencilLine className="h-4 w-4" />
                                             {isEditMode ? "Done" : "Edit"}
@@ -408,7 +419,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 <CheckSquare className="h-4 w-4 text-muted-foreground" />
                                                 Checklists
                                             </div>
-                                            <CardChecklists cardId={card._id} />
+                                            <CardChecklists cardId={card._id} isReadOnly={isReadOnly} />
                                         </section>
 
                                         <section className="space-y-2 rounded-lg border bg-card p-4">
@@ -416,7 +427,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
                                                 Comments
                                             </div>
-                                            <CardComments cardId={card._id} />
+                                            <CardComments cardId={card._id} isReadOnly={isReadOnly} />
                                         </section>
 
                                         <section className="space-y-2 rounded-lg border bg-card p-4">
@@ -424,7 +435,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 <Paperclip className="h-4 w-4 text-muted-foreground" />
                                                 Attachments
                                             </div>
-                                            <CardAttachments cardId={card._id} />
+                                            <CardAttachments cardId={card._id} isReadOnly={isReadOnly} />
                                         </section>
                                     </div>
 
@@ -511,7 +522,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 size="sm"
                                                 className="h-9 w-full justify-start gap-2"
                                                 onClick={() => setShowCopyDialog(true)}
-                                                disabled={isCopying}
+                                                disabled={isCopying || isReadOnly}
                                             >
                                                 {isCopying ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -525,7 +536,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 size="sm"
                                                 className="h-9 w-full justify-start gap-2"
                                                 onClick={() => setShowArchiveDialog(true)}
-                                                disabled={isArchiving}
+                                                disabled={isArchiving || isReadOnly}
                                             >
                                                 {isArchiving ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -539,6 +550,7 @@ export function CardModal({ cardId, isOpen, onClose }: CardModalProps) {
                                                 size="sm"
                                                 className="h-9 w-full justify-start gap-2"
                                                 onClick={() => setShowDeleteDialog(true)}
+                                                disabled={isReadOnly}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                                 Delete

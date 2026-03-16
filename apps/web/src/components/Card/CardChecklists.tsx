@@ -12,6 +12,7 @@ import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 
 interface CardChecklistsProps {
     cardId: Id<"cards">;
+    isReadOnly?: boolean;
 }
 
 interface ChecklistItemUI {
@@ -42,7 +43,7 @@ const toUI = (checklist: any): ChecklistUI => ({
     })),
 });
 
-export function CardChecklists({ cardId }: CardChecklistsProps) {
+export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsProps) {
     const checklists = useQuery(api.checklists.getByCard, { cardId });
     const createChecklist = useMutation(api.checklists.create);
     const deleteChecklist = useMutation(api.checklists.deleteChecklist);
@@ -80,6 +81,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
     if (!checklists) return null;
 
     const handleCreateChecklist = async () => {
+        if (isReadOnly) return;
         if (!newChecklistTitle.trim() || isCreatingChecklist) return;
 
         const tempId = `temp-checklist-${Date.now()}`;
@@ -123,6 +125,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
     };
 
     const handleDeleteChecklist = async (checklistId: string) => {
+        if (isReadOnly) return;
         if (checklistId.startsWith("temp-")) {
             setLocalChecklists((prev) => prev.filter((checklist) => checklist._id !== checklistId));
             return;
@@ -147,6 +150,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
     };
 
     const handleCreateItem = async (checklistId: string) => {
+        if (isReadOnly) return;
         if (checklistId.startsWith("temp-")) return;
 
         const title = (newItemTitles[checklistId] || "").trim();
@@ -221,6 +225,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
     };
 
     const handleToggleItem = async (checklistId: string, itemId: string, completed: boolean) => {
+        if (isReadOnly) return;
         if (itemId.startsWith("temp-")) return;
 
         setTogglingItemIds((prev) => ({ ...prev, [itemId]: true }));
@@ -264,6 +269,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
     };
 
     const handleDeleteItem = async (checklistId: string, itemId: string) => {
+        if (isReadOnly) return;
         const previous = localChecklists;
 
         setDeletingItemIds((prev) => ({ ...prev, [itemId]: true }));
@@ -322,7 +328,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteChecklist(checklist._id)}
-                                disabled={isDeletingChecklist || checklist.isOptimistic}
+                                disabled={isDeletingChecklist || checklist.isOptimistic || isReadOnly}
                             >
                                 {isDeletingChecklist ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -357,7 +363,12 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                                     item.completed,
                                                 )
                                             }
-                                            disabled={isToggling || isDeleting || item.isOptimistic}
+                                            disabled={
+                                                isToggling ||
+                                                isDeleting ||
+                                                item.isOptimistic ||
+                                                isReadOnly
+                                            }
                                         />
                                         <span
                                             className={`flex-1 text-sm ${
@@ -378,7 +389,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                             onClick={() =>
                                                 handleDeleteItem(checklist._id, item._id)
                                             }
-                                            disabled={isDeleting || isToggling}
+                                            disabled={isDeleting || isToggling || isReadOnly}
                                         >
                                             {isDeleting ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -404,7 +415,7 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                         if (e.key === "Enter") handleCreateItem(checklist._id);
                                     }}
                                     className="h-8 text-sm"
-                                    disabled={isAddingItem || checklist.isOptimistic}
+                                    disabled={isAddingItem || checklist.isOptimistic || isReadOnly}
                                 />
                                 <Button
                                     size="sm"
@@ -413,7 +424,8 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                                     disabled={
                                         !newItemTitles[checklist._id]?.trim() ||
                                         isAddingItem ||
-                                        checklist.isOptimistic
+                                        checklist.isOptimistic ||
+                                        isReadOnly
                                     }
                                 >
                                     {isAddingItem && (
@@ -463,15 +475,17 @@ export function CardChecklists({ cardId }: CardChecklistsProps) {
                     </div>
                 </div>
             ) : (
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setIsCreating(true)}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Checklist
-                </Button>
+                !isReadOnly && (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => setIsCreating(true)}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Checklist
+                    </Button>
+                )
             )}
         </div>
     );

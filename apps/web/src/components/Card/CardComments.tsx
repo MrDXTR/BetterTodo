@@ -19,9 +19,10 @@ import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
 
 interface CardCommentsProps {
     cardId: Id<"cards">;
+    isReadOnly?: boolean;
 }
 
-export function CardComments({ cardId }: CardCommentsProps) {
+export function CardComments({ cardId, isReadOnly = false }: CardCommentsProps) {
     const comments = useQuery(api.comments.getByCard, { cardId });
     const currentUser = useQuery(api.auth.getCurrentUser);
     const card = useQuery(api.cards.getById, { cardId });
@@ -79,6 +80,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isReadOnly) return;
         const trimmed = content.trim();
         if (!trimmed || isSubmitting) return;
 
@@ -99,6 +101,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
     };
 
     const handleReply = (commentId: Id<"comments">) => {
+        if (isReadOnly) return;
         setReplyToId(commentId);
         textareaRef.current?.focus();
     };
@@ -160,6 +163,7 @@ export function CardComments({ cardId }: CardCommentsProps) {
     };
 
     const handleDelete = async (commentId: Id<"comments">) => {
+        if (isReadOnly) return;
         if (deletingCommentId) return;
         setDeletingCommentId(commentId);
         try {
@@ -208,11 +212,13 @@ export function CardComments({ cardId }: CardCommentsProps) {
                         resolveAuthor={resolveAuthor}
                         currentUserId={currentUser?._id}
                         deletingCommentId={deletingCommentId}
+                        isReadOnly={isReadOnly}
                     />
                 ))}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-2 relative">
+            {!isReadOnly && (
+                <form onSubmit={handleSubmit} className="space-y-2 relative">
                 {replyToId && replyToAuthor && (
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
@@ -288,7 +294,8 @@ export function CardComments({ cardId }: CardCommentsProps) {
                         {isSubmitting ? "Comment" : "Comment"}
                     </Button>
                 </div>
-            </form>
+                </form>
+            )}
         </div>
     );
 }
@@ -301,6 +308,7 @@ interface CommentThreadProps {
     resolveAuthor: (userId: string) => { name: string; role?: string };
     currentUserId?: string;
     deletingCommentId: Id<"comments"> | null;
+    isReadOnly?: boolean;
 }
 
 function CommentThread({
@@ -311,6 +319,7 @@ function CommentThread({
     resolveAuthor,
     currentUserId,
     deletingCommentId,
+    isReadOnly = false,
 }: CommentThreadProps) {
     const replies = getReplies(comment._id);
     const [showAllReplies, setShowAllReplies] = useState(false);
@@ -346,6 +355,7 @@ function CommentThread({
                 resolveAuthor={resolveAuthor}
                 currentUserId={currentUserId}
                 deletingCommentId={deletingCommentId}
+                isReadOnly={isReadOnly}
             />
 
             {/* Replies - Instagram style: all in single branch with consistent spacing */}
@@ -361,6 +371,7 @@ function CommentThread({
                             currentUserId={currentUserId}
                             deletingCommentId={deletingCommentId}
                             isReply
+                            isReadOnly={isReadOnly}
                         />
                     ))}
 
@@ -399,6 +410,7 @@ interface CommentItemProps {
     currentUserId?: string;
     deletingCommentId: Id<"comments"> | null;
     isReply?: boolean;
+    isReadOnly?: boolean;
 }
 
 function CommentItem({
@@ -409,6 +421,7 @@ function CommentItem({
     currentUserId,
     deletingCommentId,
     isReply = false,
+    isReadOnly = false,
 }: CommentItemProps) {
     const { name, role } = resolveAuthor(comment.userId);
     const isOwn = currentUserId && currentUserId === comment.userId;
@@ -437,15 +450,17 @@ function CommentItem({
                     <p className="text-[11px] text-muted-foreground">{createdAt}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        disabled={isGlobalDeleting}
-                        onClick={() => onReply(comment._id)}
-                        className="text-[11px] text-muted-foreground hover:underline disabled:opacity-50 disabled:no-underline"
-                    >
-                        Reply
-                    </button>
-                    {isOwn && (
+                    {!isReadOnly && (
+                        <button
+                            type="button"
+                            disabled={isGlobalDeleting}
+                            onClick={() => onReply(comment._id)}
+                            className="text-[11px] text-muted-foreground hover:underline disabled:opacity-50 disabled:no-underline"
+                        >
+                            Reply
+                        </button>
+                    )}
+                    {isOwn && !isReadOnly && (
                         <button
                             type="button"
                             disabled={isGlobalDeleting}
