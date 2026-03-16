@@ -69,11 +69,27 @@ export async function ensureBoardReadAccess(
     ctx: Ctx,
     boardId: Id<"boards">,
 ): Promise<BoardReadAccessResult> {
-    const user = await requireAuth(ctx);
+    const user = await authComponent.safeGetAuthUser(ctx);
     const board = await ctx.db.get(boardId);
     if (!board) {
         throw new ConvexError("Board not found");
     }
+
+    if (board.visibility === "public") {
+        if (!user) throw new ConvexError("Unauthorized");
+        const membership = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) => q.eq("boardId", boardId).eq("userId", user._id))
+            .first();
+        return {
+            user,
+            board,
+            role: (membership?.role ?? "viewer") as BoardRole,
+            isDirectMember: !!membership,
+        };
+    }
+
+    if (!user) throw new ConvexError("Unauthorized");
 
     const membership = await ctx.db
         .query("boardMembers")
@@ -82,10 +98,6 @@ export async function ensureBoardReadAccess(
 
     if (membership) {
         return { user, board, role: membership.role as BoardRole, isDirectMember: true };
-    }
-
-    if (board.visibility === "public") {
-        return { user, board, role: "viewer", isDirectMember: false };
     }
 
     if (board.visibility === "team" && board.workspaceId) {
