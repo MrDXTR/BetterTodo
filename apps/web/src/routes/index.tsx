@@ -130,8 +130,17 @@ function LandingContent() {
                     gap={4}
                     className="fill-violet-500/[0.06] stroke-violet-500/[0.12] dark:fill-violet-500/[0.05] dark:stroke-violet-500/[0.10]"
                     hexagons={[
-                        [2, 2], [4, 1], [6, 3], [1, 5], [8, 2], [3, 7],
-                        [7, 5], [5, 4], [9, 6], [0, 3], [10, 4],
+                        [2, 2],
+                        [4, 1],
+                        [6, 3],
+                        [1, 5],
+                        [8, 2],
+                        [3, 7],
+                        [7, 5],
+                        [5, 4],
+                        [9, 6],
+                        [0, 3],
+                        [10, 4],
                     ]}
                 />
 
@@ -150,8 +159,7 @@ function LandingContent() {
                 {/* Headline */}
                 <FadeUp delay={0.1}>
                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.05] max-w-4xl text-foreground">
-                        Organise tasks.{" "}
-                        <br className="hidden sm:block" />
+                        Organise tasks. <br className="hidden sm:block" />
                         <SquigglyText
                             scale={[7, 10]}
                             stepDuration={70}
@@ -165,13 +173,16 @@ function LandingContent() {
                 {/* Sub-headline */}
                 <FadeUp delay={0.18}>
                     <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
-                        A beautiful Kanban board for makers who value clarity,
-                        speed, and seamless team collaboration.
+                        A beautiful Kanban board for makers who value clarity, speed, and seamless
+                        team collaboration.
                     </p>
                 </FadeUp>
 
                 {/* CTAs */}
-                <FadeUp delay={0.26} className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                <FadeUp
+                    delay={0.26}
+                    className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+                >
                     <Link to="/sign-in">
                         <div className="relative rounded-full overflow-hidden">
                             <ShineBorder
@@ -189,11 +200,7 @@ function LandingContent() {
                         </div>
                     </Link>
                     <Link to="/sign-in">
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            className="rounded-full px-8 text-base"
-                        >
+                        <Button size="lg" variant="outline" className="rounded-full px-8 text-base">
                             Sign in
                         </Button>
                     </Link>
@@ -202,7 +209,10 @@ function LandingContent() {
                 {/* Social proof perks */}
                 <FadeUp delay={0.34} className="mt-10 flex flex-wrap justify-center gap-6">
                     {perks.map(({ icon: Icon, label }) => (
-                        <span key={label} className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <span
+                            key={label}
+                            className="flex items-center gap-1.5 text-sm text-muted-foreground"
+                        >
                             <Icon className="w-4 h-4 text-violet-500" />
                             {label}
                         </span>
@@ -228,17 +238,33 @@ function LandingContent() {
                             <div className="grid grid-cols-3 gap-4">
                                 {[
                                     { title: "Backlog", count: 4, colClass: "bg-muted/50" },
-                                    { title: "In Progress", count: 2, colClass: "bg-violet-500/10 dark:bg-violet-500/20" },
+                                    {
+                                        title: "In Progress",
+                                        count: 2,
+                                        colClass: "bg-violet-500/10 dark:bg-violet-500/20",
+                                    },
                                     { title: "Done", count: 6, colClass: "bg-emerald-500/10" },
                                 ].map((col) => (
-                                    <div key={col.title} className={`rounded-xl p-3 ${col.colClass} border border-border`}>
+                                    <div
+                                        key={col.title}
+                                        className={`rounded-xl p-3 ${col.colClass} border border-border`}
+                                    >
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{col.title}</span>
-                                            <span className="text-xs bg-muted rounded-full px-2 py-0.5 text-muted-foreground">{col.count}</span>
+                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                {col.title}
+                                            </span>
+                                            <span className="text-xs bg-muted rounded-full px-2 py-0.5 text-muted-foreground">
+                                                {col.count}
+                                            </span>
                                         </div>
                                         <div className="space-y-2">
-                                            {Array.from({ length: col.count > 2 ? 2 : col.count }).map((_, i) => (
-                                                <div key={i} className="rounded-lg bg-card border border-border p-2.5">
+                                            {Array.from({
+                                                length: col.count > 2 ? 2 : col.count,
+                                            }).map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="rounded-lg bg-card border border-border p-2.5"
+                                                >
                                                     <div className="h-2 w-3/4 rounded bg-muted mb-1.5" />
                                                     <div className="h-1.5 w-1/2 rounded bg-muted/60" />
                                                 </div>
