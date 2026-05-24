@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ModeToggle } from "@/components/mode-toggle";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { SearchCommandPalette } from "@/components/SearchCommandPalette";
 import { NotificationsPopover } from "@/components/Notifications/NotificationsPopover";
 import UserMenu from "@/components/user-menu";
@@ -72,7 +72,11 @@ export default function AppNav() {
                         <SearchCommandPalette />
                         <NotificationsPopover />
                     </Authenticated>
-                    <ModeToggle />
+                    <AnimatedThemeToggler
+                        variant="circle"
+                        duration={500}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    />
                     <div className="hidden md:flex md:items-center md:gap-2">
                         <Authenticated>
                             <UserMenu />

@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
-import { Trello, ListTodo, CheckCircle2, AlertTriangle, CalendarClock, Plus } from "lucide-react";
+import { Kanban, ListTodo, CheckCircle2, AlertTriangle, CalendarClock, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -288,7 +288,7 @@ function DashboardContent() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
                     <StatCard
                         title="Total Boards"
-                        icon={Trello}
+                        icon={Kanban}
                         value={boardCount}
                         subtitle="Active boards you have access to"
                         loading={boardsLoading}
@@ -322,7 +322,7 @@ function DashboardContent() {
                 <div className="flex flex-wrap gap-3 mb-8">
                     <Link to="/boards">
                         <Button variant="outline" size="sm" className="gap-2">
-                            <Trello className="h-4 w-4" />
+                            <Kanban className="h-4 w-4" />
                             View All Boards
                         </Button>
                     </Link>
