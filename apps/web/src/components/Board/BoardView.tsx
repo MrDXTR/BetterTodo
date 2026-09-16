@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 
-import type { Board, CardPriority } from "@/types/board";
+import type { BoardWithLists, CardPriority, ListWithCards, Card } from "@/types/board";
 import { ListColumn } from "@/components/List/ListColumn";
 import { BoardHeader } from "@/components/Board/BoardHeader";
 import { BoardBackgroundGraphic, BoardEmptyStateGraphic } from "@/components/Board/BoardBackgroundGraphic";
@@ -14,12 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface BoardViewProps {
-    board: Board;
+    board: BoardWithLists;
     isReadOnly?: boolean;
 }
 
 export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
-    const [optimisticBoard, setOptimisticBoard] = useState(board);
+    const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState("");
     const [isCreatingList, setIsCreatingList] = useState(false);
@@ -64,22 +64,22 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
 
     const hasActiveFilters = activeLabelIds.length > 0 || activePriorities.length > 0;
 
-    const filteredBoard = useMemo(() => {
+    const filteredBoard = useMemo<BoardWithLists>(() => {
         if (!hasActiveFilters) return optimisticBoard;
 
         return {
             ...optimisticBoard,
-            lists: optimisticBoard.lists.map((list) => ({
+            lists: optimisticBoard.lists.map((list: ListWithCards) => ({
                 ...list,
-                cards: list.cards.filter((card) => {
+                cards: list.cards.filter((card: Card) => {
                     const matchesPriority =
                         activePriorities.length === 0 ||
                         (card.priority && activePriorities.includes(card.priority));
 
                     const matchesLabels =
                         activeLabelIds.length === 0 ||
-                        (card.labels &&
-                            card.labels.some((l: any) => activeLabelIds.includes(l._id)));
+                        (card.labelIds &&
+                            card.labelIds.some((id: string) => activeLabelIds.includes(id)));
 
                     return matchesPriority && matchesLabels;
                 }),
@@ -93,14 +93,14 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
 
         setIsCreatingList(true);
         try {
-            const listId = await createList({
+            const createdList = await createList({
                 boardId: board._id,
                 title: newListTitle.trim(),
             });
             setNewListTitle("");
             setIsAddingList(false);
-            if (listId) {
-                setFreshListId(listId);
+            if (createdList?._id) {
+                setFreshListId(createdList._id);
                 setTimeout(() => setFreshListId(null), 1200);
             }
             toast.success("List created!");
@@ -145,8 +145,8 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
         }
 
         if (type === "card") {
-            const sourceList = optimisticBoard.lists.find((l) => l._id === source.droppableId);
-            const destList = optimisticBoard.lists.find((l) => l._id === destination.droppableId);
+            const sourceList = optimisticBoard.lists.find((l: ListWithCards) => l._id === source.droppableId);
+            const destList = optimisticBoard.lists.find((l: ListWithCards) => l._id === destination.droppableId);
 
             if (!sourceList || !destList) return;
 
@@ -162,7 +162,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                 sourceCards.splice(destination.index, 0, movedCard);
                 setOptimisticBoard({
                     ...optimisticBoard,
-                    lists: optimisticBoard.lists.map((l) =>
+                    lists: optimisticBoard.lists.map((l: ListWithCards) =>
                         l._id === sourceList._id ? { ...l, cards: sourceCards } : l,
                     ),
                 });
@@ -170,7 +170,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                 destCards.splice(destination.index, 0, movedCard);
                 setOptimisticBoard({
                     ...optimisticBoard,
-                    lists: optimisticBoard.lists.map((l) => {
+                    lists: optimisticBoard.lists.map((l: ListWithCards) => {
                         if (l._id === sourceList._id) return { ...l, cards: sourceCards };
                         if (l._id === destList._id) return { ...l, cards: destCards };
                         return l;
@@ -269,7 +269,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                                 {...provided.droppableProps}
                                 className="flex gap-4 h-full items-start"
                             >
-                                {filteredBoard.lists.map((list, index) => (
+                                {filteredBoard.lists.map((list: ListWithCards, index: number) => (
                                     <ListColumn
                                         key={list._id}
                                         list={list}

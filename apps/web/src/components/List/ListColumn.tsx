@@ -1,12 +1,12 @@
 import { Draggable, Droppable } from "@hello-pangea/dnd";
-import type { List } from "@/types/board";
+import type { ListWithCards } from "@/types/board";
 import { ListHeader } from "@/components/List/ListHeader";
 import { CardItem } from "@/components/Card/CardItem";
 import { AddCardButton } from "@/components/Card/AddCardButton";
 import { cn } from "@/lib/utils";
 
 interface ListColumnProps {
-    list: List;
+    list: ListWithCards;
     index: number;
     boardColor?: string;
     isFresh?: boolean;
