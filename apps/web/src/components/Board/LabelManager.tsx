@@ -105,10 +105,10 @@ export function LabelManager({ boardId }: LabelManagerProps) {
 
     return (
         <>
-            <div className="grid gap-2 rounded-lg border p-3">
-                <p className="text-sm font-medium">Board labels</p>
+            <div className="space-y-3 rounded-xl border border-border/70 bg-card/40 p-3.5 shadow-2xs">
+                <p className="text-xs font-semibold text-foreground">Board labels</p>
 
-                <div className="flex flex-col gap-2">
+                <div className="space-y-2.5">
                     <div className="flex gap-2">
                         <Input
                             placeholder="New label name"
@@ -116,6 +116,7 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                             onChange={(e) => setNewLabelName(e.target.value)}
                             maxLength={40}
                             disabled={isCreating}
+                            className="h-8 text-xs bg-background"
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.preventDefault();
@@ -128,39 +129,47 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                             size="sm"
                             onClick={handleCreateLabel}
                             disabled={!newLabelName.trim() || isCreating}
+                            className="h-8 px-3 text-xs gap-1 shrink-0"
                         >
                             {isCreating ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-3.5 w-3.5" />
                             )}
+                            <span>Add</span>
                         </Button>
                     </div>
-                    <div className="grid grid-cols-10 gap-1">
-                        {LABEL_COLORS.map((color) => (
-                            <button
-                                key={color.value}
-                                type="button"
-                                onClick={() => setNewLabelColor(color.value)}
-                                className={cn(
-                                    "h-5 rounded transition-all",
-                                    newLabelColor === color.value &&
-                                        "ring-2 ring-primary ring-offset-2",
-                                )}
-                                style={{ backgroundColor: color.value }}
-                                title={color.name}
-                            />
-                        ))}
+                    <div className="grid grid-cols-10 gap-1.5">
+                        {LABEL_COLORS.map((color) => {
+                            const isSelected = newLabelColor === color.value;
+                            return (
+                                <button
+                                    key={color.value}
+                                    type="button"
+                                    onClick={() => setNewLabelColor(color.value)}
+                                    className={cn(
+                                        "h-5 rounded-md transition-transform duration-150 hover:scale-110 cursor-pointer flex items-center justify-center",
+                                        isSelected
+                                            ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                            : "ring-1 ring-inset ring-black/10 dark:ring-white/15",
+                                    )}
+                                    style={{ backgroundColor: color.value }}
+                                    title={color.name}
+                                >
+                                    {isSelected && <Check className="h-3 w-3 text-white drop-shadow-xs" />}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                <div className="mt-1 space-y-2 max-h-[15vh] overflow-y-auto">
+                <div className="mt-2 space-y-1.5 max-h-52 overflow-y-auto pr-1">
                     {labels === undefined && (
-                        <p className="text-xs text-muted-foreground">Loading labels...</p>
+                        <p className="text-xs text-muted-foreground py-2">Loading labels...</p>
                     )}
 
                     {labels && labels.length === 0 && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground py-2 text-center">
                             No labels yet. Create one above.
                         </p>
                     )}
@@ -170,15 +179,20 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                         return (
                             <div
                                 key={label._id}
-                                className="flex items-center gap-2 rounded-md border p-2"
+                                className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 p-2 shadow-2xs text-xs"
                             >
                                 {isEditing ? (
                                     <>
                                         <Input
                                             value={editingName}
                                             onChange={(e) => setEditingName(e.target.value)}
-                                            className="h-8"
+                                            className="h-7 text-xs flex-1"
                                             maxLength={40}
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleSaveEdit();
+                                                if (e.key === "Escape") cancelEdit();
+                                            }}
                                         />
                                         <div className="flex items-center gap-1">
                                             {LABEL_COLORS.slice(0, 8).map((color) => (
@@ -187,7 +201,7 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                                                     type="button"
                                                     onClick={() => setEditingColor(color.value)}
                                                     className={cn(
-                                                        "h-5 w-5 rounded",
+                                                        "h-4.5 w-4.5 rounded-sm cursor-pointer",
                                                         editingColor === color.value &&
                                                             "ring-2 ring-primary ring-offset-1",
                                                     )}
@@ -198,54 +212,55 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                                         </div>
                                         <Button
                                             type="button"
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-8 w-8"
+                                            size="icon-xs"
+                                            className="h-7 w-7"
                                             onClick={handleSaveEdit}
-                                            disabled={!editingName.trim() || isSavingEdit}
+                                            disabled={isSavingEdit || !editingName.trim()}
                                         >
                                             {isSavingEdit ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <Loader2 className="h-3 w-3 animate-spin" />
                                             ) : (
-                                                <Check className="h-4 w-4" />
+                                                <Check className="h-3.5 w-3.5" />
                                             )}
                                         </Button>
                                         <Button
                                             type="button"
-                                            size="icon"
                                             variant="ghost"
-                                            className="h-8 w-8"
+                                            size="icon-xs"
+                                            className="h-7 w-7"
                                             onClick={cancelEdit}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <X className="h-3.5 w-3.5" />
                                         </Button>
                                     </>
                                 ) : (
                                     <>
                                         <span
-                                            className="h-4 w-6 rounded"
+                                            className="h-3 w-3 rounded-full shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/15"
                                             style={{ backgroundColor: label.color }}
                                         />
-                                        <span className="flex-1 text-sm">{label.name}</span>
+                                        <span className="flex-1 truncate font-medium text-foreground">
+                                            {label.name}
+                                        </span>
                                         <Button
                                             type="button"
-                                            size="icon"
                                             variant="ghost"
-                                            className="h-8 w-8"
+                                            size="icon-xs"
+                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                             onClick={() =>
                                                 startEdit(label._id, label.name, label.color)
                                             }
                                         >
-                                            <Pencil className="h-4 w-4" />
+                                            <Pencil className="h-3 w-3" />
                                         </Button>
                                         <Button
                                             type="button"
-                                            size="icon"
                                             variant="ghost"
-                                            className="h-8 w-8 text-destructive hover:text-destructive"
+                                            size="icon-xs"
+                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                             onClick={() => setDeletingLabelId(label._id)}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <Trash2 className="h-3 w-3" />
                                         </Button>
                                     </>
                                 )}
@@ -259,8 +274,8 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                 open={deletingLabelId !== null}
                 onOpenChange={(open) => !open && setDeletingLabelId(null)}
                 onConfirm={handleDelete}
-                title="Delete label?"
-                description={`This will remove "${deletingLabelName}" from all cards on this board.`}
+                title="Delete Label?"
+                description={`Are you sure you want to delete "${deletingLabelName}"? It will be removed from all cards.`}
                 confirmText="Delete label"
             />
         </>

@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { Archive, Trash2 } from "lucide-react";
+import { Archive, Trash2, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ import { LabelManager } from "@/components/Board/LabelManager";
 import { CustomFieldManager } from "@/components/Board/CustomFieldManager";
 import { AutomationSettings } from "@/components/Board/AutomationSettings";
 import { ImportExportPanel } from "@/components/Board/ImportExportPanel";
+import { cn } from "@/lib/utils";
 
 interface BoardSettingsModalProps {
     open: boolean;
@@ -149,10 +150,10 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
     return (
         <>
             <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="sm:max-w-[500px] w-[95vw] sm:w-full max-h-[90dvh] flex flex-col p-4 sm:p-6 rounded-xl">
-                    <DialogHeader className="shrink-0 pb-2">
-                        <DialogTitle>Board settings</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="sm:max-w-[620px] w-[95vw] max-h-[90dvh] flex flex-col p-5 sm:p-6 rounded-2xl border border-border/70 shadow-2xl">
+                    <DialogHeader className="shrink-0 pb-1">
+                        <DialogTitle className="text-base font-semibold">Board settings</DialogTitle>
+                        <DialogDescription className="text-xs">
                             Edit board details and manage visibility. Only owners can archive or
                             delete.
                         </DialogDescription>
@@ -160,18 +161,18 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
 
                     <Tabs
                         defaultValue="general"
-                        className="flex flex-col min-h-0 flex-1 overflow-hidden"
+                        className="flex flex-col min-h-0 flex-1 overflow-hidden mt-3"
                     >
                         <TabsList
-                            className={`shrink-0 w-full ${
+                            className={`shrink-0 w-full h-8.5 ${
                                 canEdit ? "grid grid-cols-2" : "grid grid-cols-1"
                             }`}
                         >
-                            <TabsTrigger value="general" className="w-full">
+                            <TabsTrigger value="general" className="w-full text-xs">
                                 General
                             </TabsTrigger>
                             {canEdit && (
-                                <TabsTrigger value="advanced" className="w-full">
+                                <TabsTrigger value="advanced" className="w-full text-xs">
                                     Advanced
                                 </TabsTrigger>
                             )}
@@ -179,12 +180,12 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
 
                         <TabsContent
                             value="general"
-                            className="overflow-y-auto flex-1 min-h-0 mt-3"
+                            className="overflow-y-auto flex-1 min-h-0 mt-3 pr-1"
                         >
-                            <div className="grid gap-4 px-1 pb-1">
+                            <div className="space-y-4 pb-2">
                                 {/* Title */}
-                                <div className="grid gap-2">
-                                    <Label htmlFor="settings-title">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="settings-title" className="text-xs font-medium">
                                         Board title <span className="text-destructive">*</span>
                                     </Label>
                                     <Input
@@ -193,12 +194,13 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         onChange={(e) => setTitle(e.target.value)}
                                         maxLength={100}
                                         disabled={!canEdit}
+                                        className="h-8 text-xs"
                                     />
                                 </div>
 
                                 {/* Description */}
-                                <div className="grid gap-2">
-                                    <Label htmlFor="settings-description">Description</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="settings-description" className="text-xs font-medium">Description</Label>
                                     <Textarea
                                         id="settings-description"
                                         value={description}
@@ -207,38 +209,47 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         maxLength={500}
                                         disabled={!canEdit}
                                         placeholder="What is this board about?"
+                                        className="text-xs resize-y"
                                     />
                                 </div>
 
                                 {/* Color */}
-                                <div className="grid gap-2">
-                                    <Label>Board color</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium">Board color</Label>
                                     <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
-                                        {BOARD_COLORS.map((boardColor) => (
-                                            <button
-                                                key={boardColor.value}
-                                                type="button"
-                                                onClick={() =>
-                                                    canEdit && setColor(boardColor.value)
-                                                }
-                                                disabled={!canEdit}
-                                                className={`h-10 w-full rounded-md transition-all hover:scale-110 disabled:opacity-50 ${
-                                                    color === boardColor.value
-                                                        ? "ring-2 ring-primary ring-offset-2"
-                                                        : ""
-                                                }`}
-                                                style={{
-                                                    backgroundColor: boardColor.value,
-                                                }}
-                                                title={boardColor.name}
-                                            />
-                                        ))}
+                                        {BOARD_COLORS.map((boardColor) => {
+                                            const isSelected = color === boardColor.value;
+                                            return (
+                                                <button
+                                                    key={boardColor.value}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        canEdit && setColor(boardColor.value)
+                                                    }
+                                                    disabled={!canEdit}
+                                                    className={cn(
+                                                        "relative h-9 w-full rounded-lg transition-transform duration-150 hover:scale-105 disabled:opacity-50 flex items-center justify-center cursor-pointer",
+                                                        isSelected
+                                                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                                            : "ring-1 ring-inset ring-black/10 dark:ring-white/15",
+                                                    )}
+                                                    style={{
+                                                        backgroundColor: boardColor.value,
+                                                    }}
+                                                    title={boardColor.name}
+                                                >
+                                                    {isSelected && (
+                                                        <Check className="h-4 w-4 text-white drop-shadow-xs" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
                                 {/* Visibility */}
-                                <div className="grid gap-2">
-                                    <Label htmlFor="settings-visibility">Visibility</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="settings-visibility" className="text-xs font-medium">Visibility</Label>
                                     <Select
                                         value={visibility}
                                         onValueChange={(value: "private" | "team" | "public") =>
@@ -246,14 +257,14 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         }
                                         disabled={!canEdit}
                                     >
-                                        <SelectTrigger id="settings-visibility">
+                                        <SelectTrigger id="settings-visibility" className="h-8 text-xs">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="text-xs">
                                             <SelectItem value="private">
                                                 <div>
                                                     <div className="font-medium">Private</div>
-                                                    <div className="text-xs text-muted-foreground">
+                                                    <div className="text-[10px] text-muted-foreground">
                                                         Only you and invited members
                                                     </div>
                                                 </div>
@@ -261,7 +272,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             <SelectItem value="team">
                                                 <div>
                                                     <div className="font-medium">Team</div>
-                                                    <div className="text-xs text-muted-foreground">
+                                                    <div className="text-[10px] text-muted-foreground">
                                                         All team members can view
                                                     </div>
                                                 </div>
@@ -269,7 +280,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             <SelectItem value="public">
                                                 <div>
                                                     <div className="font-medium">Public</div>
-                                                    <div className="text-xs text-muted-foreground">
+                                                    <div className="text-[10px] text-muted-foreground">
                                                         Anyone with the link
                                                     </div>
                                                 </div>
@@ -278,17 +289,17 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                     </Select>
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="settings-workspace">Workspace</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="settings-workspace" className="text-xs font-medium">Workspace</Label>
                                     <Select
                                         value={workspaceId}
                                         onValueChange={setWorkspaceId}
                                         disabled={!canEdit}
                                     >
-                                        <SelectTrigger id="settings-workspace">
+                                        <SelectTrigger id="settings-workspace" className="h-8 text-xs">
                                             <SelectValue placeholder="No workspace" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="text-xs">
                                             <SelectItem value="none">No workspace</SelectItem>
                                             {(workspaces ?? []).map((workspace) => (
                                                 <SelectItem
@@ -307,9 +318,9 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         {canEdit && (
                             <TabsContent
                                 value="advanced"
-                                className="overflow-y-auto flex-1 min-h-0 mt-3"
+                                className="overflow-y-auto flex-1 min-h-0 mt-3 pr-1"
                             >
-                                <div className="grid gap-4 px-1 pb-1">
+                                <div className="space-y-4 pb-2">
                                     <LabelManager boardId={board._id} />
                                     <CustomFieldManager boardId={board._id} />
                                     <AutomationSettings boardId={board._id} />
@@ -322,7 +333,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         )}
                     </Tabs>
 
-                    <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between pt-4 shrink-0 mt-2 border-t">
+                    <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between pt-4 shrink-0 mt-2 border-t border-border/60">
                         <div className="flex flex-col gap-2 w-full sm:w-auto order-2 sm:order-1">
                             {isOwner && (
                                 <>
@@ -330,59 +341,69 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         <Button
                                             type="button"
                                             variant="outline"
+                                            size="sm"
                                             onClick={handleRestore}
                                             disabled={isSubmitting}
-                                            className="w-full sm:w-auto"
+                                            className="w-full sm:w-auto text-xs h-8 gap-1.5"
                                         >
-                                            <Archive className="h-4 w-4 mr-2" />
-                                            Restore board
+                                            <Archive className="h-3.5 w-3.5" />
+                                            <span>Restore board</span>
                                         </Button>
                                     ) : (
                                         <Button
                                             type="button"
                                             variant="outline"
+                                            size="sm"
                                             onClick={handleArchive}
                                             disabled={isSubmitting}
-                                            className="w-full sm:w-auto"
+                                            className="w-full sm:w-auto text-xs h-8 gap-1.5"
                                         >
-                                            <Archive className="h-4 w-4 mr-2" />
-                                            Archive board
+                                            <Archive className="h-3.5 w-3.5" />
+                                            <span>Archive board</span>
                                         </Button>
                                     )}
                                     <Button
                                         type="button"
-                                        variant="destructive"
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => setShowDeleteConfirm(true)}
                                         disabled={isSubmitting}
-                                        className="w-full sm:w-auto"
+                                        className="w-full sm:w-auto text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-8 gap-1.5"
                                     >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete board
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <span>Delete board</span>
                                     </Button>
                                 </>
                             )}
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2 w-full sm:w-auto">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                disabled={isSubmitting}
-                                className="w-full sm:w-auto"
-                            >
-                                Cancel
-                            </Button>
-                            {canEdit && (
+
+                        {canEdit && (
+                            <div className="flex gap-2 justify-end w-full sm:w-auto order-1 sm:order-2">
                                 <Button
                                     type="button"
-                                    onClick={handleSave}
-                                    disabled={isSubmitting || !title.trim()}
-                                    className="w-full sm:w-auto"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onOpenChange(false)}
+                                    disabled={isSubmitting}
+                                    className="text-xs h-8"
                                 >
-                                    {isSubmitting ? "Saving..." : "Save changes"}
+                                    Cancel
                                 </Button>
-                            )}
-                        </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={handleSave}
+                                    disabled={isSubmitting}
+                                    className="text-xs h-8 px-4"
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        "Save changes"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -391,8 +412,8 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                 open={showDeleteConfirm}
                 onOpenChange={setShowDeleteConfirm}
                 onConfirm={handleDeleteConfirm}
-                title="Delete board?"
-                description="This will permanently delete the board and all its lists and cards. This action cannot be undone."
+                title="Delete board permanently?"
+                description={`Are you sure you want to permanently delete "${board.title}"? All lists, cards, comments, and attachments will be deleted forever. This cannot be undone.`}
                 confirmText="Delete board"
             />
         </>

@@ -3,7 +3,7 @@ import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LayoutTemplate, Check, ArrowLeft } from "lucide-react";
+import { LayoutTemplate, Check, ArrowLeft, Loader2 } from "lucide-react";
 
 import { BOARD_COLORS, DEFAULT_BOARD_COLOR } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,7 @@ const BOARD_TEMPLATES: BoardTemplate[] = [
         id: "bugtracker",
         name: "Bug Tracker",
         description: "Track and squash bugs systematically",
-        emoji: "🐛",
+        emoji: "🪲",
         color: "#ef4444",
         lists: ["Reported", "Confirmed", "In Progress", "Testing", "Resolved"],
     },
@@ -80,7 +80,7 @@ const BOARD_TEMPLATES: BoardTemplate[] = [
         id: "marketing",
         name: "Marketing Campaign",
         description: "Plan and track campaigns end to end",
-        emoji: "📣",
+        emoji: "📢",
         color: "#f97316",
         lists: ["Ideas", "Planning", "In Production", "Launched", "Measuring"],
     },
@@ -175,42 +175,41 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto p-5 sm:p-6 rounded-2xl border border-border/70 shadow-2xl">
                 {step === "template" ? (
                     <>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <LayoutTemplate className="h-5 w-5 text-primary" />
-                                Start from a template
+                        <DialogHeader className="pb-1">
+                            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+                                <LayoutTemplate className="h-4 w-4 text-primary" />
+                                <span>Start from a template</span>
                             </DialogTitle>
-                            <DialogDescription>
+                            <DialogDescription className="text-xs">
                                 Choose a template to get started quickly, or start with a blank
                                 board.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-3">
                             {BOARD_TEMPLATES.map((template) => (
                                 <button
                                     key={template.id}
                                     type="button"
                                     onClick={() => handleTemplateSelect(template)}
                                     className={cn(
-                                        "relative text-left rounded-xl border p-4 transition-all hover:shadow-md hover:scale-[1.02]",
-                                        "bg-background hover:bg-muted/50",
+                                        "relative text-left rounded-xl border border-border/70 p-3.5 transition-[box-shadow,transform,background-color] duration-150 active:scale-[0.98] cursor-pointer shadow-2xs hover:shadow-xs",
+                                        "bg-card hover:bg-muted/40",
                                     )}
-                                    style={{ borderColor: template.color + "60" }}
                                 >
                                     <div className="flex items-start gap-3">
                                         <div
-                                            className="h-10 w-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                                            className="h-9 w-9 rounded-lg flex items-center justify-center text-lg shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
                                             style={{ background: template.color + "20" }}
                                         >
                                             {template.emoji}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-sm">{template.name}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                            <p className="font-semibold text-xs text-foreground">{template.name}</p>
+                                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
                                                 {template.description}
                                             </p>
                                             {template.lists.length > 0 && (
@@ -225,28 +224,28 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                         </div>
                     </>
                 ) : (
-                    <form onSubmit={handleSubmit}>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <DialogHeader className="pb-1">
+                            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                                 <button
                                     type="button"
                                     onClick={() => setStep("template")}
-                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                    className="p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer rounded-md hover:bg-muted"
                                 >
                                     <ArrowLeft className="h-4 w-4" />
                                 </button>
-                                <span className="text-xl">{selectedTemplate.emoji}</span>
-                                {selectedTemplate.name}
+                                <span className="text-lg">{selectedTemplate.emoji}</span>
+                                <span>{selectedTemplate.name}</span>
                             </DialogTitle>
-                            <DialogDescription>
+                            <DialogDescription className="text-xs">
                                 Customize your board before creating it.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid gap-4 py-4">
+                        <div className="space-y-3.5 py-1">
                             {/* Title */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="title">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="title" className="text-xs font-medium">
                                     Board Title <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
@@ -256,12 +255,13 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                     onChange={(e) => setTitle(e.target.value)}
                                     maxLength={100}
                                     autoFocus
+                                    className="h-8 text-xs"
                                 />
                             </div>
 
                             {/* Description */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="description">Description (optional)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="description" className="text-xs font-medium">Description (optional)</Label>
                                 <Textarea
                                     id="description"
                                     placeholder="What is this board about?"
@@ -269,49 +269,54 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={2}
                                     maxLength={500}
+                                    className="text-xs resize-y"
                                 />
                             </div>
 
                             {/* Color */}
-                            <div className="grid gap-2">
-                                <Label>Board Color</Label>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium">Board Color</Label>
                                 <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
-                                    {BOARD_COLORS.map((boardColor) => (
-                                        <button
-                                            key={boardColor.value}
-                                            type="button"
-                                            onClick={() => setColor(boardColor.value as any)}
-                                            className={`relative h-10 w-full rounded-md transition-all hover:scale-110 ${
-                                                color === boardColor.value
-                                                    ? "ring-2 ring-primary ring-offset-2"
-                                                    : ""
-                                            }`}
-                                            style={{ backgroundColor: boardColor.value }}
-                                            title={boardColor.name}
-                                        >
-                                            {color === boardColor.value && (
-                                                <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />
-                                            )}
-                                        </button>
-                                    ))}
+                                    {BOARD_COLORS.map((boardColor) => {
+                                        const isSelected = color === boardColor.value;
+                                        return (
+                                            <button
+                                                key={boardColor.value}
+                                                type="button"
+                                                onClick={() => setColor(boardColor.value as any)}
+                                                className={cn(
+                                                    "relative h-8 w-full rounded-lg transition-transform duration-150 hover:scale-105 flex items-center justify-center cursor-pointer",
+                                                    isSelected
+                                                        ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                                        : "ring-1 ring-inset ring-black/10 dark:ring-white/15",
+                                                )}
+                                                style={{ backgroundColor: boardColor.value }}
+                                                title={boardColor.name}
+                                            >
+                                                {isSelected && (
+                                                    <Check className="h-3.5 w-3.5 text-white drop-shadow-xs" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                             {/* Visibility */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="visibility">Visibility</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="visibility" className="text-xs font-medium">Visibility</Label>
                                 <Select
                                     value={visibility}
                                     onValueChange={(value: any) => setVisibility(value)}
                                 >
-                                    <SelectTrigger id="visibility">
+                                    <SelectTrigger id="visibility" className="h-8 text-xs">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="text-xs">
                                         <SelectItem value="private">
                                             <div>
                                                 <div className="font-medium">Private</div>
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-[10px] text-muted-foreground">
                                                     Only you and invited members
                                                 </div>
                                             </div>
@@ -319,7 +324,7 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                         <SelectItem value="team">
                                             <div>
                                                 <div className="font-medium">Team</div>
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-[10px] text-muted-foreground">
                                                     All team members can view
                                                 </div>
                                             </div>
@@ -327,7 +332,7 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                         <SelectItem value="public">
                                             <div>
                                                 <div className="font-medium">Public</div>
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-[10px] text-muted-foreground">
                                                     Anyone with the link
                                                 </div>
                                             </div>
@@ -336,13 +341,13 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                                 </Select>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="workspace">Workspace</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="workspace" className="text-xs font-medium">Workspace</Label>
                                 <Select value={workspaceId} onValueChange={setWorkspaceId}>
-                                    <SelectTrigger id="workspace">
+                                    <SelectTrigger id="workspace" className="h-8 text-xs">
                                         <SelectValue placeholder="Choose workspace (optional)" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="text-xs">
                                         <SelectItem value="none">No workspace</SelectItem>
                                         {(workspaces ?? []).map((workspace) => (
                                             <SelectItem key={workspace._id} value={workspace._id}>
@@ -354,15 +359,15 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                             </div>
 
                             {selectedTemplate.lists.length > 0 && (
-                                <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-                                    <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                                <div className="rounded-xl border border-border/60 bg-muted/25 px-3 py-2.5">
+                                    <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
                                         Lists to be created:
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {selectedTemplate.lists.map((list) => (
                                             <span
                                                 key={list}
-                                                className="text-xs bg-background border border-border rounded px-2 py-0.5"
+                                                className="text-[11px] bg-background border border-border/70 rounded-md px-2 py-0.5"
                                             >
                                                 {list}
                                             </span>
@@ -372,17 +377,27 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
                             )}
                         </div>
 
-                        <DialogFooter>
+                        <DialogFooter className="pt-3 border-t border-border/60">
                             <Button
                                 type="button"
                                 variant="outline"
+                                size="sm"
                                 onClick={() => handleClose(false)}
                                 disabled={isSubmitting}
+                                className="h-8 text-xs"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isSubmitting || !title.trim()}>
-                                {isSubmitting ? "Creating..." : "Create Board"}
+                            <Button
+                                type="submit"
+                                size="sm"
+                                disabled={isSubmitting || !title.trim()}
+                                className="h-8 text-xs px-4 gap-1.5"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : null}
+                                <span>Create board</span>
                             </Button>
                         </DialogFooter>
                     </form>

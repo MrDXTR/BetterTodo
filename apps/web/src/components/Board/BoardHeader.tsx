@@ -12,7 +12,7 @@ import {
     Users,
     X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
@@ -53,29 +53,6 @@ const PRIORITY_COLORS: Record<CardPriority, string> = {
     medium: "#eab308",
     low: "#22c55e",
 };
-
-function hexToRgba(hex: string, alpha: number) {
-    const clean = hex.replace("#", "");
-    if (!/^[0-9a-fA-F]+$/.test(clean)) {
-        return `rgba(0, 0, 0, ${alpha})`;
-    }
-
-    let r = 0;
-    let g = 0;
-    let b = 0;
-
-    if (clean.length === 3) {
-        r = parseInt(clean[0] + clean[0], 16);
-        g = parseInt(clean[1] + clean[1], 16);
-        b = parseInt(clean[2] + clean[2], 16);
-    } else if (clean.length === 6) {
-        r = parseInt(clean.slice(0, 2), 16);
-        g = parseInt(clean.slice(2, 4), 16);
-        b = parseInt(clean.slice(4, 6), 16);
-    }
-
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
 
 export function BoardHeader({
     board,
@@ -125,39 +102,19 @@ export function BoardHeader({
     };
 
     const boardColor = board.color || "#0079BF";
-
-    const colors = useMemo(
-        () => ({
-            tintStrong: hexToRgba(boardColor, 0.16),
-            tintSoft: hexToRgba(boardColor, 0.08),
-            tintBorder: hexToRgba(boardColor, 0.3),
-            tintChip: hexToRgba(boardColor, 0.12),
-        }),
-        [boardColor],
-    );
-
     const controlButtonClass =
-        "h-8 px-2.5 text-foreground/70 hover:text-foreground hover:bg-background/75 transition-colors";
-
-    const activeFilterCount = activeLabelIds.length + activePriorities.length;
+        "h-8 px-2.5 text-xs text-foreground/75 hover:text-foreground hover:bg-accent transition-[background-color,color,transform] active:scale-[0.97]";
 
     return (
-        <header className="relative overflow-hidden border-b border-border/60 bg-background/85 backdrop-blur-md">
-            <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                    background: `linear-gradient(115deg, ${colors.tintStrong} 0%, ${colors.tintSoft} 38%, transparent 72%)`,
-                }}
-            />
-
-            <div className="relative px-4 md:px-6 py-3.5">
-                {/* Row 1: back button, title, controls */}
-                <div className="flex items-center gap-3 md:gap-4 min-w-0">
+        <header className="relative border-b border-border/60 bg-background/85 backdrop-blur-md">
+            <div className="px-4 sm:px-6 py-3">
+                {/* Row 1: Back button, title, controls */}
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <Link to="/boards" className="shrink-0">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-background/70 transition-colors"
+                            className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-accent transition-[background-color,color,transform] active:scale-[0.97]"
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
@@ -165,7 +122,7 @@ export function BoardHeader({
 
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span
-                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            className="h-3 w-3 rounded-full shrink-0 ring-2 ring-background ring-offset-1 ring-offset-border/30"
                             style={{ background: boardColor }}
                         />
 
@@ -182,23 +139,21 @@ export function BoardHeader({
                                         setIsEditingTitle(false);
                                     }
                                 }}
-                                className="h-9 max-w-lg font-semibold text-base bg-background border-border shadow-sm"
+                                className="h-8 max-w-sm font-semibold text-sm bg-background border-border/80 shadow-2xs"
                                 maxLength={100}
                             />
                         ) : (
                             <button
+                                type="button"
                                 onClick={() => setIsEditingTitle(true)}
-                                className="truncate rounded-md px-2 py-1.5 text-left text-base font-semibold text-foreground hover:bg-background/65 transition-colors max-w-full"
+                                className="truncate rounded-md px-2 py-1 text-left text-sm font-semibold text-foreground hover:bg-muted/60 transition-[background-color] max-w-full cursor-pointer"
                             >
                                 {board.title}
                             </button>
                         )}
                     </div>
 
-                    <div
-                        className="ml-auto shrink-0 flex items-center gap-1 rounded-xl border bg-background/65 p-1 backdrop-blur-sm"
-                        style={{ borderColor: colors.tintBorder }}
-                    >
+                    <div className="ml-auto shrink-0 flex items-center gap-1 rounded-lg border border-border/60 bg-muted/20 p-0.5">
                         <BoardAvatars users={members} />
 
                         <Button
@@ -207,8 +162,8 @@ export function BoardHeader({
                             className={controlButtonClass}
                             onClick={() => setMembersOpen(true)}
                         >
-                            <Users className="h-4 w-4" />
-                            <span className="hidden lg:inline ml-1">Members</span>
+                            <Users className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline ml-1.5">Members</span>
                         </Button>
 
                         <Button
@@ -217,8 +172,8 @@ export function BoardHeader({
                             className={controlButtonClass}
                             onClick={() => setArchivedOpen(true)}
                         >
-                            <Archive className="h-4 w-4" />
-                            <span className="hidden lg:inline ml-1">Archived</span>
+                            <Archive className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline ml-1.5">Archived</span>
                         </Button>
 
                         {/* Filter Popover */}
@@ -230,13 +185,13 @@ export function BoardHeader({
                                     className={cn(
                                         controlButtonClass,
                                         "relative",
-                                        showFilters && "bg-background/75 text-foreground",
+                                        showFilters && "bg-accent text-foreground",
                                     )}
                                 >
-                                    <SlidersHorizontal className="h-4 w-4" />
-                                    <span className="hidden lg:inline ml-1">Filter</span>
+                                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                                    <span className="hidden md:inline ml-1.5">Filter</span>
                                     {hasActiveFilters && (
-                                        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />
+                                        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
                                     )}
                                 </Button>
                             </PopoverTrigger>
@@ -246,22 +201,23 @@ export function BoardHeader({
                                 className="w-72 p-0 overflow-hidden"
                             >
                                 {/* Popover header */}
-                                <div className="flex items-center justify-between px-4 py-3 border-b">
-                                    <span className="text-sm font-semibold">Filters</span>
+                                <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60">
+                                    <span className="text-xs font-semibold">Filters</span>
                                     {hasActiveFilters && (
                                         <button
+                                            type="button"
                                             onClick={clearFilters}
-                                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                                         >
                                             Clear all
                                         </button>
                                     )}
                                 </div>
 
-                                <div className="max-h-80 overflow-y-auto">
+                                <div className="max-h-80 overflow-y-auto p-1">
                                     {/* Priority section */}
-                                    <div className="px-4 pt-3 pb-1">
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                                    <div className="px-2.5 pt-2 pb-1">
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                                             Priority
                                         </p>
                                         <div className="space-y-0.5">
@@ -277,19 +233,20 @@ export function BoardHeader({
                                                     activePriorities.includes(priority);
                                                 return (
                                                     <button
+                                                        type="button"
                                                         key={priority}
                                                         onClick={() =>
                                                             togglePriorityFilter(priority)
                                                         }
                                                         className={cn(
-                                                            "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors",
+                                                            "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors cursor-pointer",
                                                             isActive
-                                                                ? "bg-accent/80 text-accent-foreground"
+                                                                ? "bg-accent text-accent-foreground font-medium"
                                                                 : "text-foreground/80 hover:bg-muted/60",
                                                         )}
                                                     >
                                                         <span
-                                                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                                                            className="h-2 w-2 rounded-full shrink-0"
                                                             style={{
                                                                 background:
                                                                     PRIORITY_COLORS[priority],
@@ -299,7 +256,7 @@ export function BoardHeader({
                                                             {priority}
                                                         </span>
                                                         {isActive && (
-                                                            <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                            <Check className="h-3 w-3 text-primary shrink-0" />
                                                         )}
                                                     </button>
                                                 );
@@ -309,8 +266,8 @@ export function BoardHeader({
 
                                     {/* Labels section */}
                                     {boardLabels && boardLabels.length > 0 && (
-                                        <div className="px-4 pt-3 pb-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                                        <div className="px-2.5 pt-2 pb-2">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                                                 Labels
                                             </p>
                                             <div className="space-y-0.5">
@@ -320,26 +277,27 @@ export function BoardHeader({
                                                     );
                                                     return (
                                                         <button
+                                                            type="button"
                                                             key={label._id}
                                                             onClick={() =>
                                                                 toggleLabelFilter(label._id)
                                                             }
                                                             className={cn(
-                                                                "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors",
+                                                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors cursor-pointer",
                                                                 isActive
-                                                                    ? "bg-accent/80 text-accent-foreground"
+                                                                    ? "bg-accent text-accent-foreground font-medium"
                                                                     : "text-foreground/80 hover:bg-muted/60",
                                                             )}
                                                         >
                                                             <span
-                                                                className="h-2.5 w-2.5 rounded-full shrink-0"
+                                                                className="h-2 w-2 rounded-full shrink-0"
                                                                 style={{ background: label.color }}
                                                             />
                                                             <span className="flex-1 text-left truncate">
                                                                 {label.name}
                                                             </span>
                                                             {isActive && (
-                                                                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                <Check className="h-3 w-3 text-primary shrink-0" />
                                                             )}
                                                         </button>
                                                     );
@@ -350,7 +308,7 @@ export function BoardHeader({
 
                                     {/* Empty state */}
                                     {(!boardLabels || boardLabels.length === 0) && (
-                                        <div className="px-4 pt-1 pb-3">
+                                        <div className="px-3 pt-1 pb-2">
                                             <p className="text-xs text-muted-foreground">
                                                 No labels on this board yet.
                                             </p>
@@ -363,49 +321,47 @@ export function BoardHeader({
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-background/75 transition-all hover:rotate-45"
+                            className="h-8 w-8 p-0 text-foreground/75 hover:text-foreground hover:bg-accent transition-[background-color,color,transform] active:scale-[0.97]"
                             onClick={() => setSettingsOpen(true)}
+                            aria-label="Board settings"
                         >
-                            <Settings className="h-4 w-4" />
+                            <Settings className="h-3.5 w-3.5" />
                         </Button>
                     </div>
                 </div>
 
                 {/* Row 2: stats + active filter chips */}
-                <div className="mt-2 ml-10 flex flex-row items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none">
-                    <span
-                        className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted-foreground whitespace-nowrap"
-                        style={{ borderColor: colors.tintBorder, background: colors.tintChip }}
-                    >
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                         {board.visibility}
                     </span>
 
                     {stats && (
                         <>
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground">
                                 <Layers3 className="h-3 w-3 shrink-0" />
                                 {stats.lists} {stats.lists === 1 ? "list" : "lists"}
                             </span>
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground">
                                 <ListTodo className="h-3 w-3 shrink-0" />
                                 {stats.cards} {stats.cards === 1 ? "card" : "cards"}
                             </span>
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground">
                                 <CheckSquare className="h-3 w-3 shrink-0" />
                                 {stats.checklistItemsCompleted}/{stats.checklistItemsTotal} tasks
                             </span>
                         </>
                     )}
 
-                    {/* Active filter chips inline */}
+                    {/* Active filter chips */}
                     {hasActiveFilters && (
-                        <>
-                            <span className="h-4 w-px bg-border/60 shrink-0" />
+                        <div className="flex flex-wrap items-center gap-1.5 pl-1 border-l border-border/60">
                             {activePriorities.map((p) => (
                                 <button
+                                    type="button"
                                     key={p}
                                     onClick={() => togglePriorityFilter(p)}
-                                    className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-transparent px-2 py-1 text-[11px] font-medium text-white whitespace-nowrap hover:opacity-80 transition-opacity"
+                                    className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow-2xs hover:opacity-85 transition-opacity cursor-pointer"
                                     style={{ background: PRIORITY_COLORS[p] }}
                                 >
                                     <span className="capitalize">{p}</span>
@@ -417,30 +373,23 @@ export function BoardHeader({
                                 if (!label) return null;
                                 return (
                                     <button
+                                        type="button"
                                         key={id}
                                         onClick={() => toggleLabelFilter(id)}
-                                        className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-transparent px-2 py-1 text-[11px] font-medium text-white whitespace-nowrap hover:opacity-80 transition-opacity"
+                                        className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow-2xs hover:opacity-85 transition-opacity cursor-pointer"
                                         style={{ background: label.color }}
                                     >
-                                        {label.name}
+                                        <span>{label.name}</span>
                                         <X className="h-2.5 w-2.5" />
                                     </button>
                                 );
                             })}
-                            <button
-                                onClick={clearFilters}
-                                className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                            >
-                                <X className="h-3 w-3" />
-                                Clear
-                            </button>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
 
-            <BoardSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} board={board} />
-
+            {/* Panels & Modals */}
             <BoardMembersPanel
                 open={membersOpen}
                 onOpenChange={setMembersOpen}
@@ -452,6 +401,12 @@ export function BoardHeader({
                 open={archivedOpen}
                 onOpenChange={setArchivedOpen}
                 boardId={board._id}
+            />
+
+            <BoardSettingsModal
+                open={settingsOpen}
+                onOpenChange={setSettingsOpen}
+                board={board}
             />
         </header>
     );

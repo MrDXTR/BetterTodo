@@ -35,7 +35,7 @@ const ROLE_CONFIG = {
     owner: {
         label: "Owner",
         icon: Crown,
-        color: "text-yellow-500",
+        color: "text-amber-500",
         description: "Full control over the board",
     },
     admin: {
@@ -47,7 +47,7 @@ const ROLE_CONFIG = {
     member: {
         label: "Member",
         icon: User,
-        color: "text-green-500",
+        color: "text-emerald-500",
         description: "Can create and edit cards",
     },
     viewer: {
@@ -110,10 +110,10 @@ export function BoardMembersPanel({
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent className="sm:max-w-md p-4">
+                <SheetContent className="sm:max-w-md p-6">
                     <SheetHeader>
-                        <SheetTitle>Board Members</SheetTitle>
-                        <SheetDescription>
+                        <SheetTitle className="text-base font-semibold">Board Members</SheetTitle>
+                        <SheetDescription className="text-xs">
                             {members
                                 ? `${members.length} member${members.length === 1 ? "" : "s"}`
                                 : "Loading..."}
@@ -122,10 +122,10 @@ export function BoardMembersPanel({
 
                     {/* Invite Section */}
                     {canManageMembers && (
-                        <div className="mt-4 p-3 rounded-lg border bg-muted/30">
-                            <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
-                                <UserPlus className="h-4 w-4" />
-                                Invite Member
+                        <div className="mt-5 p-3.5 rounded-xl border border-border/70 bg-muted/25 space-y-2.5">
+                            <p className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+                                <UserPlus className="h-3.5 w-3.5" />
+                                <span>Invite Member</span>
                             </p>
                             <form
                                 onSubmit={async (e) => {
@@ -152,10 +152,11 @@ export function BoardMembersPanel({
                             >
                                 <Input
                                     type="email"
-                                    placeholder="user@example.com"
+                                    placeholder="colleague@example.com"
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
                                     disabled={isInviting}
+                                    className="h-8 text-xs bg-background"
                                 />
                                 <div className="flex gap-2">
                                     <DropdownMenu>
@@ -164,17 +165,18 @@ export function BoardMembersPanel({
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                className="gap-1 text-xs flex-1"
+                                                className="gap-1 text-xs flex-1 h-8 justify-between"
                                             >
-                                                {ROLE_CONFIG[inviteRole].label}
+                                                <span>{ROLE_CONFIG[inviteRole].label}</span>
                                                 <ChevronDown className="h-3 w-3 opacity-50" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
+                                        <DropdownMenuContent align="start">
                                             {(["admin", "member", "viewer"] as const).map((r) => (
                                                 <DropdownMenuItem
                                                     key={r}
                                                     onClick={() => setInviteRole(r)}
+                                                    className="text-xs cursor-pointer"
                                                 >
                                                     {ROLE_CONFIG[r].label}
                                                 </DropdownMenuItem>
@@ -185,34 +187,33 @@ export function BoardMembersPanel({
                                         type="submit"
                                         size="sm"
                                         disabled={isInviting || !inviteEmail.trim()}
-                                        className="gap-1"
+                                        className="gap-1 h-8 text-xs px-3"
                                     >
                                         {isInviting ? (
                                             <Loader2 className="h-3 w-3 animate-spin" />
                                         ) : (
                                             <UserPlus className="h-3 w-3" />
                                         )}
-                                        Invite
+                                        <span>Invite</span>
                                     </Button>
                                 </div>
                             </form>
                         </div>
                     )}
 
-                    <div className="mt-6 space-y-1 max-h-[calc(100vh-12rem)] overflow-y-auto">
+                    <div className="mt-6 space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
                         {members === undefined ? (
-                            // Skeleton loader
                             Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="flex items-center gap-3 p-3 rounded-lg">
-                                    <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                                <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg">
+                                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
                                     <div className="flex-1 space-y-1.5">
-                                        <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                                        <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                                        <div className="h-3.5 w-28 bg-muted animate-pulse rounded" />
+                                        <div className="h-2.5 w-16 bg-muted animate-pulse rounded" />
                                     </div>
                                 </div>
                             ))
                         ) : members.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-8">
+                            <p className="text-xs text-muted-foreground text-center py-8">
                                 No members found
                             </p>
                         ) : (
@@ -226,50 +227,50 @@ export function BoardMembersPanel({
                                 return (
                                     <div
                                         key={member._id}
-                                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                                        className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/40 transition-colors"
                                     >
                                         {/* Avatar */}
-                                        <Avatar className="h-10 w-10 border-2 border-background">
+                                        <Avatar className="h-8 w-8 ring-2 ring-background shrink-0">
                                             <AvatarImage src={member.user?.image} />
-                                            <AvatarFallback className="text-sm font-medium">
+                                            <AvatarFallback className="text-xs font-medium">
                                                 {member.user?.name?.charAt(0).toUpperCase() ?? "?"}
                                             </AvatarFallback>
                                         </Avatar>
 
                                         {/* Name & Email */}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">
+                                            <p className="text-xs font-medium truncate text-foreground">
                                                 {member.user?.name ?? "Unknown User"}
                                             </p>
-                                            <p className="text-xs text-muted-foreground truncate">
+                                            <p className="text-[10px] text-muted-foreground truncate">
                                                 {member.user?.email ?? ""}
                                             </p>
                                         </div>
 
                                         {/* Role Badge / Dropdown */}
                                         {isLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                                         ) : member.role === "owner" ? (
-                                            <Badge variant="secondary" className="gap-1 shrink-0">
-                                                <Crown className="h-3 w-3 text-yellow-500" />
-                                                Owner
+                                            <Badge variant="secondary" className="gap-1 shrink-0 text-[10px]">
+                                                <Crown className="h-3 w-3 text-amber-500" />
+                                                <span>Owner</span>
                                             </Badge>
                                         ) : isOwner ? (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 gap-1 text-xs shrink-0"
+                                                        size="xs"
+                                                        className="h-7 gap-1 text-[11px] shrink-0"
                                                     >
                                                         <RoleIcon
                                                             className={`h-3 w-3 ${role.color}`}
                                                         />
-                                                        {role.label}
+                                                        <span>{role.label}</span>
                                                         <ChevronDown className="h-3 w-3 opacity-50" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
+                                                <DropdownMenuContent align="end" className="text-xs">
                                                     {(["admin", "member", "viewer"] as const).map(
                                                         (r) => {
                                                             const rc = ROLE_CONFIG[r];
@@ -283,16 +284,16 @@ export function BoardMembersPanel({
                                                                             r,
                                                                         )
                                                                     }
-                                                                    className="gap-2"
+                                                                    className="gap-2 cursor-pointer"
                                                                 >
                                                                     <Icon
-                                                                        className={`h-4 w-4 ${rc.color}`}
+                                                                        className={`h-3.5 w-3.5 ${rc.color}`}
                                                                     />
                                                                     <div>
-                                                                        <p className="font-medium">
+                                                                        <p className="font-medium text-xs">
                                                                             {rc.label}
                                                                         </p>
-                                                                        <p className="text-xs text-muted-foreground">
+                                                                        <p className="text-[10px] text-muted-foreground">
                                                                             {rc.description}
                                                                         </p>
                                                                     </div>
@@ -309,20 +310,20 @@ export function BoardMembersPanel({
                                                                     "this member",
                                                             })
                                                         }
-                                                        className="gap-2 text-destructive focus:text-destructive"
+                                                        className="gap-2 text-destructive focus:text-destructive cursor-pointer"
                                                     >
-                                                        <UserMinus className="h-4 w-4" />
-                                                        <p className="font-medium">
+                                                        <UserMinus className="h-3.5 w-3.5" />
+                                                        <span className="font-medium text-xs">
                                                             Remove from board
-                                                        </p>
+                                                        </span>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         ) : canManageMembers && member.role !== "owner" ? (
                                             <Button
                                                 variant="ghost"
-                                                size="sm"
-                                                className="h-7 text-xs text-destructive hover:text-destructive shrink-0"
+                                                size="xs"
+                                                className="h-7 text-[11px] text-destructive hover:text-destructive shrink-0"
                                                 onClick={() =>
                                                     setRemovingMember({
                                                         userId: member.userId,
@@ -331,12 +332,12 @@ export function BoardMembersPanel({
                                                 }
                                             >
                                                 <UserMinus className="h-3 w-3 mr-1" />
-                                                Remove
+                                                <span>Remove</span>
                                             </Button>
                                         ) : (
-                                            <Badge variant="secondary" className="gap-1 shrink-0">
+                                            <Badge variant="secondary" className="gap-1 shrink-0 text-[10px]">
                                                 <RoleIcon className={`h-3 w-3 ${role.color}`} />
-                                                {role.label}
+                                                <span>{role.label}</span>
                                             </Badge>
                                         )}
                                     </div>

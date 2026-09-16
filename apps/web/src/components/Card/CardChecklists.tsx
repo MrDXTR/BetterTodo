@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { CheckSquare, Plus, Trash2, GripVertical, Loader2 } from "lucide-react";
+import { CheckSquare, Plus, Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
+import { cn } from "@/lib/utils";
 
 interface CardChecklistsProps {
     cardId: Id<"cards">;
@@ -126,17 +127,15 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
 
     const handleDeleteChecklist = async (checklistId: string) => {
         if (isReadOnly) return;
-        if (checklistId.startsWith("temp-")) {
-            setLocalChecklists((prev) => prev.filter((checklist) => checklist._id !== checklistId));
-            return;
-        }
-
         const previous = localChecklists;
+
         setDeletingChecklistIds((prev) => ({ ...prev, [checklistId]: true }));
-        setLocalChecklists((prev) => prev.filter((checklist) => checklist._id !== checklistId));
+        setLocalChecklists((prev) => prev.filter((c) => c._id !== checklistId));
 
         try {
-            await deleteChecklist({ checklistId: checklistId as Id<"checklists"> });
+            if (!checklistId.startsWith("temp-")) {
+                await deleteChecklist({ checklistId: checklistId as Id<"checklists"> });
+            }
         } catch (error) {
             setLocalChecklists(previous);
             toast.error("Failed to delete checklist");
@@ -151,27 +150,25 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
 
     const handleCreateItem = async (checklistId: string) => {
         if (isReadOnly) return;
-        if (checklistId.startsWith("temp-")) return;
-
-        const title = (newItemTitles[checklistId] || "").trim();
-        if (!title || creatingItemFor[checklistId]) return;
+        const itemTitle = (newItemTitles[checklistId] || "").trim();
+        if (!itemTitle || creatingItemFor[checklistId]) return;
 
         const tempId = `temp-item-${Date.now()}`;
-
         setCreatingItemFor((prev) => ({ ...prev, [checklistId]: true }));
-        setNewItemTitles((prev) => ({ ...prev, [checklistId]: "" }));
+
         setLocalChecklists((prev) =>
             prev.map((checklist) => {
                 if (checklist._id !== checklistId) return checklist;
+                const nextPosition = (checklist.items?.length || 0) + 1;
                 return {
                     ...checklist,
                     items: [
                         ...checklist.items,
                         {
                             _id: tempId,
-                            title,
+                            title: itemTitle,
                             completed: false,
-                            position: checklist.items.length + 1,
+                            position: nextPosition,
                             isOptimistic: true,
                         },
                     ],
@@ -179,10 +176,12 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
             }),
         );
 
+        setNewItemTitles((prev) => ({ ...prev, [checklistId]: "" }));
+
         try {
             const created = await createItem({
                 checklistId: checklistId as Id<"checklists">,
-                title,
+                title: itemTitle,
             });
 
             setLocalChecklists((prev) =>
@@ -194,7 +193,7 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
                             item._id === tempId
                                 ? {
                                       _id: String(created?._id),
-                                      title: created?.title ?? title,
+                                      title: created?.title ?? itemTitle,
                                       completed: created?.completed ?? false,
                                       position: created?.position ?? item.position,
                                   }
@@ -213,8 +212,7 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
                     };
                 }),
             );
-            setNewItemTitles((prev) => ({ ...prev, [checklistId]: title }));
-            toast.error("Failed to add checklist item");
+            toast.error("Failed to create checklist item");
             console.error("Error creating item:", error);
         } finally {
             setCreatingItemFor((prev) => {
@@ -310,42 +308,69 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
             {localChecklists.map((checklist) => {
                 const progress = calculateProgress(checklist.items || []);
                 const isDeletingChecklist = !!deletingChecklistIds[checklist._id];
-                const isAddingItem = !!creatingItemFor[checklist._id];
+                const isAllCompleted = checklist.items?.length > 0 && progress === 100;
 
                 return (
-                    <div key={checklist._id} className="space-y-2">
-                        <div className="flex items-center justify-between">
+                    <div
+                        key={checklist._id}
+                        className="space-y-2.5 rounded-lg border border-border/60 bg-card/40 p-3 shadow-2xs"
+                    >
+                        {/* Header: Title, Progress %, Delete */}
+                        <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
-                                <CheckSquare className="w-4 h-4" />
-                                <h4 className="font-semibold text-sm [word-break:break-word]">
+                                <CheckSquare className="w-4 h-4 text-muted-foreground shrink-0" />
+                                <h4 className="font-semibold text-xs text-foreground truncate">
                                     {checklist.title}
                                 </h4>
                                 {checklist.isOptimistic && (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
                                 )}
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteChecklist(checklist._id)}
-                                disabled={
-                                    isDeletingChecklist || checklist.isOptimistic || isReadOnly
-                                }
-                            >
-                                {isDeletingChecklist ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Trash2 className="w-4 h-4" />
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span
+                                    className={cn(
+                                        "text-[11px] font-medium",
+                                        isAllCompleted
+                                            ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+                                            : "text-muted-foreground",
+                                    )}
+                                >
+                                    {progress}%
+                                </span>
+                                {!isReadOnly && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        onClick={() => handleDeleteChecklist(checklist._id)}
+                                        disabled={
+                                            isDeletingChecklist ||
+                                            checklist.isOptimistic ||
+                                            isReadOnly
+                                        }
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        title="Delete checklist"
+                                    >
+                                        {isDeletingChecklist ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-3 h-3" />
+                                        )}
+                                    </Button>
                                 )}
-                            </Button>
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{progress}%</span>
-                            <Progress value={progress} className="flex-1" />
-                        </div>
+                        {/* Progress bar */}
+                        <Progress
+                            value={progress}
+                            className={cn(
+                                "h-1.5 transition-all",
+                                isAllCompleted && "[&>div]:bg-emerald-500",
+                            )}
+                        />
 
-                        <div className="space-y-1 ml-6">
+                        {/* Checklist Items */}
+                        <div className="space-y-1 pt-1">
                             {checklist.items?.map((item) => {
                                 const isDeleting = !!deletingItemIds[item._id];
                                 const isToggling = !!togglingItemIds[item._id];
@@ -353,9 +378,8 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
                                 return (
                                     <div
                                         key={item._id}
-                                        className="flex items-center gap-2 group p-1 [word-break:break-word] rounded hover:bg-muted"
+                                        className="flex items-center gap-2 group px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors"
                                     >
-                                        <GripVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
                                         <Checkbox
                                             checked={item.completed}
                                             onCheckedChange={() =>
@@ -371,123 +395,144 @@ export function CardChecklists({ cardId, isReadOnly = false }: CardChecklistsPro
                                                 item.isOptimistic ||
                                                 isReadOnly
                                             }
+                                            className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                                         />
                                         <span
-                                            className={`flex-1 text-sm ${
+                                            className={cn(
+                                                "flex-1 text-xs leading-normal transition-[color,text-decoration-line]",
                                                 item.completed
                                                     ? "line-through text-muted-foreground"
-                                                    : ""
-                                            }`}
+                                                    : "text-foreground",
+                                            )}
                                         >
                                             <TextWithLinkPreviews text={item.title} />
                                         </span>
                                         {(isToggling || item.isOptimistic) && (
-                                            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                                            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />
                                         )}
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                                            onClick={() =>
-                                                handleDeleteItem(checklist._id, item._id)
-                                            }
-                                            disabled={isDeleting || isToggling || isReadOnly}
-                                        >
-                                            {isDeleting ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : (
-                                                <Trash2 className="w-3 h-3" />
-                                            )}
-                                        </Button>
+                                        {!isReadOnly && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                className="opacity-0 group-hover:opacity-100 max-sm:opacity-70 transition-opacity h-5 w-5 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                                                onClick={() =>
+                                                    handleDeleteItem(checklist._id, item._id)
+                                                }
+                                                disabled={isDeleting || isToggling || isReadOnly}
+                                                title="Delete item"
+                                            >
+                                                {isDeleting ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-3 h-3" />
+                                                )}
+                                            </Button>
+                                        )}
                                     </div>
                                 );
                             })}
 
-                            <div className="flex items-center gap-2 mt-2">
-                                <Input
-                                    placeholder="Add an item..."
-                                    value={newItemTitles[checklist._id] || ""}
-                                    onChange={(e) =>
-                                        setNewItemTitles({
-                                            ...newItemTitles,
-                                            [checklist._id]: e.target.value,
-                                        })
-                                    }
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleCreateItem(checklist._id);
-                                    }}
-                                    className="h-8 text-sm"
-                                    disabled={isAddingItem || checklist.isOptimistic || isReadOnly}
-                                />
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleCreateItem(checklist._id)}
-                                    disabled={
-                                        !newItemTitles[checklist._id]?.trim() ||
-                                        isAddingItem ||
-                                        checklist.isOptimistic ||
-                                        isReadOnly
-                                    }
-                                >
-                                    {isAddingItem && (
-                                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                                    )}
-                                    Add
-                                </Button>
-                            </div>
+                            {/* Add Item Input */}
+                            {!isReadOnly && (
+                                <div className="flex items-center gap-2 pt-1.5">
+                                    <Input
+                                        placeholder="Add an item..."
+                                        value={newItemTitles[checklist._id] || ""}
+                                        onChange={(e) =>
+                                            setNewItemTitles((prev) => ({
+                                                ...prev,
+                                                [checklist._id]: e.target.value,
+                                            }))
+                                        }
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleCreateItem(checklist._id);
+                                            }
+                                        }}
+                                        className="h-7 text-xs bg-background/70"
+                                        disabled={creatingItemFor[checklist._id]}
+                                    />
+                                    <Button
+                                        size="xs"
+                                        onClick={() => handleCreateItem(checklist._id)}
+                                        disabled={
+                                            !(newItemTitles[checklist._id] || "").trim() ||
+                                            creatingItemFor[checklist._id]
+                                        }
+                                        className="h-7 text-xs px-2.5 gap-1"
+                                    >
+                                        {creatingItemFor[checklist._id] ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Plus className="w-3 h-3" />
+                                        )}
+                                        <span>Add</span>
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
             })}
 
-            {isCreating ? (
-                <div className="space-y-2">
-                    <Input
-                        placeholder="Checklist title..."
-                        value={newChecklistTitle}
-                        onChange={(e) => setNewChecklistTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") handleCreateChecklist();
-                            if (e.key === "Escape" && !isCreatingChecklist) setIsCreating(false);
-                        }}
-                        className="h-8 text-sm"
-                        autoFocus
-                        disabled={isCreatingChecklist}
-                    />
-                    <div className="flex gap-2">
+            {/* Create Checklist Action */}
+            {!isReadOnly && (
+                <div>
+                    {isCreating ? (
+                        <div className="flex items-center gap-2 rounded-lg border border-border/70 p-2 bg-card/40">
+                            <Input
+                                placeholder="Checklist title..."
+                                value={newChecklistTitle}
+                                onChange={(e) => setNewChecklistTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleCreateChecklist();
+                                    }
+                                    if (e.key === "Escape" && !isCreatingChecklist) {
+                                        setIsCreating(false);
+                                    }
+                                }}
+                                className="h-7 text-xs"
+                                autoFocus
+                                disabled={isCreatingChecklist}
+                            />
+                            <Button
+                                size="xs"
+                                onClick={handleCreateChecklist}
+                                disabled={!newChecklistTitle.trim() || isCreatingChecklist}
+                                className="h-7 text-xs px-2.5 gap-1"
+                            >
+                                {isCreatingChecklist ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Plus className="w-3 h-3" />
+                                )}
+                                <span>Create</span>
+                            </Button>
+                            <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => setIsCreating(false)}
+                                disabled={isCreatingChecklist}
+                                className="h-7 text-xs px-2"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    ) : (
                         <Button
-                            size="sm"
-                            onClick={handleCreateChecklist}
-                            disabled={!newChecklistTitle.trim() || isCreatingChecklist}
-                        >
-                            {isCreatingChecklist && (
-                                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                            )}
-                            Add
-                        </Button>
-                        <Button
-                            size="sm"
                             variant="ghost"
-                            onClick={() => setIsCreating(false)}
-                            disabled={isCreatingChecklist}
+                            size="sm"
+                            className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground font-normal"
+                            onClick={() => setIsCreating(true)}
                         >
-                            Cancel
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add checklist</span>
                         </Button>
-                    </div>
+                    )}
                 </div>
-            ) : (
-                !isReadOnly && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => setIsCreating(true)}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Checklist
-                    </Button>
-                )
             )}
         </div>
     );

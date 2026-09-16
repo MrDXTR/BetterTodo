@@ -1,61 +1,94 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { LayoutDashboard, LayoutList, Menu } from "lucide-react";
+import {
+    Clock,
+    Flame,
+    Home,
+    KanbanSquare,
+    LayoutDashboard,
+    Menu,
+    Plus,
+    Search,
+    Shield,
+    Sparkles,
+} from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
-import { SearchCommandPalette } from "@/components/SearchCommandPalette";
 import { NotificationsPopover } from "@/components/Notifications/NotificationsPopover";
-import UserMenu from "@/components/user-menu";
+import { SearchCommandPalette } from "@/components/SearchCommandPalette";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
+import { Button } from "@/components/ui/button";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet";
+import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/boards", label: "Boards", icon: LayoutList },
-] as const;
+function NavLinks({
+    vertical = false,
+    onNavigate,
+}: {
+    vertical?: boolean;
+    onNavigate?: () => void;
+}) {
+    const router = useRouterState();
+    const pathname = router.location.pathname;
 
-function NavLinks({ onNavigate, vertical }: { onNavigate?: () => void; vertical?: boolean }) {
+    const links = [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/boards", label: "Boards", icon: KanbanSquare },
+    ];
+
     return (
-        <nav className={cn("flex gap-1", vertical ? "flex-col" : "items-center")}>
-            {navLinks.map(({ to, label, icon: Icon }) => (
-                <Link
-                    key={to}
-                    to={to}
-                    onClick={onNavigate}
-                    activeOptions={{ exact: to === "/dashboard" }}
-                    activeProps={{
-                        className: "bg-accent text-accent-foreground font-medium",
-                    }}
-                    className={cn(
-                        "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                        "hover:bg-accent/80 hover:text-accent-foreground",
-                    )}
-                >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                </Link>
-            ))}
+        <nav
+            className={cn(
+                "flex items-center gap-1",
+                vertical && "flex-col items-stretch gap-1 w-full",
+            )}
+        >
+            {links.map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname.startsWith(link.href);
+                return (
+                    <Link
+                        key={link.href}
+                        to={link.href}
+                        onClick={onNavigate}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                            isActive
+                                ? "bg-muted text-foreground shadow-2xs font-semibold"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        )}
+                    >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{link.label}</span>
+                    </Link>
+                );
+            })}
         </nav>
     );
 }
 
-export default function AppNav() {
+export function AppNav() {
     const [mobileOpen, setMobileOpen] = useState(false);
 
     return (
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-12 items-center justify-between gap-4 px-4">
+        <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/90 backdrop-blur-md">
+            <div className="flex h-13 items-center justify-between px-4 sm:px-6">
                 {/* Logo */}
                 <Link
                     to="/"
-                    className="flex items-center gap-1 shrink-0 font-semibold text-lg tracking-tight"
+                    className="flex items-center gap-2 shrink-0 transition-opacity hover:opacity-85 active:scale-[0.98]"
                 >
                     <img
                         src="/mainlogo.svg"
-                        alt=""
-                        className="h-16 w-[200px] rounded-md object-contain dark:invert"
+                        alt="BetterTodo"
+                        className="h-8 w-auto object-contain dark:invert"
                     />
                 </Link>
 
@@ -75,7 +108,7 @@ export default function AppNav() {
                     <AnimatedThemeToggler
                         variant="circle"
                         duration={500}
-                        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/80 text-muted-foreground transition-[background-color,color,transform] hover:bg-muted hover:text-foreground active:scale-[0.96] cursor-pointer"
                     />
                     <div className="hidden md:flex md:items-center md:gap-2">
                         <Authenticated>
@@ -94,21 +127,21 @@ export default function AppNav() {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="md:hidden"
+                                className="md:hidden h-8 w-8"
                                 aria-label="Open menu"
                             >
-                                <Menu className="h-5 w-5" />
+                                <Menu className="h-4 w-4" />
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="right" className="w-[280px] p-4">
                             <SheetHeader>
-                                <SheetTitle>Menu</SheetTitle>
+                                <SheetTitle className="text-left text-base">Navigation</SheetTitle>
                             </SheetHeader>
                             <div className="flex flex-col gap-2 pt-4">
                                 <Authenticated>
                                     <NavLinks vertical onNavigate={() => setMobileOpen(false)} />
                                 </Authenticated>
-                                <div className="mt-4 pt-4 border-t">
+                                <div className="mt-4 pt-4 border-t border-border/60">
                                     <Authenticated>
                                         <UserMenu />
                                     </Authenticated>
@@ -128,3 +161,5 @@ export default function AppNav() {
         </header>
     );
 }
+
+export default AppNav;

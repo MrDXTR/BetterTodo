@@ -59,7 +59,6 @@ function getThemeTransitionClipPaths(
             return [polygonCollapsed(cx, cy, 3), `polygon(${verts})`];
         }
         case "diamond": {
-            // Slightly larger than the view-transition circle radius so axis-aligned coverage matches the circle reveal.
             const R = maxRadius * Math.SQRT2;
             const end = [
                 `${cx}px ${cy - R}px`,
@@ -90,7 +89,6 @@ function getThemeTransitionClipPaths(
             return [polygonCollapsed(cx, cy, 4), `polygon(${end})`];
         }
         case "star": {
-            // Small overscan so the last frames never leave a 1px seam before the transition group ends.
             const R = maxRadius * Math.SQRT2 * 1.03;
             const innerRatio = 0.42;
             const starPolygon = (radius: number) => {
@@ -189,8 +187,6 @@ export const AnimatedThemeToggler = ({
         const root = document.documentElement;
         root.dataset.magicuiThemeVt = "active";
         root.style.setProperty("--magicui-theme-toggle-vt-duration", `${duration}ms`);
-        // Pin the collapsed clip-path via CSS so Firefox does not paint the new
-        // theme unclipped between snapshot and the ready.then() JS animation.
         root.style.setProperty("--magicui-theme-vt-clip-from", clipPath[0]);
         const cleanup = () => {
             delete root.dataset.magicuiThemeVt;
@@ -216,7 +212,6 @@ export const AnimatedThemeToggler = ({
                     },
                     {
                         duration,
-                        // Star: linear avoids easing overshoot that fights polygon interpolation at t→1; VT group duration is synced above.
                         easing: shape === "star" ? "linear" : "ease-in-out",
                         fill: "forwards",
                         pseudoElement: "::view-transition-new(root)",
@@ -234,7 +229,11 @@ export const AnimatedThemeToggler = ({
             className={cn(className)}
             {...props}
         >
-            {isDark ? <Sun /> : <Moon />}
+            {isDark ? (
+                <Sun className="h-4 w-4 shrink-0 transition-transform duration-200" />
+            ) : (
+                <Moon className="h-4 w-4 shrink-0 transition-transform duration-200" />
+            )}
             <span className="sr-only">Toggle theme</span>
         </button>
     );

@@ -13,7 +13,7 @@ interface AddCardButtonProps {
     boardColor?: string;
 }
 
-export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonProps) {
+export function AddCardButton({ listId }: AddCardButtonProps) {
     const [isAdding, setIsAdding] = useState(false);
     const [title, setTitle] = useState("");
     const [isCreating, setIsCreating] = useState(false);
@@ -23,7 +23,7 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!title.trim()) return;
+        if (!title.trim() || isCreating) return;
 
         setIsCreating(true);
         try {
@@ -46,10 +46,7 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
         return (
             <form
                 onSubmit={handleSubmit}
-                className="space-y-2 p-2 rounded-lg backdrop-blur-sm"
-                style={{
-                    background: `${boardColor}08`,
-                }}
+                className="space-y-2 p-2 rounded-lg bg-background/70 border border-border/70 shadow-xs"
             >
                 <Input
                     autoFocus
@@ -67,26 +64,18 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                             setTitle("");
                         }
                     }}
-                    className="border-0 bg-background/80 backdrop-blur-sm focus-visible:ring-1 shadow-sm"
-                    style={{
-                        boxShadow: `0 0 0 1px ${boardColor}30`,
-                    }}
+                    className="h-8 text-xs bg-background focus-visible:ring-1"
                     maxLength={200}
+                    disabled={isCreating}
                 />
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1.5">
                     <Button
                         type="submit"
                         size="sm"
                         disabled={!title.trim() || isCreating}
-                        className="transition-all gap-2"
-                        style={{
-                            background: !title.trim()
-                                ? undefined
-                                : `linear-gradient(135deg, ${boardColor} 0%, ${boardColor}dd 100%)`,
-                            color: !title.trim() ? undefined : "white",
-                        }}
+                        className="h-7 text-xs px-2.5 gap-1.5"
                     >
-                        {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {isCreating && <Loader2 className="h-3 w-3 animate-spin" />}
                         Add Card
                     </Button>
                     <Button
@@ -97,7 +86,7 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
                             setIsAdding(false);
                             setTitle("");
                         }}
-                        className="hover:bg-background/80"
+                        className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
                     >
                         Cancel
                     </Button>
@@ -107,19 +96,13 @@ export function AddCardButton({ listId, boardColor = "#0079BF" }: AddCardButtonP
     }
 
     return (
-        <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground transition-all hover:scale-[1.02] group"
+        <button
+            type="button"
             onClick={() => setIsAdding(true)}
-            style={{
-                background: `${boardColor}05`,
-            }}
+            className="w-full flex items-center gap-1.5 rounded-lg border border-transparent hover:border-border/60 hover:bg-muted/40 text-muted-foreground hover:text-foreground px-2.5 py-1.5 text-xs font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.98] cursor-pointer text-left select-none"
         >
-            <Plus
-                className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
-                style={{ color: boardColor }}
-            />
-            <span className="font-medium">Add a card</span>
-        </Button>
+            <Plus className="h-3.5 w-3.5" />
+            <span>Add a card</span>
+        </button>
     );
 }

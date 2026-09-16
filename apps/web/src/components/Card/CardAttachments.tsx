@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface CardAttachmentsProps {
     cardId: Id<"cards">;
@@ -52,15 +53,16 @@ export function CardAttachments({ cardId, isReadOnly = false }: CardAttachmentsP
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<string>("");
     const [deletingId, setDeletingId] = useState<Id<"attachments"> | null>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleUpload = async (files: FileList) => {
+    const handleUpload = async (files: FileList | File[]) => {
         setIsUploading(true);
 
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                setUploadProgress(`Uploading ${file.name} (${i + 1}/${files.length})...`);
+                setUploadProgress(`Uploading ${file.name}...`);
 
                 const uploadUrl = await generateUploadUrl();
 
@@ -117,142 +119,176 @@ export function CardAttachments({ cardId, isReadOnly = false }: CardAttachmentsP
     if (attachments === undefined) {
         return (
             <div className="space-y-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-8 w-full" />
             </div>
         );
     }
 
     return (
         <TooltipProvider delayDuration={120}>
-            <div className="space-y-3">
-                <div>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        multiple
-                        onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                                handleUpload(e.target.files);
+            <div className="space-y-2.5">
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    multiple
+                    onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                            handleUpload(e.target.files);
+                        }
+                    }}
+                />
+
+                {/* Dropzone / Upload button */}
+                {!isReadOnly && (
+                    <div
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDragOver(true);
+                        }}
+                        onDragLeave={() => setIsDragOver(false)}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            setIsDragOver(false);
+                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                handleUpload(e.dataTransfer.files);
                             }
                         }}
-                    />
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="gap-2"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading || isReadOnly}
+                        className={cn(
+                            "flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed text-xs text-muted-foreground transition-[background-color,border-color] cursor-pointer",
+                            isDragOver
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-border/70 bg-card/40 hover:bg-muted/40 hover:text-foreground",
+                            isUploading && "pointer-events-none opacity-60",
+                        )}
                     >
                         {isUploading ? (
                             <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                {uploadProgress}
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                <span className="text-xs">{uploadProgress}</span>
                             </>
                         ) : (
                             <>
-                                <Upload className="h-4 w-4" />
-                                Add Attachment
+                                <Upload className="h-3.5 w-3.5" />
+                                <span>Drop files here or click to upload</span>
                             </>
                         )}
-                    </Button>
-                </div>
-
-                {attachments.length === 0 && !isUploading && (
-                    <p className="text-xs text-muted-foreground">No attachments yet.</p>
+                    </div>
                 )}
 
-                {attachments.map((attachment) => {
-                    const Icon = getFileIcon(attachment.mimeType);
-                    const isImage = attachment.mimeType.startsWith("image/");
-                    const isDeleting = deletingId === attachment._id;
+                {/* Attachment list */}
+                {attachments.length > 0 && (
+                    <div className="space-y-1.5">
+                        {attachments.map((attachment) => {
+                            const Icon = getFileIcon(attachment.mimeType);
+                            const isImage = attachment.mimeType.startsWith("image/");
+                            const isDeleting = deletingId === attachment._id;
 
-                    return (
-                        <div
-                            key={attachment._id}
-                            className="flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                        >
-                            {isImage && attachment.url ? (
-                                <img
-                                    src={attachment.url}
-                                    alt={attachment.fileName}
-                                    className="h-12 w-16 shrink-0 rounded object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-muted">
-                                    <Icon className="h-6 w-6 text-muted-foreground" />
+                            return (
+                                <div
+                                    key={attachment._id}
+                                    className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-card/40 p-2 transition-colors hover:bg-muted/40 shadow-2xs"
+                                >
+                                    {isImage && attachment.url ? (
+                                        <div className="relative h-9 w-12 shrink-0 rounded overflow-hidden">
+                                            <img
+                                                src={attachment.url}
+                                                alt={attachment.fileName}
+                                                className="h-full w-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded pointer-events-none" />
+                                        </div>
+                                    ) : (
+                                        <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded bg-muted/60">
+                                            <Icon className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                    )}
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-xs font-medium text-foreground">
+                                            {attachment.fileName}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            {formatFileSize(attachment.fileSize)} •{" "}
+                                            {new Date(attachment.createdAt).toLocaleDateString()}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        {isImage && !isReadOnly && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-xs"
+                                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                                        onClick={() =>
+                                                            handleSetAsCover(attachment.storageId)
+                                                        }
+                                                    >
+                                                        <ImageIcon className="h-3 w-3" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="text-[10px]">
+                                                    Set as cover
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+
+                                        {attachment.url && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-xs"
+                                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                                        asChild
+                                                    >
+                                                        <a
+                                                            href={attachment.url}
+                                                            download={attachment.fileName}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download className="h-3 w-3" />
+                                                        </a>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="text-[10px]">
+                                                    Download
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+
+                                        {!isReadOnly && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-xs"
+                                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                                        onClick={() => handleDelete(attachment._id)}
+                                                        disabled={isDeleting}
+                                                    >
+                                                        {isDeleting ? (
+                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3 w-3" />
+                                                        )}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="text-[10px]">
+                                                    Delete
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-
-                            <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium break-words">
-                                    {attachment.fileName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {formatFileSize(attachment.fileSize)} •{" "}
-                                    {new Date(attachment.createdAt).toLocaleDateString()}
-                                </p>
-                            </div>
-
-                            <div className="flex shrink-0 items-center gap-1">
-                                {isImage && !isReadOnly && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-7 gap-1 px-2 text-xs"
-                                        onClick={() => handleSetAsCover(attachment.storageId)}
-                                    >
-                                        <ImageIcon className="h-3.5 w-3.5" />
-                                        Cover
-                                    </Button>
-                                )}
-                                {attachment.url && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 w-7 p-0"
-                                                asChild
-                                            >
-                                                <a
-                                                    href={attachment.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    download={attachment.fileName}
-                                                >
-                                                    <Download className="h-3.5 w-3.5" />
-                                                </a>
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">Download</TooltipContent>
-                                    </Tooltip>
-                                )}
-                                {!isReadOnly && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                                onClick={() => handleDelete(attachment._id)}
-                                                disabled={isDeleting}
-                                            >
-                                                {isDeleting ? (
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                ) : (
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                )}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">Delete</TooltipContent>
-                                    </Tooltip>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </TooltipProvider>
     );

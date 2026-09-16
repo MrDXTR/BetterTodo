@@ -21,23 +21,23 @@ export function BoardAvatars({ users }: BoardAvatarsProps) {
     if (!users || users.length === 0) return null;
 
     return (
-        <div className="flex -space-x-2 mr-2">
-            <TooltipProvider delayDuration={300}>
+        <div className="flex -space-x-1.5 mr-1 items-center">
+            <TooltipProvider delayDuration={200}>
                 {users.slice(0, 4).map((member) => (
                     <Tooltip key={member._id}>
                         <TooltipTrigger asChild>
-                            <div className="relative">
-                                <Avatar className="h-8 w-8 border-2 border-background ring-2 ring-primary/20 transition-transform hover:z-10 hover:scale-110">
+                            <div className="relative cursor-pointer transition-transform duration-150 hover:z-10 hover:scale-105">
+                                <Avatar className="h-6 w-6 ring-2 ring-background shrink-0">
                                     <AvatarImage src={member.user?.image || undefined} />
-                                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
+                                    <AvatarFallback className="text-[10px] bg-muted font-medium text-foreground">
                                         {member.user?.name?.charAt(0).toUpperCase() || "?"}
                                     </AvatarFallback>
                                 </Avatar>
                             </div>
                         </TooltipTrigger>
-                        <TooltipContent>
-                            <p className="font-semibold">{member.user?.name || "Unknown"}</p>
-                            <p className="text-xs text-muted-foreground capitalize">
+                        <TooltipContent sideOffset={4} className="text-xs">
+                            <p className="font-medium">{member.user?.name || "Unknown"}</p>
+                            <p className="text-[10px] text-muted-foreground capitalize">
                                 {member.role}
                             </p>
                         </TooltipContent>
@@ -45,7 +45,7 @@ export function BoardAvatars({ users }: BoardAvatarsProps) {
                 ))}
 
                 {users.length > 4 && (
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-muted border-2 border-background text-xs font-medium ring-2 ring-primary/20">
+                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted ring-2 ring-background text-[10px] font-medium text-muted-foreground shrink-0">
                         +{users.length - 4}
                     </div>
                 )}
