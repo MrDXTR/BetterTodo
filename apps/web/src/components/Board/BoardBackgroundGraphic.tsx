@@ -6,12 +6,32 @@ interface BoardBackgroundGraphicProps {
     className?: string;
 }
 
+/**
+ * Parses a hex color (e.g. #0079BF) and returns a secondary shifted hue for gradients
+ */
+function getSecondaryColor(hex: string): string {
+    const cleanHex = hex.replace("#", "");
+    if (cleanHex.length !== 6) return hex;
+
+    const r = parseInt(cleanHex.slice(0, 2), 16);
+    const g = parseInt(cleanHex.slice(2, 4), 16);
+    const b = parseInt(cleanHex.slice(4, 6), 16);
+
+    // Subtle hue rotation & lightness shift for rich dual-tone gradients
+    const shiftedR = Math.min(255, Math.max(0, Math.round(r * 0.8 + b * 0.2)));
+    const shiftedG = Math.min(255, Math.max(0, Math.round(g * 0.7 + r * 0.3)));
+    const shiftedB = Math.min(255, Math.max(0, Math.round(b * 0.85 + g * 0.2)));
+
+    const toHex = (n: number) => n.toString(16).padStart(2, "0");
+    return `#${toHex(shiftedR)}${toHex(shiftedG)}${toHex(shiftedB)}`;
+}
+
 export function BoardBackgroundGraphic({
     color = "#0079BF",
     className,
 }: BoardBackgroundGraphicProps) {
-    // Unique ID prefix to prevent gradient collisions if multiple boards render
-    const uid = useMemo(() => `bg-${Math.random().toString(36).slice(2, 8)}`, []);
+    const uid = useMemo(() => `art-${Math.random().toString(36).slice(2, 8)}`, []);
+    const secondaryColor = useMemo(() => getSecondaryColor(color), [color]);
 
     return (
         <div
@@ -21,293 +41,200 @@ export function BoardBackgroundGraphic({
             )}
             aria-hidden="true"
         >
-            {/* Ambient corner gradient wash */}
+            {/* Seamless full-page ambient color wash */}
             <div
-                className="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-3xl opacity-15 dark:opacity-10 transition-opacity duration-700"
+                className="absolute -top-[25%] -right-[15%] w-[85vw] h-[85vw] max-w-[1100px] max-h-[1100px] rounded-full blur-[140px] opacity-[0.14] dark:opacity-[0.09] transition-all duration-1000"
                 style={{
-                    background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+                    background: `radial-gradient(circle, ${color} 0%, ${secondaryColor} 45%, transparent 75%)`,
                 }}
             />
             <div
-                className="absolute -bottom-40 -left-20 w-[420px] h-[420px] rounded-full blur-3xl opacity-10 dark:opacity-8 transition-opacity duration-700"
+                className="absolute -bottom-[30%] -left-[15%] w-[90vw] h-[90vw] max-w-[1200px] max-h-[1200px] rounded-full blur-[160px] opacity-[0.10] dark:opacity-[0.07] transition-all duration-1000"
                 style={{
-                    background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+                    background: `radial-gradient(circle, ${secondaryColor} 0%, ${color} 50%, transparent 75%)`,
                 }}
             />
 
-            {/* Minimal SVG Kanban Illustration in bottom-right canvas */}
-            <div className="absolute right-4 bottom-4 sm:right-12 sm:bottom-8 w-72 sm:w-96 md:w-[440px] opacity-40 dark:opacity-30 transition-opacity duration-500">
-                <svg
-                    viewBox="0 0 440 300"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-auto"
-                >
-                    <defs>
-                        {/* Primary gradient fill */}
-                        <linearGradient id={`${uid}-primary`} x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-                            <stop offset="100%" stopColor={color} stopOpacity="0.04" />
-                        </linearGradient>
+            {/* Seamless Full-Page Abstract Vector Art */}
+            <svg
+                viewBox="0 0 1440 900"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="xMidYMid slice"
+                className="absolute inset-0 w-full h-full opacity-60 dark:opacity-40 transition-opacity duration-700"
+            >
+                <defs>
+                    {/* Primary flowing wave gradient */}
+                    <linearGradient id={`${uid}-wave1`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+                        <stop offset="45%" stopColor={secondaryColor} stopOpacity="0.08" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+                    </linearGradient>
 
-                        {/* Secondary soft gradient */}
-                        <linearGradient id={`${uid}-soft`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor={color} stopOpacity="0.14" />
-                            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-                        </linearGradient>
+                    {/* Secondary counter-wave gradient */}
+                    <linearGradient id={`${uid}-wave2`} x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor={secondaryColor} stopOpacity="0.14" />
+                        <stop offset="55%" stopColor={color} stopOpacity="0.05" />
+                        <stop offset="100%" stopColor={secondaryColor} stopOpacity="0.01" />
+                    </linearGradient>
 
-                        {/* Border gradient */}
-                        <linearGradient id={`${uid}-stroke`} x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor={color} stopOpacity="0.45" />
-                            <stop offset="50%" stopColor={color} stopOpacity="0.18" />
-                            <stop offset="100%" stopColor={color} stopOpacity="0.06" />
-                        </linearGradient>
+                    {/* Deep atmospheric layer */}
+                    <linearGradient id={`${uid}-wave3`} x1="50%" y1="0%" x2="50%" y2="100%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.09" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0" />
+                    </linearGradient>
 
-                        {/* Accent gradient for pills */}
-                        <linearGradient id={`${uid}-accent`} x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor={color} stopOpacity="0.5" />
-                            <stop offset="100%" stopColor={color} stopOpacity="0.25" />
-                        </linearGradient>
-                    </defs>
+                    {/* Contour line gradient */}
+                    <linearGradient id={`${uid}-contour`} x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.06" />
+                        <stop offset="30%" stopColor={color} stopOpacity="0.32" />
+                        <stop offset="70%" stopColor={secondaryColor} stopOpacity="0.25" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+                    </linearGradient>
 
-                    {/* Subtle connecting dotted grid lines */}
+                    {/* Hairline stroke gradient */}
+                    <linearGradient id={`${uid}-hairline`} x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={secondaryColor} stopOpacity="0.04" />
+                        <stop offset="50%" stopColor={color} stopOpacity="0.24" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.03" />
+                    </linearGradient>
+
+                    {/* Mask for soft edge feathering */}
+                    <linearGradient id={`${uid}-fade`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="white" stopOpacity="0.9" />
+                        <stop offset="90%" stopColor="white" stopOpacity="0.7" />
+                        <stop offset="100%" stopColor="white" stopOpacity="0.5" />
+                    </linearGradient>
+                </defs>
+
+                {/* ============================================================ */}
+                {/* 1. BROAD ORGANIC SILK WAVES (Atmospheric Fills) */}
+                {/* ============================================================ */}
+                <g mask={`url(#${uid}-fade)`}>
+                    {/* Background deep wave */}
                     <path
-                        d="M 20 70 L 420 70 M 20 180 L 420 180"
-                        stroke={color}
-                        strokeOpacity="0.08"
-                        strokeDasharray="4 6"
-                        strokeWidth="1"
+                        d="M -100 320 Q 320 180 720 380 T 1540 260 L 1540 950 L -100 950 Z"
+                        fill={`url(#${uid}-wave3)`}
                     />
 
-                    {/* ============================================================ */}
-                    {/* COLUMN 1 (To Do) */}
-                    {/* ============================================================ */}
-                    <g className="transition-transform duration-500">
-                        {/* Column Container */}
-                        <rect
-                            x="24"
-                            y="40"
-                            width="116"
-                            height="240"
-                            rx="14"
-                            fill={`url(#${uid}-soft)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        {/* Column Header Pill */}
-                        <rect
-                            x="36"
-                            y="54"
-                            width="48"
-                            height="8"
-                            rx="4"
-                            fill={`url(#${uid}-accent)`}
-                        />
-                        <circle cx="124" cy="58" r="3" fill={color} fillOpacity="0.3" />
+                    {/* Middle sweeping silk wave */}
+                    <path
+                        d="M -100 480 C 260 340 580 620 960 420 C 1220 280 1380 440 1540 380 L 1540 950 L -100 950 Z"
+                        fill={`url(#${uid}-wave1)`}
+                    />
 
-                        {/* Card 1 */}
-                        <rect
-                            x="34"
-                            y="74"
-                            width="96"
-                            height="52"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        <rect x="44" y="86" width="56" height="5" rx="2.5" fill={color} fillOpacity="0.4" />
-                        <rect x="44" y="96" width="38" height="4" rx="2" fill={color} fillOpacity="0.2" />
-                        <circle cx="48" cy="113" r="3.5" fill={color} fillOpacity="0.35" />
-                        <circle cx="58" cy="113" r="3.5" fill={color} fillOpacity="0.25" />
+                    {/* Foreground counter-flow wave */}
+                    <path
+                        d="M -100 680 C 340 820 680 540 1080 660 C 1320 730 1440 600 1540 560 L 1540 950 L -100 950 Z"
+                        fill={`url(#${uid}-wave2)`}
+                    />
+                </g>
 
-                        {/* Card 2 */}
-                        <rect
-                            x="34"
-                            y="136"
-                            width="96"
-                            height="60"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        <rect x="44" y="148" width="68" height="5" rx="2.5" fill={color} fillOpacity="0.4" />
-                        <rect x="44" y="158" width="48" height="4" rx="2" fill={color} fillOpacity="0.2" />
-                        <rect x="44" y="167" width="58" height="4" rx="2" fill={color} fillOpacity="0.15" />
-                        <rect x="44" y="180" width="28" height="6" rx="3" fill={`url(#${uid}-accent)`} />
+                {/* ============================================================ */}
+                {/* 2. TOPOGRAPHIC & GENERATIVE CONTOUR RIBBONS (Precision Lines) */}
+                {/* ============================================================ */}
+                <g>
+                    {/* Primary flow contour bundle */}
+                    <path
+                        d="M -50 210 C 380 90 740 360 1140 220 C 1320 160 1420 230 1500 200"
+                        stroke={`url(#${uid}-contour)`}
+                        strokeWidth="1.25"
+                    />
+                    <path
+                        d="M -50 255 C 370 140 730 400 1130 270 C 1310 210 1410 275 1500 248"
+                        stroke={`url(#${uid}-contour)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.85"
+                    />
+                    <path
+                        d="M -50 305 C 360 195 720 445 1120 325 C 1300 265 1400 325 1500 300"
+                        stroke={`url(#${uid}-contour)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.7"
+                    />
+                    <path
+                        d="M -50 360 C 350 255 710 495 1110 385 C 1290 325 1390 380 1500 355"
+                        stroke={`url(#${uid}-contour)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.55"
+                        strokeDasharray="4 6"
+                    />
+                    <path
+                        d="M -50 420 C 340 320 700 550 1100 450 C 1280 390 1380 440 1500 415"
+                        stroke={`url(#${uid}-contour)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.45"
+                    />
 
-                        {/* Card 3 (Ghost outline) */}
-                        <rect
-                            x="34"
-                            y="206"
-                            width="96"
-                            height="44"
-                            rx="8"
-                            stroke={color}
-                            strokeOpacity="0.18"
-                            strokeDasharray="3 3"
-                            strokeWidth="1"
-                            fill="none"
-                        />
+                    {/* Lower harmonic wave bundle */}
+                    <path
+                        d="M -50 560 C 280 430 640 680 1020 540 C 1260 450 1390 530 1500 490"
+                        stroke={`url(#${uid}-hairline)`}
+                        strokeWidth="1.25"
+                    />
+                    <path
+                        d="M -50 610 C 290 485 650 730 1030 595 C 1270 505 1400 580 1500 545"
+                        stroke={`url(#${uid}-hairline)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.8"
+                    />
+                    <path
+                        d="M -50 665 C 300 545 660 785 1040 655 C 1280 565 1410 635 1500 605"
+                        stroke={`url(#${uid}-hairline)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.65"
+                    />
+                    <path
+                        d="M -50 725 C 310 610 670 845 1050 720 C 1290 630 1420 695 1500 670"
+                        stroke={`url(#${uid}-hairline)`}
+                        strokeWidth="1"
+                        strokeOpacity="0.5"
+                        strokeDasharray="6 8"
+                    />
+                </g>
+
+                {/* ============================================================ */}
+                {/* 3. GENERATIVE ARCHITECTURAL ARCS & HORIZON ACCENTS */}
+                {/* ============================================================ */}
+                <g>
+                    {/* Vast celestial orbital curve */}
+                    <circle
+                        cx="1200"
+                        cy="120"
+                        r="380"
+                        stroke={color}
+                        strokeWidth="1"
+                        strokeOpacity="0.12"
+                        strokeDasharray="5 7"
+                    />
+                    <circle
+                        cx="1200"
+                        cy="120"
+                        r="240"
+                        stroke={secondaryColor}
+                        strokeWidth="1"
+                        strokeOpacity="0.08"
+                    />
+
+                    {/* Delicate precision crosshairs & micro-constellation nodes */}
+                    <g stroke={color} strokeOpacity="0.25" strokeWidth="1">
+                        <path d="M 280 145 L 280 155 M 275 150 L 285 150" />
+                        <path d="M 860 115 L 860 125 M 855 120 L 865 120" />
+                        <path d="M 1240 465 L 1240 475 M 1235 470 L 1245 470" />
+                        <path d="M 460 625 L 460 635 M 455 630 L 465 630" />
                     </g>
 
-                    {/* ============================================================ */}
-                    {/* COLUMN 2 (In Progress - Floating / Elevated) */}
-                    {/* ============================================================ */}
-                    <g className="transition-transform duration-500">
-                        {/* Column Container */}
-                        <rect
-                            x="162"
-                            y="25"
-                            width="116"
-                            height="255"
-                            rx="14"
-                            fill={`url(#${uid}-soft)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        {/* Header Pill */}
-                        <rect
-                            x="174"
-                            y="39"
-                            width="58"
-                            height="8"
-                            rx="4"
-                            fill={`url(#${uid}-accent)`}
-                        />
-                        <circle cx="262" cy="43" r="3" fill={color} fillOpacity="0.3" />
+                    {/* Soft glowing accent nodes on intersection ridges */}
+                    <circle cx="740" cy="360" r="3" fill={color} fillOpacity="0.35" />
+                    <circle cx="740" cy="360" r="7" stroke={color} strokeOpacity="0.18" strokeWidth="1" />
 
-                        {/* Card 1 (Active / Highlighted with glow) */}
-                        <rect
-                            x="172"
-                            y="59"
-                            width="96"
-                            height="74"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1.25"
-                        />
-                        {/* Card Cover Banner preview */}
-                        <rect
-                            x="173"
-                            y="60"
-                            width="94"
-                            height="18"
-                            rx="7"
-                            fill={`url(#${uid}-accent)`}
-                            fillOpacity="0.35"
-                        />
-                        <rect x="182" y="86" width="62" height="5" rx="2.5" fill={color} fillOpacity="0.45" />
-                        <rect x="182" y="96" width="44" height="4" rx="2" fill={color} fillOpacity="0.25" />
-                        {/* Checklist progress bar */}
-                        <rect x="182" y="112" width="76" height="3.5" rx="1.75" fill={color} fillOpacity="0.15" />
-                        <rect x="182" y="112" width="46" height="3.5" rx="1.75" fill={color} fillOpacity="0.6" />
+                    <circle cx="1140" cy="220" r="2.5" fill={secondaryColor} fillOpacity="0.4" />
+                    <circle cx="1140" cy="220" r="6" stroke={secondaryColor} strokeOpacity="0.2" strokeWidth="1" />
 
-                        {/* Card 2 */}
-                        <rect
-                            x="172"
-                            y="143"
-                            width="96"
-                            height="54"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        <rect x="182" y="155" width="50" height="5" rx="2.5" fill={color} fillOpacity="0.4" />
-                        <rect x="182" y="165" width="68" height="4" rx="2" fill={color} fillOpacity="0.2" />
-                        <rect x="182" y="179" width="32" height="7" rx="3.5" fill={color} fillOpacity="0.25" />
-
-                        {/* Card 3 */}
-                        <rect
-                            x="172"
-                            y="207"
-                            width="96"
-                            height="48"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        <rect x="182" y="219" width="58" height="5" rx="2.5" fill={color} fillOpacity="0.35" />
-                        <rect x="182" y="229" width="36" height="4" rx="2" fill={color} fillOpacity="0.18" />
-                    </g>
-
-                    {/* ============================================================ */}
-                    {/* COLUMN 3 (Completed) */}
-                    {/* ============================================================ */}
-                    <g className="transition-transform duration-500">
-                        {/* Column Container */}
-                        <rect
-                            x="300"
-                            y="48"
-                            width="116"
-                            height="232"
-                            rx="14"
-                            fill={`url(#${uid}-soft)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        {/* Header Pill */}
-                        <rect
-                            x="312"
-                            y="62"
-                            width="44"
-                            height="8"
-                            rx="4"
-                            fill={`url(#${uid}-accent)`}
-                        />
-                        <circle cx="400" cy="66" r="3" fill={color} fillOpacity="0.3" />
-
-                        {/* Card 1 (Completed with Checkmark badge) */}
-                        <rect
-                            x="310"
-                            y="82"
-                            width="96"
-                            height="56"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        <rect x="320" y="94" width="56" height="5" rx="2.5" fill={color} fillOpacity="0.35" />
-                        <rect x="320" y="104" width="40" height="4" rx="2" fill={color} fillOpacity="0.18" />
-                        {/* Mini checkmark circle */}
-                        <circle cx="392" cy="122" r="5" fill={color} fillOpacity="0.35" />
-                        <path
-                            d="M 389.5 122 L 391.2 123.7 L 394.5 120.5"
-                            stroke="white"
-                            strokeWidth="1"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-
-                        {/* Card 2 */}
-                        <rect
-                            x="310"
-                            y="148"
-                            width="96"
-                            height="50"
-                            rx="8"
-                            fill={`url(#${uid}-primary)`}
-                            stroke={`url(#${uid}-stroke)`}
-                            strokeWidth="1"
-                        />
-                        <rect x="320" y="160" width="64" height="5" rx="2.5" fill={color} fillOpacity="0.35" />
-                        <rect x="320" y="170" width="34" height="4" rx="2" fill={color} fillOpacity="0.18" />
-                        <circle cx="392" cy="184" r="5" fill={color} fillOpacity="0.3" />
-                        <path
-                            d="M 389.5 184 L 391.2 185.7 L 394.5 182.5"
-                            stroke="white"
-                            strokeWidth="1"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </g>
-                </svg>
-            </div>
+                    <circle cx="370" cy="140" r="2" fill={color} fillOpacity="0.3" />
+                    <circle cx="1020" cy="540" r="2.5" fill={color} fillOpacity="0.3" />
+                </g>
+            </svg>
         </div>
     );
 }
@@ -317,6 +244,7 @@ export function BoardEmptyStateGraphic({
     className,
 }: BoardBackgroundGraphicProps) {
     const uid = useMemo(() => `empty-${Math.random().toString(36).slice(2, 8)}`, []);
+    const secondaryColor = useMemo(() => getSecondaryColor(color), [color]);
 
     return (
         <div className={cn("flex flex-col items-center justify-center select-none", className)}>
@@ -328,62 +256,53 @@ export function BoardEmptyStateGraphic({
             >
                 <defs>
                     <linearGradient id={`${uid}-grad`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-                        <stop offset="100%" stopColor={color} stopOpacity="0.08" />
+                        <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+                        <stop offset="100%" stopColor={secondaryColor} stopOpacity="0.06" />
                     </linearGradient>
-                    <linearGradient id={`${uid}-border`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={color} stopOpacity="0.5" />
-                        <stop offset="100%" stopColor={color} stopOpacity="0.15" />
+                    <linearGradient id={`${uid}-stroke`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+                        <stop offset="100%" stopColor={secondaryColor} stopOpacity="0.12" />
                     </linearGradient>
                 </defs>
 
-                {/* Left Mini Column */}
+                {/* Minimalist modern generative art badge */}
                 <rect
-                    x="15"
-                    y="15"
-                    width="38"
-                    height="80"
-                    rx="6"
+                    x="12"
+                    y="12"
+                    width="136"
+                    height="86"
+                    rx="12"
                     fill={`url(#${uid}-grad)`}
-                    stroke={`url(#${uid}-border)`}
+                    stroke={`url(#${uid}-stroke)`}
                     strokeWidth="1"
                 />
-                <rect x="20" y="22" width="18" height="3" rx="1.5" fill={color} fillOpacity="0.5" />
-                <rect x="19" y="30" width="30" height="18" rx="4" fill={color} fillOpacity="0.18" />
-                <rect x="19" y="52" width="30" height="22" rx="4" fill={color} fillOpacity="0.18" />
 
-                {/* Center Mini Column (Active / Raised) */}
-                <rect
-                    x="61"
-                    y="8"
-                    width="38"
-                    height="94"
-                    rx="6"
-                    fill={`url(#${uid}-grad)`}
-                    stroke={`url(#${uid}-border)`}
-                    strokeWidth="1.25"
+                {/* Fluid art curves inside badge */}
+                <path
+                    d="M 12 62 C 45 42 75 74 110 52 C 128 41 140 50 148 46 L 148 98 L 12 98 Z"
+                    fill={color}
+                    fillOpacity="0.12"
                 />
-                <rect x="66" y="16" width="22" height="3" rx="1.5" fill={color} fillOpacity="0.7" />
-                <rect x="65" y="24" width="30" height="26" rx="4" fill={color} fillOpacity="0.25" />
-                <rect x="65" y="54" width="30" height="20" rx="4" fill={color} fillOpacity="0.2" />
-                <rect x="65" y="78" width="30" height="16" rx="4" fill={color} fillOpacity="0.15" />
-
-                {/* Right Mini Column */}
-                <rect
-                    x="107"
-                    y="15"
-                    width="38"
-                    height="80"
-                    rx="6"
-                    fill={`url(#${uid}-grad)`}
-                    stroke={`url(#${uid}-border)`}
+                <path
+                    d="M 14 52 C 46 34 76 64 112 44 C 130 34 142 42 148 38"
+                    stroke={color}
+                    strokeWidth="1.2"
+                    strokeOpacity="0.45"
+                />
+                <path
+                    d="M 14 62 C 46 44 76 74 112 54 C 130 44 142 52 148 48"
+                    stroke={secondaryColor}
                     strokeWidth="1"
+                    strokeOpacity="0.3"
+                    strokeDasharray="3 3"
                 />
-                <rect x="112" y="22" width="16" height="3" rx="1.5" fill={color} fillOpacity="0.5" />
-                <rect x="111" y="30" width="30" height="24" rx="4" fill={color} fillOpacity="0.18" />
-                <circle cx="134" cy="46" r="2.5" fill={color} fillOpacity="0.5" />
+
+                {/* Floating focus node */}
+                <circle cx="112" cy="44" r="3" fill={color} fillOpacity="0.6" />
+                <circle cx="112" cy="44" r="6" stroke={color} strokeOpacity="0.25" strokeWidth="1" />
             </svg>
         </div>
     );
 }
+
 export default BoardBackgroundGraphic;
