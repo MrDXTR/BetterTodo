@@ -219,7 +219,7 @@ export function CardModal({
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-                <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-4xl flex-col p-0 overflow-hidden rounded-2xl border border-border/70 shadow-2xl">
+                <DialogContent className="flex max-h-[86vh] w-[94vw] sm:max-w-3xl md:max-w-4xl lg:max-w-5xl flex-col p-0 overflow-hidden rounded-2xl border border-border/70 shadow-2xl">
                     {isLoading && <CardModalSkeleton />}
 
                     {notFound && (
@@ -229,17 +229,19 @@ export function CardModal({
                     )}
 
                     {card && (
-                        <div className="flex flex-col h-full overflow-y-auto">
+                        <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
                             {/* Edge-to-edge Cover Banner */}
                             {card.coverImage && (
-                                <CardCoverImage
-                                    cardId={card._id}
-                                    coverImage={card.coverImage}
-                                    variant="banner"
-                                />
+                                <div className="shrink-0">
+                                    <CardCoverImage
+                                        cardId={card._id}
+                                        coverImage={card.coverImage}
+                                        variant="banner"
+                                    />
+                                </div>
                             )}
 
-                            <div className="p-5 md:p-7 space-y-6">
+                            <div className="p-5 md:p-7 space-y-6 flex-1">
                                 {/* Header: Title + Status Pill */}
                                 <DialogHeader className="space-y-2 text-left">
                                     <div className="flex items-start justify-between gap-3">
@@ -298,7 +300,7 @@ export function CardModal({
                                 </DialogHeader>
 
                                 {/* Main Two-Column Layout */}
-                                <div className="grid grid-cols-1 md:grid-cols-[1fr_270px] gap-6 items-start">
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_290px] lg:grid-cols-[1fr_310px] gap-6 items-start">
                                     {/* Left Column: Description, Checklists, Activity */}
                                     <div className="space-y-6 min-w-0">
                                         {/* Description Section */}
@@ -617,7 +619,7 @@ function CardModalSkeleton() {
                 <div className="h-6 w-2/3 rounded bg-muted animate-pulse" />
                 <div className="h-4 w-1/3 rounded bg-muted/60 animate-pulse" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_270px] gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_290px] lg:grid-cols-[1fr_310px] gap-6">
                 <div className="space-y-4">
                     <div className="h-24 rounded-xl bg-muted/50 animate-pulse" />
                     <div className="h-32 rounded-xl bg-muted/50 animate-pulse" />
