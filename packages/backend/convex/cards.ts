@@ -24,11 +24,28 @@ export const getById = query({
 
         const labels = await Promise.all(cardLabelLinks.map((link) => ctx.db.get(link.labelId)));
 
-        // Get assignments
-        const assignments = await ctx.db
+        // Get assignments with user details
+        const rawAssignments = await ctx.db
             .query("cardAssignments")
             .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
             .collect();
+
+        const assignments = await Promise.all(
+            rawAssignments.map(async (assignment) => {
+                const user = await authComponent.getAnyUserById(ctx, assignment.userId);
+                return {
+                    ...assignment,
+                    user: user
+                        ? {
+                              _id: user._id,
+                              name: user.name,
+                              email: user.email,
+                              image: user.image,
+                          }
+                        : null,
+                };
+            }),
+        );
 
         // Get checklists
         const checklists = await ctx.db
@@ -80,10 +97,27 @@ export const getAssignments = query({
     handler: async (ctx, args) => {
         await ensureCardReadAccess(ctx, args.cardId);
 
-        return await ctx.db
+        const assignments = await ctx.db
             .query("cardAssignments")
             .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
             .collect();
+
+        return await Promise.all(
+            assignments.map(async (assignment) => {
+                const user = await authComponent.getAnyUserById(ctx, assignment.userId);
+                return {
+                    ...assignment,
+                    user: user
+                        ? {
+                              _id: user._id,
+                              name: user.name,
+                              email: user.email,
+                              image: user.image,
+                          }
+                        : null,
+                };
+            }),
+        );
     },
 });
 

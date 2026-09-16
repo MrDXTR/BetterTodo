@@ -61,6 +61,21 @@ export const update = mutation({
 });
 
 /**
+ * Update list title (convenience wrapper)
+ */
+export const updateTitle = mutation({
+    args: {
+        listId: v.id("lists"),
+        title: v.string(),
+    },
+    handler: async (ctx, args) => {
+        await ensureListWriteAccess(ctx, args.listId, "member");
+        await ctx.db.patch(args.listId, { title: args.title });
+        return await ctx.db.get(args.listId);
+    },
+});
+
+/**
  * Update list position (for drag and drop reordering)
  */
 export const updatePosition = mutation({
@@ -103,6 +118,98 @@ export const updatePosition = mutation({
 });
 
 /**
+ * Duplicate a list and all its cards
+ */
+export const duplicate = mutation({
+    args: { listId: v.id("lists") },
+    handler: async (ctx, args) => {
+        const { user, list } = await ensureListWriteAccess(ctx, args.listId, "member");
+
+        // Get max position of lists on the board
+        const existingLists = await ctx.db
+            .query("lists")
+            .withIndex("by_board", (q) => q.eq("boardId", list.boardId))
+            .filter((q) => q.eq(q.field("archived"), false))
+            .collect();
+
+        const maxPosition = existingLists.reduce((max, l) => Math.max(max, l.position), -1);
+
+        const now = Date.now();
+        const newListId = await ctx.db.insert("lists", {
+            boardId: list.boardId,
+            title: `${list.title} (Copy)`,
+            position: maxPosition + 1,
+            cardLimit: list.cardLimit,
+            archived: false,
+            createdAt: now,
+        });
+
+        // Duplicate all non-archived cards in this list
+        const cards = await ctx.db
+            .query("cards")
+            .withIndex("by_list", (q) => q.eq("listId", args.listId))
+            .filter((q) => q.eq(q.field("archived"), false))
+            .collect();
+
+        for (const card of cards) {
+            const { _id: oldCardId, _creationTime, ...cardData } = card;
+            const newCardId = await ctx.db.insert("cards", {
+                ...cardData,
+                listId: newListId,
+                createdBy: user._id,
+                createdAt: now,
+                updatedAt: now,
+            });
+
+            // Duplicate checklists
+            const checklists = await ctx.db
+                .query("checklists")
+                .withIndex("by_card", (q) => q.eq("cardId", oldCardId))
+                .collect();
+
+            for (const cl of checklists) {
+                const newClId = await ctx.db.insert("checklists", {
+                    cardId: newCardId,
+                    title: cl.title,
+                    position: cl.position,
+                });
+
+                const items = await ctx.db
+                    .query("checklistItems")
+                    .withIndex("by_checklist", (q) => q.eq("checklistId", cl._id))
+                    .collect();
+
+                for (const item of items) {
+                    await ctx.db.insert("checklistItems", {
+                        checklistId: newClId,
+                        title: item.title,
+                        position: item.position,
+                        completed: item.completed,
+                        dueDate: item.dueDate,
+                        assignedTo: item.assignedTo,
+                    });
+                }
+            }
+
+            // Duplicate card label links
+            const cardLabels = await ctx.db
+                .query("cardLabels")
+                .withIndex("by_card", (q) => q.eq("cardId", oldCardId))
+                .collect();
+
+            for (const cl of cardLabels) {
+                await ctx.db.insert("cardLabels", {
+                    cardId: newCardId,
+                    labelId: cl.labelId,
+                });
+            }
+        }
+
+        return await ctx.db.get(newListId);
+    },
+});
+
+/**
  * Archive a list
  */
 export const archive = mutation({
@@ -122,7 +229,7 @@ export const archive = mutation({
 export const deleteList = mutation({
     args: { listId: v.id("lists") },
     handler: async (ctx, args) => {
-        const { list } = await ensureListWriteAccess(ctx, args.listId, "admin");
+        await ensureListWriteAccess(ctx, args.listId, "admin");
 
         // Delete all cards in this list
         const cards = await ctx.db

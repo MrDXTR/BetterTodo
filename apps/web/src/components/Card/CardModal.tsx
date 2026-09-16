@@ -13,6 +13,7 @@ import {
     MessageSquare,
     Paperclip,
     Trash2,
+    X,
 } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -68,11 +69,17 @@ export function CardModal({
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
 
+    // Field mutation loading states
+    const [isUpdatingPriority, setIsUpdatingPriority] = useState(false);
+    const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
+    const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+
     // Dialog states
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
     const [showCopyDialog, setShowCopyDialog] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
 
@@ -130,33 +137,42 @@ export function CardModal({
     };
 
     const handlePriorityChange = async (priority: string) => {
-        if (!card) return;
+        if (!card || isUpdatingPriority) return;
+        setIsUpdatingPriority(true);
         try {
             await updateCard({
                 cardId: card._id,
                 priority: priority === "none" ? undefined : (priority as any),
             });
+            toast.success("Priority updated");
         } catch (error) {
             console.error("Error updating priority:", error);
             toast.error("Failed to update priority");
+        } finally {
+            setIsUpdatingPriority(false);
         }
     };
 
     const handleDueDateChange = async (date: Date | undefined) => {
-        if (!card) return;
+        if (!card || isUpdatingDueDate) return;
+        setIsUpdatingDueDate(true);
         try {
             await updateCard({
                 cardId: card._id,
                 dueDate: date ? date.getTime() : undefined,
             });
+            toast.success("Due date updated");
         } catch (error) {
             console.error("Error updating due date:", error);
             toast.error("Failed to update due date");
+        } finally {
+            setIsUpdatingDueDate(false);
         }
     };
 
     const handleToggleComplete = async () => {
-        if (!card) return;
+        if (!card || isTogglingComplete) return;
+        setIsTogglingComplete(true);
         try {
             await updateCard({
                 cardId: card._id,
@@ -165,6 +181,8 @@ export function CardModal({
         } catch (error) {
             console.error("Error toggling completed:", error);
             toast.error("Failed to update status");
+        } finally {
+            setIsTogglingComplete(false);
         }
     };
 
@@ -173,6 +191,7 @@ export function CardModal({
         setIsArchiving(true);
         try {
             await archiveCard({ cardId: card._id });
+            setShowArchiveDialog(false);
             onClose();
             toast.success("Card archived");
         } catch (error) {
@@ -199,14 +218,18 @@ export function CardModal({
     };
 
     const handleDelete = async () => {
-        if (!card) return;
+        if (!card || isDeleting) return;
+        setIsDeleting(true);
         try {
             await deleteCard({ cardId: card._id });
+            setShowDeleteDialog(false);
             onClose();
             toast.success("Card deleted");
         } catch (error) {
             console.error("Error deleting card:", error);
             toast.error("Failed to delete card");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -219,7 +242,22 @@ export function CardModal({
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-                <DialogContent className="flex max-h-[86vh] w-[94vw] sm:max-w-3xl md:max-w-4xl lg:max-w-5xl flex-col p-0 overflow-hidden rounded-2xl border border-border/70 shadow-2xl">
+                <DialogContent
+                    showCloseButton={false}
+                    className="flex max-h-[86vh] w-[94vw] sm:max-w-3xl md:max-w-4xl lg:max-w-5xl flex-col p-0 overflow-hidden rounded-2xl border border-border/70 shadow-2xl"
+                >
+                    {/* Fallback close button when loading or card not found */}
+                    {(isLoading || notFound) && (
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="absolute top-3.5 right-3.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 cursor-pointer"
+                            aria-label="Close modal"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+
                     {isLoading && <CardModalSkeleton />}
 
                     {notFound && (
@@ -232,17 +270,26 @@ export function CardModal({
                         <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
                             {/* Edge-to-edge Cover Banner */}
                             {card.coverImage && (
-                                <div className="shrink-0">
+                                <div className="relative shrink-0">
                                     <CardCoverImage
                                         cardId={card._id}
                                         coverImage={card.coverImage}
                                         variant="banner"
                                     />
+                                    {/* Close button over banner */}
+                                    <button
+                                        type="button"
+                                        onClick={handleClose}
+                                        className="absolute top-3.5 right-3.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white/90 backdrop-blur-md transition-all hover:bg-black/75 hover:text-white active:scale-95 cursor-pointer shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                        aria-label="Close modal"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
                                 </div>
                             )}
 
                             <div className="p-5 md:p-7 space-y-6 flex-1">
-                                {/* Header: Title + Status Pill */}
+                                {/* Header: Title + Status Pill & Close */}
                                 <DialogHeader className="space-y-2 text-left">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
@@ -277,25 +324,40 @@ export function CardModal({
                                             )}
                                         </div>
 
-                                        {/* Mark Done Pill Button */}
-                                        <button
-                                            type="button"
-                                            onClick={handleToggleComplete}
-                                            disabled={isReadOnly}
-                                            className={cn(
-                                                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors shrink-0 cursor-pointer active:scale-[0.97]",
-                                                card.completed
-                                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
-                                                    : "bg-muted text-muted-foreground border-border/70 hover:bg-muted/80 hover:text-foreground",
+                                        {/* Top-Right Action Controls: Status Pill + Close Button (when no cover image) */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={handleToggleComplete}
+                                                disabled={isReadOnly || isTogglingComplete}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors shrink-0 cursor-pointer active:scale-[0.97] disabled:opacity-70",
+                                                    card.completed
+                                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                                                        : "bg-muted text-muted-foreground border-border/70 hover:bg-muted/80 hover:text-foreground",
+                                                )}
+                                            >
+                                                {isTogglingComplete ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                                                ) : card.completed ? (
+                                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                ) : (
+                                                    <Circle className="h-3.5 w-3.5" />
+                                                )}
+                                                <span>{card.completed ? "Completed" : "Mark done"}</span>
+                                            </button>
+
+                                            {!card.coverImage && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClose}
+                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                    aria-label="Close modal"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
                                             )}
-                                        >
-                                            {card.completed ? (
-                                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            ) : (
-                                                <Circle className="h-3.5 w-3.5" />
-                                            )}
-                                            <span>{card.completed ? "Completed" : "Mark done"}</span>
-                                        </button>
+                                        </div>
                                     </div>
                                 </DialogHeader>
 
@@ -429,11 +491,14 @@ export function CardModal({
 
                                             {/* Priority */}
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs text-muted-foreground shrink-0">
+                                                <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1.5">
                                                     Priority
+                                                    {isUpdatingPriority && (
+                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                    )}
                                                 </span>
                                                 <Select
-                                                    disabled={isReadOnly}
+                                                    disabled={isReadOnly || isUpdatingPriority}
                                                     value={card.priority || "none"}
                                                     onValueChange={(val) => {
                                                         if (
@@ -460,11 +525,15 @@ export function CardModal({
 
                                             {/* Due Date */}
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs text-muted-foreground shrink-0">
+                                                <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1.5">
                                                     Due date
+                                                    {isUpdatingDueDate && (
+                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                    )}
                                                 </span>
                                                 <div className="w-36 max-w-[145px]">
                                                     <DatePicker
+                                                        disabled={isReadOnly || isUpdatingDueDate}
                                                         date={dueDate}
                                                         onDateChange={handleDueDateChange}
                                                         placeholder="No date"
@@ -572,6 +641,7 @@ export function CardModal({
                 onConfirm={handleDelete}
                 title="Delete Card"
                 description="Are you sure you want to permanently delete this card? This action cannot be undone."
+                isLoading={isDeleting}
             />
 
             <ConfirmationDialog

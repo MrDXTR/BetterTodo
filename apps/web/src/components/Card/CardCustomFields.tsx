@@ -115,7 +115,7 @@ export function CardCustomFields({ cardId, isEditable }: CardCustomFieldsProps) 
                                     <Input
                                         disabled={!isEditable || isSaving}
                                         defaultValue={value?.textValue ?? ""}
-                                        placeholder="Empty"
+
                                         onBlur={(e) =>
                                             save(field._id, {
                                                 textValue: e.target.value.trim() || undefined,
@@ -130,7 +130,7 @@ export function CardCustomFields({ cardId, isEditable }: CardCustomFieldsProps) 
                                         type="number"
                                         disabled={!isEditable || isSaving}
                                         defaultValue={value?.numberValue ?? ""}
-                                        placeholder="Empty"
+
                                         onBlur={(e) => {
                                             const raw = e.target.value.trim();
                                             save(field._id, {

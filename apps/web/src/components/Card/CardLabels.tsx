@@ -121,9 +121,14 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                     <Button
                         variant="outline"
                         size="xs"
+                        disabled={Object.keys(pendingLabelIds).length > 0}
                         className="h-6 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
                     >
-                        <Tag className="w-3 h-3" />
+                        {Object.keys(pendingLabelIds).length > 0 ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                        ) : (
+                            <Tag className="w-3 h-3" />
+                        )}
                         <span>Labels</span>
                     </Button>
                 </PopoverTrigger>
@@ -204,12 +209,12 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                             className={cn(
                                                 "w-full h-5 rounded-xs transition-all disabled:opacity-50 cursor-pointer",
                                                 selectedColor === color.value &&
-                                                    "ring-2 ring-primary ring-offset-1",
+                                                "ring-2 ring-primary ring-offset-1",
                                             )}
                                             style={{ backgroundColor: color.value }}
                                             title={color.name}
                                         />
-                                    ))}\
+                                    ))}
                                 </div>
                                 <div className="flex items-center gap-1.5 pt-1">
                                     <Button

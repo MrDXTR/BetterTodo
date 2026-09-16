@@ -245,7 +245,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
             {/* Custom scrollbars */}
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar { height: 7px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }\
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
                     background: hsl(var(--muted-foreground) / 0.2);
                     border-radius: 9999px;

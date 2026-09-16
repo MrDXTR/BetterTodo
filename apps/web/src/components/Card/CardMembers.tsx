@@ -2,11 +2,18 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { Users, Check, UserPlus } from "lucide-react";
+import { Users, Check, UserPlus, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface CardMembersProps {
     cardId: Id<"cards">;
@@ -21,16 +28,27 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
     const unassignMember = useMutation(api.cards.unassignUser);
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
 
     if (!card || !boardMembers || !cardAssignments) return null;
 
     const assignedUserIds = cardAssignments.map((a: any) => a.userId);
 
     const handleToggleMember = async (userId: string) => {
-        if (assignedUserIds.includes(userId)) {
-            await unassignMember({ cardId, userId });
-        } else {
-            await assignMember({ cardId, userId });
+        setTogglingUserId(userId);
+        try {
+            if (assignedUserIds.includes(userId)) {
+                await unassignMember({ cardId, userId });
+                toast.success("Member unassigned");
+            } else {
+                await assignMember({ cardId, userId });
+                toast.success("Member assigned");
+            }
+        } catch (error) {
+            console.error("Error toggling member assignment:", error);
+            toast.error("Failed to update assignment");
+        } finally {
+            setTogglingUserId(null);
         }
     };
 
@@ -44,26 +62,41 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
         <div className="flex flex-wrap items-center gap-1.5">
             {/* Display assigned members */}
             {cardAssignments.length > 0 && (
-                <div className="flex -space-x-1.5">
-                    {cardAssignments.slice(0, 4).map((assignment: any) => (
-                        <Avatar
-                            key={assignment.userId}
-                            className="h-6 w-6 ring-2 ring-background shrink-0"
-                        >
-                            <AvatarImage src={assignment.user?.image} />
-                            <AvatarFallback className="text-[10px] font-medium bg-muted">
-                                {assignment.user?.name?.charAt(0).toUpperCase() || "?"}
-                            </AvatarFallback>
-                        </Avatar>
-                    ))}
-                    {cardAssignments.length > 4 && (
-                        <div className="h-6 w-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-semibold text-muted-foreground">
-                                +{cardAssignments.length - 4}
-                            </span>
-                        </div>
-                    )}
-                </div>
+                <TooltipProvider delayDuration={200}>
+                    <div className="flex -space-x-1.5">
+                        {cardAssignments.slice(0, 4).map((assignment: any) => {
+                            const boardMember = boardMembers.find(
+                                (m: any) => m.userId === assignment.userId,
+                            );
+                            const user = assignment.user || boardMember?.user;
+                            const displayName = user?.name || user?.email || "Member";
+                            const initial = displayName.trim().charAt(0).toUpperCase() || "M";
+
+                            return (
+                                <Tooltip key={assignment.userId}>
+                                    <TooltipTrigger asChild>
+                                        <Avatar className="h-6 w-6 ring-2 ring-background shrink-0 cursor-default">
+                                            <AvatarImage src={user?.image} alt={displayName} />
+                                            <AvatarFallback className="text-[10px] font-medium bg-muted">
+                                                {initial}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs py-1 px-2">
+                                        {displayName}
+                                    </TooltipContent>
+                                </Tooltip>
+                            );
+                        })}
+                        {cardAssignments.length > 4 && (
+                            <div className="h-6 w-6 rounded-full bg-muted ring-2 ring-background flex items-center justify-center shrink-0">
+                                <span className="text-[10px] font-semibold text-muted-foreground">
+                                    +{cardAssignments.length - 4}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </TooltipProvider>
             )}
 
             {/* Add member button */}
@@ -72,9 +105,14 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
                     <Button
                         variant="outline"
                         size="xs"
+                        disabled={!!togglingUserId}
                         className="h-6 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
                     >
-                        <UserPlus className="w-3 h-3" />
+                        {togglingUserId ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                        ) : (
+                            <UserPlus className="w-3 h-3" />
+                        )}
                         <span>{cardAssignments.length > 0 ? "Assign" : "Assignee"}</span>
                     </Button>
                 </PopoverTrigger>
@@ -96,35 +134,44 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
                         <div className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
                             {filteredMembers.map((member: any) => {
                                 const isAssigned = assignedUserIds.includes(member.userId);
+                                const isToggling = togglingUserId === member.userId;
+                                const displayName = member.user?.name || member.user?.email || "Unknown";
+                                const initial = displayName.trim().charAt(0).toUpperCase() || "M";
+
                                 return (
                                     <button
                                         type="button"
                                         key={member.userId}
+                                        disabled={isToggling}
                                         onClick={() => handleToggleMember(member.userId)}
-                                        className="w-full flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/70 transition-colors cursor-pointer text-left"
+                                        className="w-full flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/70 transition-colors cursor-pointer text-left disabled:opacity-60"
                                     >
                                         <Avatar className="h-6 w-6 shrink-0">
                                             <AvatarImage src={member.user?.image} />
                                             <AvatarFallback className="text-[10px]">
-                                                {member.user?.name?.charAt(0).toUpperCase() || "?"}
+                                                {initial}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-medium truncate">
-                                                {member.user?.name || "Unknown"}
+                                                {displayName}
                                             </p>
                                             <p className="text-[10px] text-muted-foreground capitalize">
                                                 {member.role}
                                             </p>
                                         </div>
-                                        {isAssigned && (
-                                            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                        {isToggling ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
+                                        ) : (
+                                            isAssigned && (
+                                                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                            )
                                         )}
                                     </button>
                                 );
                             })}
                             {filteredMembers.length === 0 && (
-                                <p className="text-[11px] text-muted-foreground px-2 py-2 text-center">
+                                <p className="text-[11px] text-muted-foreground px-2 py-1.5 text-center">
                                     No members found.
                                 </p>
                             )}
