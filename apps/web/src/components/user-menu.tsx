@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { Shield } from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 
 import {
     DropdownMenu,
@@ -12,56 +12,80 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
-
 import { Button } from "./ui/button";
 
-export default function UserMenu() {
+export function UserMenu() {
     const navigate = useNavigate();
     const user = useQuery(api.auth.getCurrentUser);
     const role = useQuery(api.auth.getMyRole);
 
+    const initials = user?.name
+        ? user.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2)
+        : "U";
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline">{user?.name}</Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-2 px-2 rounded-full border border-border/60 hover:bg-accent hover:text-accent-foreground active:scale-[0.97]"
+                >
+                    <Avatar className="h-5 w-5">
+                        <AvatarImage src={user?.image} alt={user?.name} />
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
+                            {initials}
+                        </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium max-w-[100px] truncate">
+                        {user?.name || "User"}
+                    </span>
+                </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-card min-w-44">
+            <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user?.name}</p>
+                        <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>{user?.email}</DropdownMenuItem>
-                    {role === "admin" && (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    to="/admin"
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    <Shield className="h-4 w-4 text-primary" />
-                                    Admin Panel
-                                </Link>
-                            </DropdownMenuItem>
-                        </>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => {
-                            authClient.signOut({
-                                fetchOptions: {
-                                    onSuccess: () => {
-                                        navigate({ to: "/dashboard" });
-                                    },
-                                },
-                            });
-                        }}
-                    >
-                        Sign Out
+                    <DropdownMenuItem asChild>
+                        <Link to="/profile" className="flex w-full items-center">
+                            <User className="mr-2 h-4 w-4" />
+                            Profile
+                        </Link>
                     </DropdownMenuItem>
+                    {role === "admin" && (
+                        <DropdownMenuItem asChild>
+                            <Link to="/admin" className="flex w-full items-center">
+                                <Shield className="mr-2 h-4 w-4" />
+                                Admin Panel
+                            </Link>
+                        </DropdownMenuItem>
+                    )}
                 </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                    onClick={async () => {
+                        await authClient.signOut();
+                        navigate({ to: "/sign-in" });
+                    }}
+                >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
 }
+
+export default UserMenu;

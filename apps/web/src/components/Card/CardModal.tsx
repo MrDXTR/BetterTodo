@@ -1,23 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import {
-    AlertCircle,
     AlignLeft,
     Archive,
     Calendar as CalendarIcon,
-    CheckSquare,
+    CheckCircle2,
+    Circle,
     Copy,
     Loader2,
     MessageSquare,
     Paperclip,
-    PencilLine,
-    Save,
-    Tag,
     Trash2,
-    Users,
-    Wrench,
+    X,
 } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,7 +23,6 @@ import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
     Select,
@@ -38,173 +33,157 @@ import {
 } from "@/components/ui/select";
 import { PRIORITY_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+
+import { CardCoverImage } from "./CardCoverImage";
 import { CardLabels } from "./CardLabels";
 import { CardMembers } from "./CardMembers";
 import { CardChecklists } from "./CardChecklists";
-import { CardComments } from "./CardComments";
 import { CardAttachments } from "./CardAttachments";
-import { CardCoverImage } from "./CardCoverImage";
+import { CardComments } from "./CardComments";
 import { CardCustomFields } from "./CardCustomFields";
 import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
-import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface CardModalProps {
-    cardId: Id<"cards"> | null;
+    cardId: Id<"cards">;
     isOpen: boolean;
     onClose: () => void;
     isReadOnly?: boolean;
 }
 
-interface PendingChanges {
-    title?: string;
-    description?: string;
-    priority?: "low" | "medium" | "high" | "urgent";
-    dueDate?: number;
-}
-
-function CardModalSkeleton() {
-    return (
-        <div className="space-y-6">
-            <Skeleton className="h-40 w-full rounded-lg" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-2/3" />
-                <Skeleton className="h-4 w-40" />
-            </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_280px]">
-                <div className="space-y-5">
-                    <Skeleton className="h-20 w-full rounded-lg" />
-                    <Skeleton className="h-32 w-full rounded-lg" />
-                    <Skeleton className="h-24 w-full rounded-lg" />
-                </div>
-                <div className="space-y-3">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-20 w-full rounded-lg" />
-                </div>
-            </div>
-        </div>
-    );
-}
-
-export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardModalProps) {
-    const card = useQuery(api.cards.getById, cardId ? { cardId } : "skip");
+export function CardModal({
+    cardId,
+    isOpen,
+    onClose,
+    isReadOnly = false,
+}: CardModalProps) {
+    const card = useQuery(api.cards.getById, { cardId });
     const updateCard = useMutation(api.cards.update);
+    const deleteCard = useMutation(api.cards.deleteCard);
     const archiveCard = useMutation(api.cards.archive);
     const duplicateCard = useMutation(api.cards.duplicate);
-    const deleteCard = useMutation(api.cards.deleteCard);
 
-    const [isEditMode, setIsEditMode] = useState(false);
+    // Form states
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+
+    // Field mutation loading states
+    const [isUpdatingPriority, setIsUpdatingPriority] = useState(false);
+    const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
+    const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+
+    // Dialog states
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
     const [showCopyDialog, setShowCopyDialog] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [pendingClose, setPendingClose] = useState(false);
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<PendingChanges>({});
 
-    const isLoading = cardId != null && card === undefined;
-    const notFound = cardId != null && card === null;
-
+    // Sync card data to local state
     useEffect(() => {
         if (card) {
-            setPendingChanges({});
-            setIsEditMode(false);
+            setTitle(card.title || "");
+            setDescription(card.description || "");
         }
-    }, [card?._id]);
+    }, [card]);
 
-    useEffect(() => {
-        if (isReadOnly) {
-            setPendingChanges({});
-            setIsEditMode(false);
-        }
-    }, [isReadOnly]);
+    const isLoading = card === undefined;
+    const notFound = card === null;
 
-    const hasUnsavedChanges = useMemo(() => {
+    // Check for unsaved changes
+    const hasUnsavedChanges = () => {
         if (!card) return false;
-
         return (
-            (pendingChanges.title !== undefined && pendingChanges.title !== card.title) ||
-            (pendingChanges.description !== undefined &&
-                pendingChanges.description !== (card.description || "")) ||
-            (pendingChanges.priority !== undefined && pendingChanges.priority !== card.priority) ||
-            (pendingChanges.dueDate !== undefined && pendingChanges.dueDate !== card.dueDate)
+            (isEditingTitle && title !== card.title) ||
+            (isEditingDescription && description !== (card.description || ""))
         );
-    }, [card, pendingChanges]);
-
-    const currentTitle =
-        pendingChanges.title !== undefined ? pendingChanges.title : card?.title || "";
-    const currentDescription =
-        pendingChanges.description !== undefined
-            ? pendingChanges.description
-            : card?.description || "";
-    const currentPriority =
-        pendingChanges.priority !== undefined ? pendingChanges.priority : card?.priority;
-    const currentDueDate =
-        pendingChanges.dueDate !== undefined ? pendingChanges.dueDate : card?.dueDate;
-
-    const handleDueDateChange = (date: Date | undefined) => {
-        setPendingChanges((prev) => ({ ...prev, dueDate: date ? date.getTime() : undefined }));
     };
 
-    const handleSaveChanges = async () => {
-        if (!card || !hasUnsavedChanges) return;
-        setIsSaving(true);
-
-        const updates: {
-            cardId: Id<"cards">;
-            title?: string;
-            description?: string;
-            priority?: "low" | "medium" | "high" | "urgent";
-            dueDate?: number;
-        } = { cardId: card._id };
-
-        if (pendingChanges.title !== undefined && pendingChanges.title !== card.title) {
-            updates.title = pendingChanges.title.trim();
-        }
-        if (
-            pendingChanges.description !== undefined &&
-            pendingChanges.description !== (card.description || "")
-        ) {
-            updates.description = pendingChanges.description;
-        }
-        if (pendingChanges.priority !== undefined && pendingChanges.priority !== card.priority) {
-            updates.priority = pendingChanges.priority;
-        }
-        if (pendingChanges.dueDate !== undefined && pendingChanges.dueDate !== card.dueDate) {
-            updates.dueDate = pendingChanges.dueDate;
-        }
-
-        await updateCard(updates);
-        setPendingChanges({});
-        setIsSaving(false);
-
-        if (pendingClose) {
-            setPendingClose(false);
-            onClose();
-        }
-    };
-
-    const handleDiscardChanges = () => {
-        setPendingChanges({});
-        setIsEditMode(false);
-
-        if (pendingClose) {
-            setPendingClose(false);
-            onClose();
-        }
-    };
-
-    const handleCloseAttempt = () => {
-        if (hasUnsavedChanges) {
-            setPendingClose(true);
+    const handleClose = () => {
+        if (hasUnsavedChanges()) {
             setShowUnsavedDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
+    const handleSaveTitle = async () => {
+        if (!card || !title.trim() || title === card.title) {
+            setIsEditingTitle(false);
             return;
         }
-        setIsEditMode(false);
-        onClose();
+        try {
+            await updateCard({ cardId: card._id, title: title.trim() });
+            setIsEditingTitle(false);
+        } catch (error) {
+            console.error("Error updating title:", error);
+            toast.error("Failed to update title");
+        }
+    };
+
+    const handleSaveDescription = async () => {
+        if (!card) return;
+        try {
+            await updateCard({ cardId: card._id, description: description.trim() });
+            setIsEditingDescription(false);
+        } catch (error) {
+            console.error("Error updating description:", error);
+            toast.error("Failed to update description");
+        }
+    };
+
+    const handlePriorityChange = async (priority: string) => {
+        if (!card || isUpdatingPriority) return;
+        setIsUpdatingPriority(true);
+        try {
+            await updateCard({
+                cardId: card._id,
+                priority: priority === "none" ? undefined : (priority as any),
+            });
+            toast.success("Priority updated");
+        } catch (error) {
+            console.error("Error updating priority:", error);
+            toast.error("Failed to update priority");
+        } finally {
+            setIsUpdatingPriority(false);
+        }
+    };
+
+    const handleDueDateChange = async (date: Date | undefined) => {
+        if (!card || isUpdatingDueDate) return;
+        setIsUpdatingDueDate(true);
+        try {
+            await updateCard({
+                cardId: card._id,
+                dueDate: date ? date.getTime() : undefined,
+            });
+            toast.success("Due date updated");
+        } catch (error) {
+            console.error("Error updating due date:", error);
+            toast.error("Failed to update due date");
+        } finally {
+            setIsUpdatingDueDate(false);
+        }
+    };
+
+    const handleToggleComplete = async () => {
+        if (!card || isTogglingComplete) return;
+        setIsTogglingComplete(true);
+        try {
+            await updateCard({
+                cardId: card._id,
+                completed: !card.completed,
+            });
+        } catch (error) {
+            console.error("Error toggling completed:", error);
+            toast.error("Failed to update status");
+        } finally {
+            setIsTogglingComplete(false);
+        }
     };
 
     const handleArchive = async () => {
@@ -214,8 +193,10 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
             await archiveCard({ cardId: card._id });
             setShowArchiveDialog(false);
             onClose();
+            toast.success("Card archived");
         } catch (error) {
             console.error("Error archiving card:", error);
+            toast.error("Failed to archive card");
         } finally {
             setIsArchiving(false);
         }
@@ -227,404 +208,440 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
         try {
             await duplicateCard({ cardId: card._id });
             setShowCopyDialog(false);
+            toast.success("Card duplicated");
         } catch (error) {
             console.error("Error copying card:", error);
+            toast.error("Failed to copy card");
         } finally {
             setIsCopying(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!card) return;
-        await deleteCard({ cardId: card._id });
-        onClose();
+        if (!card || isDeleting) return;
+        setIsDeleting(true);
+        try {
+            await deleteCard({ cardId: card._id });
+            setShowDeleteDialog(false);
+            onClose();
+            toast.success("Card deleted");
+        } catch (error) {
+            console.error("Error deleting card:", error);
+            toast.error("Failed to delete card");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
-    const dueDate = currentDueDate ? new Date(currentDueDate) : undefined;
+    const dueDate = card?.dueDate ? new Date(card.dueDate) : undefined;
     const isOverdue = dueDate && dueDate < new Date() && !card?.completed;
-    const priorityConfig = currentPriority
-        ? PRIORITY_CONFIG[currentPriority as keyof typeof PRIORITY_CONFIG]
+    const priorityConfig = card?.priority
+        ? PRIORITY_CONFIG[card.priority as keyof typeof PRIORITY_CONFIG]
         : null;
 
     return (
         <>
-            <Dialog
-                open={isOpen}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        handleCloseAttempt();
-                    }
-                }}
-            >
-                <DialogContent className="flex h-[90vh] md:min-w-4xl w-[95vw] max-w-4xl flex-col">
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                        {isLoading && <CardModalSkeleton />}
+            <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+                <DialogContent
+                    showCloseButton={false}
+                    className="flex max-h-[86vh] w-[94vw] sm:max-w-3xl md:max-w-4xl lg:max-w-5xl flex-col p-0 overflow-hidden rounded-2xl border border-border/70 shadow-2xl"
+                >
+                    {/* Fallback close button when loading or card not found */}
+                    {(isLoading || notFound) && (
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="absolute top-3.5 right-3.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 cursor-pointer"
+                            aria-label="Close modal"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
 
-                        {notFound && (
-                            <div className="py-12 text-center text-muted-foreground">
-                                <p>Card not found or you do not have access.</p>
-                            </div>
-                        )}
+                    {isLoading && <CardModalSkeleton />}
 
-                        {card && (
-                            <>
-                                {card.coverImage && (
-                                    <div className="-mx-4 -mt-4 mb-4 overflow-hidden rounded-t-lg md:-mx-6 md:-mt-6">
-                                        <img
-                                            src={card.coverImage}
-                                            alt="Cover"
-                                            className="block h-48 w-full object-cover"
-                                        />
-                                    </div>
-                                )}
+                    {notFound && (
+                        <div className="py-16 text-center text-muted-foreground">
+                            <p className="text-sm">Card not found or you do not have access.</p>
+                        </div>
+                    )}
 
-                                <DialogHeader className="mb-5">
+                    {card && (
+                        <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+                            {/* Edge-to-edge Cover Banner */}
+                            {card.coverImage && (
+                                <div className="relative shrink-0">
+                                    <CardCoverImage
+                                        cardId={card._id}
+                                        coverImage={card.coverImage}
+                                        variant="banner"
+                                    />
+                                    {/* Close button over banner */}
+                                    <button
+                                        type="button"
+                                        onClick={handleClose}
+                                        className="absolute top-3.5 right-3.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white/90 backdrop-blur-md transition-all hover:bg-black/75 hover:text-white active:scale-95 cursor-pointer shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                        aria-label="Close modal"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="p-5 md:p-7 space-y-6 flex-1">
+                                {/* Header: Title + Status Pill & Close */}
+                                <DialogHeader className="space-y-2 text-left">
                                     <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            {isEditMode ? (
+                                        <div className="flex-1 min-w-0">
+                                            {isEditingTitle && !isReadOnly ? (
                                                 <Input
-                                                    value={currentTitle}
-                                                    onChange={(e) =>
-                                                        setPendingChanges((prev) => ({
-                                                            ...prev,
-                                                            title: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="mb-2 h-10 text-xl font-semibold"
+                                                    autoFocus
+                                                    value={title}
+                                                    onChange={(e) => setTitle(e.target.value)}
+                                                    onBlur={handleSaveTitle}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") handleSaveTitle();
+                                                        if (e.key === "Escape") {
+                                                            setTitle(card.title);
+                                                            setIsEditingTitle(false);
+                                                        }
+                                                    }}
+                                                    className="h-9 text-lg md:text-xl font-semibold bg-background"
                                                     maxLength={200}
                                                 />
                                             ) : (
-                                                <DialogTitle className="wrap-break-word text-2xl leading-tight">
-                                                    {currentTitle}
+                                                <DialogTitle
+                                                    onClick={() => {
+                                                        if (!isReadOnly) setIsEditingTitle(true);
+                                                    }}
+                                                    className={cn(
+                                                        "text-lg md:text-xl font-semibold leading-snug text-foreground rounded-md transition-colors cursor-pointer",
+                                                        !isReadOnly && "hover:bg-muted/50 px-1 -mx-1 py-0.5",
+                                                    )}
+                                                >
+                                                    {card.title}
                                                 </DialogTitle>
                                             )}
-
-                                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                {priorityConfig && (
-                                                    <Badge
-                                                        className={cn(
-                                                            priorityConfig.color,
-                                                            "text-white",
-                                                        )}
-                                                    >
-                                                        {priorityConfig.label}
-                                                    </Badge>
-                                                )}
-                                                {dueDate && (
-                                                    <Badge
-                                                        variant={
-                                                            isOverdue ? "destructive" : "secondary"
-                                                        }
-                                                        className="gap-1"
-                                                    >
-                                                        <CalendarIcon className="h-3 w-3" />
-                                                        {dueDate.toLocaleDateString()}
-                                                        {isOverdue && " (Overdue)"}
-                                                    </Badge>
-                                                )}
-                                            </div>
                                         </div>
 
-                                        <Button
-                                            variant={isEditMode ? "secondary" : "default"}
-                                            size="sm"
-                                            className="gap-2"
-                                            onClick={() => {
-                                                if (!isReadOnly) setIsEditMode((prev) => !prev);
-                                            }}
-                                            disabled={isReadOnly}
-                                        >
-                                            <PencilLine className="h-4 w-4" />
-                                            {isEditMode ? "Done" : "Edit"}
-                                        </Button>
+                                        {/* Top-Right Action Controls: Status Pill + Close Button (when no cover image) */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={handleToggleComplete}
+                                                disabled={isReadOnly || isTogglingComplete}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors shrink-0 cursor-pointer active:scale-[0.97] disabled:opacity-70",
+                                                    card.completed
+                                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                                                        : "bg-muted text-muted-foreground border-border/70 hover:bg-muted/80 hover:text-foreground",
+                                                )}
+                                            >
+                                                {isTogglingComplete ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                                                ) : card.completed ? (
+                                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                ) : (
+                                                    <Circle className="h-3.5 w-3.5" />
+                                                )}
+                                                <span>{card.completed ? "Completed" : "Mark done"}</span>
+                                            </button>
+
+                                            {!card.coverImage && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClose}
+                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                    aria-label="Close modal"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </DialogHeader>
 
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_280px]">
-                                    <div className="space-y-6">
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <AlignLeft className="h-4 w-4 text-muted-foreground" />
-                                                Description
+                                {/* Main Two-Column Layout */}
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_290px] lg:grid-cols-[1fr_310px] gap-6 items-start">
+                                    {/* Left Column: Description, Checklists, Activity */}
+                                    <div className="space-y-6 min-w-0">
+                                        {/* Description Section */}
+                                        <section className="space-y-2 rounded-xl border border-border/60 bg-card/40 p-4 shadow-2xs">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                    <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <span>Description</span>
+                                                </div>
+                                                {!isReadOnly && !isEditingDescription && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsEditingDescription(true)}
+                                                        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
                                             </div>
-                                            {isEditMode ? (
-                                                <Textarea
-                                                    value={currentDescription}
-                                                    onChange={(e) =>
-                                                        setPendingChanges((prev) => ({
-                                                            ...prev,
-                                                            description: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="min-h-[120px]"
-                                                    placeholder="Add a detailed description..."
-                                                />
-                                            ) : currentDescription ? (
-                                                <div className="text-sm text-muted-foreground whitespace-pre-wrap [word-break:break-word]  ">
-                                                    <TextWithLinkPreviews
-                                                        text={currentDescription}
+
+                                            {isEditingDescription && !isReadOnly ? (
+                                                <div className="space-y-2 pt-1">
+                                                    <Textarea
+                                                        autoFocus
+                                                        value={description}
+                                                        onChange={(e) =>
+                                                            setDescription(e.target.value)
+                                                        }
+                                                        onKeyDown={(e) => {
+                                                            if (
+                                                                (e.metaKey || e.ctrlKey) &&
+                                                                e.key === "Enter"
+                                                            ) {
+                                                                e.preventDefault();
+                                                                handleSaveDescription();
+                                                            }
+                                                            if (e.key === "Escape") {
+                                                                setDescription(
+                                                                    card.description || "",
+                                                                );
+                                                                setIsEditingDescription(false);
+                                                            }
+                                                        }}
+                                                        placeholder="Add a detailed description... (⌘↵ to save)"
+                                                        className="min-h-[100px] text-xs bg-background"
                                                     />
-                                                </div>
-                                            ) : (
-                                                <p className="text-sm text-muted-foreground">
-                                                    No description yet.
-                                                </p>
-                                            )}
-                                        </section>
-
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <Tag className="h-4 w-4 text-muted-foreground" />
-                                                Labels
-                                            </div>
-                                            {isEditMode ? (
-                                                <CardLabels
-                                                    cardId={card._id}
-                                                    boardId={card.boardId}
-                                                />
-                                            ) : card.labels && card.labels.length > 0 ? (
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {card.labels.map((label) => (
-                                                        <Badge
-                                                            key={label._id}
-                                                            style={{
-                                                                backgroundColor: label.color,
-                                                            }}
-                                                            className="text-white"
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            size="xs"
+                                                            onClick={handleSaveDescription}
+                                                            className="h-7 text-xs px-3"
                                                         >
-                                                            {label.name}
-                                                        </Badge>
-                                                    ))}
+                                                            Save
+                                                        </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                setDescription(
+                                                                    card.description || "",
+                                                                );
+                                                                setIsEditingDescription(false);
+                                                            }}
+                                                            className="h-7 text-xs px-2"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : card.description ? (
+                                                <div
+                                                    onClick={() => {
+                                                        if (!isReadOnly)
+                                                            setIsEditingDescription(true);
+                                                    }}
+                                                    className={cn(
+                                                        "text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap [word-break:break-word] rounded-md p-1 -m-1 transition-colors",
+                                                        !isReadOnly && "hover:bg-muted/40 cursor-pointer",
+                                                    )}
+                                                >
+                                                    <TextWithLinkPreviews text={card.description} />
                                                 </div>
                                             ) : (
-                                                <p className="text-sm text-muted-foreground">
-                                                    No labels.
-                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!isReadOnly)
+                                                            setIsEditingDescription(true);
+                                                    }}
+                                                    disabled={isReadOnly}
+                                                    className="w-full text-left rounded-md p-2 border border-dashed border-border/70 text-xs text-muted-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                                                >
+                                                    Add a more detailed description...
+                                                </button>
                                             )}
                                         </section>
 
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <Wrench className="h-4 w-4 text-muted-foreground" />
-                                                Custom Fields
-                                            </div>
-                                            <CardCustomFields
-                                                cardId={card._id}
-                                                isEditable={isEditMode}
-                                            />
-                                        </section>
-
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <CheckSquare className="h-4 w-4 text-muted-foreground" />
-                                                Checklists
-                                            </div>
+                                        {/* Checklists Section */}
+                                        <section className="space-y-3">
                                             <CardChecklists
                                                 cardId={card._id}
                                                 isReadOnly={isReadOnly}
                                             />
                                         </section>
 
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                                Comments
+                                        {/* Comments Section */}
+                                        <section className="space-y-3 pt-2">
+                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <span>Activity & Comments</span>
                                             </div>
                                             <CardComments
                                                 cardId={card._id}
                                                 isReadOnly={isReadOnly}
                                             />
                                         </section>
+                                    </div>
 
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                                Attachments
+                                    {/* Right Column: Inspector Sidebar */}
+                                    <aside className="space-y-4 w-full min-w-0">
+                                        {/* Properties Card */}
+                                        <div className="rounded-xl border border-border/60 bg-card/40 p-3.5 space-y-3.5 shadow-2xs">
+                                            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                Properties
+                                            </h3>
+
+                                            {/* Priority */}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1.5">
+                                                    Priority
+                                                    {isUpdatingPriority && (
+                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                    )}
+                                                </span>
+                                                <Select
+                                                    disabled={isReadOnly || isUpdatingPriority}
+                                                    value={card.priority || "none"}
+                                                    onValueChange={(val) => {
+                                                        if (
+                                                            val === "low" ||
+                                                            val === "medium" ||
+                                                            val === "high" ||
+                                                            val === "urgent"
+                                                        ) {
+                                                            handlePriorityChange(val);
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="h-7 text-xs w-32 bg-background/80">
+                                                        <SelectValue placeholder="Set priority" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="text-xs">
+                                                        <SelectItem value="low">Low</SelectItem>
+                                                        <SelectItem value="medium">Medium</SelectItem>
+                                                        <SelectItem value="high">High</SelectItem>
+                                                        <SelectItem value="urgent">Urgent</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Due Date */}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1.5">
+                                                    Due date
+                                                    {isUpdatingDueDate && (
+                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                    )}
+                                                </span>
+                                                <div className="w-36 max-w-[145px]">
+                                                    <DatePicker
+                                                        disabled={isReadOnly || isUpdatingDueDate}
+                                                        date={dueDate}
+                                                        onDateChange={handleDueDateChange}
+                                                        placeholder="No date"
+                                                        className="h-7 text-xs px-2 bg-background/80"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Assignees / Members */}
+                                            <div className="space-y-1.5 pt-1 border-t border-border/50">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                    Assignees
+                                                </span>
+                                                <CardMembers
+                                                    cardId={card._id}
+                                                    boardId={card.boardId}
+                                                />
+                                            </div>
+
+                                            {/* Labels */}
+                                            <div className="space-y-1.5 pt-1 border-t border-border/50">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                    Labels
+                                                </span>
+                                                <CardLabels
+                                                    cardId={card._id}
+                                                    boardId={card.boardId}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Custom Fields Card (Self-contained, renders null if none) */}
+                                        <CardCustomFields
+                                            cardId={card._id}
+                                            isEditable={!isReadOnly}
+                                        />
+
+                                        {/* Attachments Card */}
+                                        <div className="rounded-xl border border-border/60 bg-card/40 p-3.5 space-y-2.5 shadow-2xs">
+                                            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                <Paperclip className="h-3 w-3" />
+                                                <span>Attachments</span>
                                             </div>
                                             <CardAttachments
                                                 cardId={card._id}
                                                 isReadOnly={isReadOnly}
                                             />
-                                        </section>
-                                    </div>
+                                        </div>
 
-                                    <aside className="space-y-4">
-                                        {isEditMode && (
-                                            <section className="space-y-3 rounded-lg border bg-card p-4">
-                                                <h3 className="text-xs font-semibold uppercase text-muted-foreground">
-                                                    Edit Details
-                                                </h3>
-                                                <div className="space-y-1">
-                                                    <label className="text-xs text-muted-foreground">
-                                                        Members
-                                                    </label>
-                                                    <CardMembers
-                                                        cardId={card._id}
-                                                        boardId={card.boardId}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-xs text-muted-foreground">
-                                                        Due date
-                                                    </label>
-                                                    <DatePicker
-                                                        date={dueDate}
-                                                        onDateChange={handleDueDateChange}
-                                                        placeholder="Set due date"
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-xs text-muted-foreground">
-                                                        Priority
-                                                    </label>
-                                                    <Select
-                                                        value={currentPriority || ""}
-                                                        onValueChange={(value) => {
-                                                            if (
-                                                                value === "low" ||
-                                                                value === "medium" ||
-                                                                value === "high" ||
-                                                                value === "urgent"
-                                                            ) {
-                                                                setPendingChanges((prev) => ({
-                                                                    ...prev,
-                                                                    priority: value,
-                                                                }));
-                                                            }
-                                                        }}
-                                                    >
-                                                        <SelectTrigger className="h-9 w-full">
-                                                            <SelectValue placeholder="Set priority" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="low">Low</SelectItem>
-                                                            <SelectItem value="medium">
-                                                                Medium
-                                                            </SelectItem>
-                                                            <SelectItem value="high">
-                                                                High
-                                                            </SelectItem>
-                                                            <SelectItem value="urgent">
-                                                                Urgent
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-xs text-muted-foreground">
-                                                        Cover
-                                                    </label>
-                                                    <CardCoverImage
-                                                        cardId={card._id}
-                                                        coverImage={card.coverImage}
-                                                    />
-                                                </div>
-                                            </section>
-                                        )}
-
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+                                        {/* Actions Card */}
+                                        <div className="rounded-xl border border-border/60 bg-card/40 p-3.5 space-y-2 shadow-2xs">
+                                            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                                                 Actions
                                             </h3>
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                className="h-9 w-full justify-start gap-2"
-                                                onClick={() => setShowCopyDialog(true)}
-                                                disabled={isCopying || isReadOnly}
-                                            >
-                                                {isCopying ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Copy className="h-4 w-4" />
+                                            <div className="flex flex-col gap-1.5">
+                                                {!isReadOnly && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="xs"
+                                                        onClick={() => setShowCopyDialog(true)}
+                                                        className="w-full justify-start text-xs h-7 gap-2 bg-background/60"
+                                                    >
+                                                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                                                        <span>Duplicate Card</span>
+                                                    </Button>
                                                 )}
-                                                Copy
-                                            </Button>
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                className="h-9 w-full justify-start gap-2"
-                                                onClick={() => setShowArchiveDialog(true)}
-                                                disabled={isArchiving || isReadOnly}
-                                            >
-                                                {isArchiving ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Archive className="h-4 w-4" />
-                                                )}
-                                                Archive
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                className="h-9 w-full justify-start gap-2"
-                                                onClick={() => setShowDeleteDialog(true)}
-                                                disabled={isReadOnly}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                Delete
-                                            </Button>
-                                        </section>
 
-                                        <section className="space-y-2 rounded-lg border bg-card p-4">
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                                                Status
+                                                {!isReadOnly && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="xs"
+                                                        onClick={() => setShowArchiveDialog(true)}
+                                                        className="w-full justify-start text-xs h-7 gap-2 bg-background/60 text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        <Archive className="h-3.5 w-3.5" />
+                                                        <span>Archive Card</span>
+                                                    </Button>
+                                                )}
+
+                                                {!isReadOnly && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="xs"
+                                                        onClick={() => setShowDeleteDialog(true)}
+                                                        className="w-full justify-start text-xs h-7 gap-2 bg-background/60 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        <span>Delete Card</span>
+                                                    </Button>
+                                                )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                {card.completed ? "Completed" : "In progress"}
-                                            </p>
-                                        </section>
-
-                                        {isEditMode && (
-                                            <section className="space-y-2 rounded-lg border bg-card p-4">
-                                                <div className="flex items-center gap-2 text-sm font-semibold">
-                                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                                    Editing Mode
-                                                </div>
-                                                <p className="text-xs text-muted-foreground">
-                                                    You are editing details. Save or discard changes
-                                                    at the bottom.
-                                                </p>
-                                            </section>
-                                        )}
+                                        </div>
                                     </aside>
                                 </div>
-                            </>
-                        )}
-                    </div>
-
-                    {hasUnsavedChanges && card && (
-                        <div className="flex justify-end gap-2 border-t bg-background p-4">
-                            <Button variant="ghost" size="sm" onClick={handleDiscardChanges}>
-                                Discard
-                            </Button>
-                            <Button size="sm" onClick={handleSaveChanges} className="gap-2">
-                                {isSaving ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Save className="h-4 w-4" />
-                                )}
-                                Save Changes
-                            </Button>
+                            </div>
                         </div>
                     )}
                 </DialogContent>
             </Dialog>
 
+            {/* Confirmation Dialogs */}
             <DeleteConfirmationDialog
                 open={showDeleteDialog}
                 onOpenChange={setShowDeleteDialog}
                 onConfirm={handleDelete}
                 title="Delete Card"
-                description="Are you sure you want to delete this card? This action cannot be undone."
-            />
-
-            <UnsavedChangesDialog
-                open={showUnsavedDialog}
-                onOpenChange={setShowUnsavedDialog}
-                onSave={handleSaveChanges}
-                onDiscard={handleDiscardChanges}
+                description="Are you sure you want to permanently delete this card? This action cannot be undone."
+                isLoading={isDeleting}
             />
 
             <ConfirmationDialog
@@ -632,7 +649,7 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
                 onOpenChange={setShowArchiveDialog}
                 onConfirm={handleArchive}
                 title="Archive Card"
-                description="Are you sure you want to archive this card? You can restore it later from archived items."
+                description="This card will be archived and hidden from the board. You can restore it anytime from board settings."
                 confirmText="Archive"
                 isLoading={isArchiving}
             />
@@ -641,11 +658,47 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
                 open={showCopyDialog}
                 onOpenChange={setShowCopyDialog}
                 onConfirm={handleDuplicate}
-                title="Copy Card"
-                description="This will create a duplicate of this card in the same list."
-                confirmText="Copy"
+                title="Duplicate Card"
+                description="A duplicate of this card with its checklists and labels will be created."
+                confirmText="Duplicate"
                 isLoading={isCopying}
             />
+
+            <UnsavedChangesDialog
+                open={showUnsavedDialog}
+                onOpenChange={setShowUnsavedDialog}
+                onDiscard={() => {
+                    setShowUnsavedDialog(false);
+                    onClose();
+                }}
+                onSave={async () => {
+                    if (isEditingTitle) await handleSaveTitle();
+                    if (isEditingDescription) await handleSaveDescription();
+                    setShowUnsavedDialog(false);
+                    onClose();
+                }}
+            />
         </>
+    );
+}
+
+function CardModalSkeleton() {
+    return (
+        <div className="p-6 space-y-6">
+            <div className="space-y-2">
+                <div className="h-6 w-2/3 rounded bg-muted animate-pulse" />
+                <div className="h-4 w-1/3 rounded bg-muted/60 animate-pulse" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_290px] lg:grid-cols-[1fr_310px] gap-6">
+                <div className="space-y-4">
+                    <div className="h-24 rounded-xl bg-muted/50 animate-pulse" />
+                    <div className="h-32 rounded-xl bg-muted/50 animate-pulse" />
+                </div>
+                <div className="space-y-3">
+                    <div className="h-44 rounded-xl bg-muted/50 animate-pulse" />
+                    <div className="h-28 rounded-xl bg-muted/50 animate-pulse" />
+                </div>
+            </div>
+        </div>
     );
 }

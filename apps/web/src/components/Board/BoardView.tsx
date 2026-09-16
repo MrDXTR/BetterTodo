@@ -1,92 +1,49 @@
-import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { api } from "@BetterTodo/backend/convex/_generated/api";
+import { useState, useMemo, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Plus, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
+import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 
-import type { BoardWithLists, CardPriority } from "@/types/board";
-import { BoardHeader } from "./BoardHeader";
-import { ListColumn } from "../List/ListColumn";
+import type { BoardWithLists, CardPriority, ListWithCards, Card } from "@/types/board";
+import { ListColumn } from "@/components/List/ListColumn";
+import { BoardHeader } from "@/components/Board/BoardHeader";
+import { BoardBackgroundGraphic, BoardEmptyStateGraphic } from "@/components/Board/BoardBackgroundGraphic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface BoardViewProps {
     board: BoardWithLists;
+    isReadOnly?: boolean;
 }
 
-// IDs of lists that should play the "just born" entrance animation
-type NewListId = string;
-
-export function BoardView({ board }: BoardViewProps) {
-    const isReadOnly = board.role === "viewer";
-
+export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
+    const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState("");
     const [isCreatingList, setIsCreatingList] = useState(false);
+    const [freshListId, setFreshListId] = useState<string | null>(null);
 
-    // Track which list was just created so ListColumn can animate it
-    const [freshListId, setFreshListId] = useState<NewListId | null>(null);
-
-    // Used to detect the newly-added list after the board updates
-    const prevListIdsRef = useRef<Set<string>>(new Set(board.lists.map((l) => l._id)));
-
-    // Optimistic state for drag-and-drop
-    const [optimisticBoard, setOptimisticBoard] = useState<BoardWithLists>(board);
-
-    // -- Filters --
+    // Filtering states
+    const [showFilters, setShowFilters] = useState(false);
     const [activeLabelIds, setActiveLabelIds] = useState<string[]>([]);
     const [activePriorities, setActivePriorities] = useState<CardPriority[]>([]);
-    const [showFilters, setShowFilters] = useState(false);
-
-    const boardLabels = useQuery(api.labels.getByBoard, { boardId: board._id });
-
-    // Sync optimistic state with actual board data when it changes
-    useEffect(() => {
-        const prevIds = prevListIdsRef.current;
-        const newList = board.lists.find((l) => !prevIds.has(l._id));
-
-        if (newList) {
-            setFreshListId(newList._id);
-            // Clear the "fresh" flag after the animation finishes (~700ms)
-            const timer = setTimeout(() => setFreshListId(null), 700);
-            prevListIdsRef.current = new Set(board.lists.map((l) => l._id));
-            setOptimisticBoard(board);
-            return () => clearTimeout(timer);
-        }
-
-        prevListIdsRef.current = new Set(board.lists.map((l) => l._id));
-        setOptimisticBoard(board);
-    }, [board]);
-
-    // Fetch board members (replaces the old presence/heartbeat system)
-    const boardMembers = useQuery(api.boards.getMembers, { boardId: board._id });
 
     const createList = useMutation(api.lists.create);
-    const moveCard = useMutation(api.cards.move);
     const updateListPosition = useMutation(api.lists.updatePosition);
+    const moveCard = useMutation(api.cards.move);
 
-    // Filtered board derived from active label / priority filters
-    const hasActiveFilters = activeLabelIds.length > 0 || activePriorities.length > 0;
-    const filteredBoard = useMemo(() => {
-        if (!hasActiveFilters) return optimisticBoard;
+    const boardLabels = useQuery(api.labels.getByBoard, {
+        boardId: board._id,
+    });
+    const boardMembers = useQuery(api.boards.getMembers, {
+        boardId: board._id,
+    });
 
-        return {
-            ...optimisticBoard,
-            lists: optimisticBoard.lists.map((list) => ({
-                ...list,
-                cards: list.cards.filter((card) => {
-                    const labelMatch =
-                        activeLabelIds.length === 0 ||
-                        activeLabelIds.some((id) => card.labelIds?.includes(id));
-                    const priorityMatch =
-                        activePriorities.length === 0 ||
-                        (card.priority && activePriorities.includes(card.priority));
-                    return labelMatch && priorityMatch;
-                }),
-            })),
-        };
-    }, [optimisticBoard, activeLabelIds, activePriorities, hasActiveFilters]);
+    useEffect(() => {
+        setOptimisticBoard(board);
+    }, [board]);
 
     const toggleLabelFilter = (labelId: string) => {
         setActiveLabelIds((prev) =>
@@ -105,19 +62,47 @@ export function BoardView({ board }: BoardViewProps) {
         setActivePriorities([]);
     };
 
+    const hasActiveFilters = activeLabelIds.length > 0 || activePriorities.length > 0;
+
+    const filteredBoard = useMemo<BoardWithLists>(() => {
+        if (!hasActiveFilters) return optimisticBoard;
+
+        return {
+            ...optimisticBoard,
+            lists: optimisticBoard.lists.map((list: ListWithCards) => ({
+                ...list,
+                cards: list.cards.filter((card: Card) => {
+                    const matchesPriority =
+                        activePriorities.length === 0 ||
+                        (card.priority && activePriorities.includes(card.priority));
+
+                    const matchesLabels =
+                        activeLabelIds.length === 0 ||
+                        (card.labelIds &&
+                            card.labelIds.some((id: string) => activeLabelIds.includes(id)));
+
+                    return matchesPriority && matchesLabels;
+                }),
+            })),
+        };
+    }, [optimisticBoard, activeLabelIds, activePriorities, hasActiveFilters]);
+
     const handleCreateList = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isReadOnly) return;
-        if (!newListTitle.trim()) return;
+        if (!newListTitle.trim() || isCreatingList) return;
 
         setIsCreatingList(true);
         try {
-            await createList({
+            const createdList = await createList({
                 boardId: board._id,
                 title: newListTitle.trim(),
             });
             setNewListTitle("");
             setIsAddingList(false);
+            if (createdList?._id) {
+                setFreshListId(createdList._id);
+                setTimeout(() => setFreshListId(null), 1200);
+            }
             toast.success("List created!");
         } catch (error) {
             console.error("Error creating list:", error);
@@ -129,54 +114,73 @@ export function BoardView({ board }: BoardViewProps) {
 
     const handleDragEnd = async (result: DropResult) => {
         if (isReadOnly) return;
-        const { destination, source, type } = result;
+        const { destination, source, draggableId, type } = result;
 
         if (!destination) return;
-        if (destination.droppableId === source.droppableId && destination.index === source.index)
+        if (destination.droppableId === source.droppableId && destination.index === source.index) {
             return;
+        }
 
         if (type === "list") {
             const newLists = Array.from(optimisticBoard.lists);
             const [movedList] = newLists.splice(source.index, 1);
             newLists.splice(destination.index, 0, movedList);
-            setOptimisticBoard({ ...optimisticBoard, lists: newLists });
+
+            setOptimisticBoard({
+                ...optimisticBoard,
+                lists: newLists,
+            });
 
             try {
                 await updateListPosition({
-                    listId: result.draggableId as any,
+                    listId: draggableId as Id<"lists">,
                     newPosition: destination.index,
                 });
             } catch (error) {
-                console.error("Error moving list:", error);
-                toast.error("Failed to move list");
+                console.error("Error updating list position:", error);
+                toast.error("Failed to reorder list");
                 setOptimisticBoard(board);
             }
             return;
         }
 
         if (type === "card") {
-            const sourceListIndex = optimisticBoard.lists.findIndex(
-                (l) => l._id === source.droppableId,
-            );
-            const destListIndex = optimisticBoard.lists.findIndex(
-                (l) => l._id === destination.droppableId,
-            );
-            if (sourceListIndex === -1 || destListIndex === -1) return;
+            const sourceList = optimisticBoard.lists.find((l: ListWithCards) => l._id === source.droppableId);
+            const destList = optimisticBoard.lists.find((l: ListWithCards) => l._id === destination.droppableId);
 
-            const newLists = optimisticBoard.lists.map((list) => ({
-                ...list,
-                cards: [...list.cards],
-            }));
-            const [movedCard] = newLists[sourceListIndex].cards.splice(source.index, 1);
-            newLists[destListIndex].cards.splice(destination.index, 0, {
-                ...movedCard,
-                listId: destination.droppableId as any,
-            });
-            setOptimisticBoard({ ...optimisticBoard, lists: newLists });
+            if (!sourceList || !destList) return;
+
+            const sourceCards = Array.from(sourceList.cards);
+            const destCards =
+                source.droppableId === destination.droppableId
+                    ? sourceCards
+                    : Array.from(destList.cards);
+
+            const [movedCard] = sourceCards.splice(source.index, 1);
+
+            if (source.droppableId === destination.droppableId) {
+                sourceCards.splice(destination.index, 0, movedCard);
+                setOptimisticBoard({
+                    ...optimisticBoard,
+                    lists: optimisticBoard.lists.map((l: ListWithCards) =>
+                        l._id === sourceList._id ? { ...l, cards: sourceCards } : l,
+                    ),
+                });
+            } else {
+                destCards.splice(destination.index, 0, movedCard);
+                setOptimisticBoard({
+                    ...optimisticBoard,
+                    lists: optimisticBoard.lists.map((l: ListWithCards) => {
+                        if (l._id === sourceList._id) return { ...l, cards: sourceCards };
+                        if (l._id === destList._id) return { ...l, cards: destCards };
+                        return l;
+                    }),
+                });
+            }
 
             try {
                 await moveCard({
-                    cardId: result.draggableId as any,
+                    cardId: draggableId as Id<"cards">,
                     targetListId: destination.droppableId as any,
                     newPosition: destination.index,
                 });
@@ -188,7 +192,6 @@ export function BoardView({ board }: BoardViewProps) {
         }
     };
 
-    const backgroundColor = optimisticBoard.color || "#0079BF";
     const boardStats = useMemo(() => {
         let cards = 0;
         let checklistItemsTotal = 0;
@@ -211,23 +214,16 @@ export function BoardView({ board }: BoardViewProps) {
     }, [optimisticBoard.lists]);
 
     return (
-        <div
-            className="flex h-full flex-col overflow-hidden relative"
-            style={{
-                background: `
-                    radial-gradient(circle at 10% 20%, ${backgroundColor}12 0%, transparent 50%),
-                    radial-gradient(circle at 90% 80%, ${backgroundColor}10 0%, transparent 50%),
-                    linear-gradient(180deg, ${backgroundColor}08 0%, transparent 100%),
-                    hsl(var(--background))
-                `,
-            }}
-        >
-            {/* Subtle dot-grid pattern */}
+        <div className="flex h-full flex-col overflow-hidden relative bg-muted/25 dark:bg-background/95">
+            {/* Minimal Ambient SVG Graphic in Board Color & Gradient (Light & Dark Mode) */}
+            <BoardBackgroundGraphic color={board.color} />
+
+            {/* Subtle neutral dot-grid pattern */}
             <div
-                className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
                 style={{
-                    backgroundImage: `radial-gradient(circle at 1px 1px, ${backgroundColor} 1px, transparent 0)`,
-                    backgroundSize: "40px 40px",
+                    backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+                    backgroundSize: "32px 32px",
                 }}
             />
 
@@ -246,56 +242,20 @@ export function BoardView({ board }: BoardViewProps) {
                 hasActiveFilters={hasActiveFilters}
             />
 
-            {/* CSS for the "border-expand" animation on newly created lists */}
+            {/* Custom scrollbars */}
             <style>{`
-                @keyframes listBorderExpand {
-                    0% {
-                        box-shadow: 0 0 0 0px ${backgroundColor}00, 0 4px 12px ${backgroundColor}20;
-                        border-color: ${backgroundColor}90;
-                        transform: scaleX(0.92) scaleY(0.96);
-                        opacity: 0;
-                    }
-                    40% {
-                        box-shadow: 0 0 0 3px ${backgroundColor}50, 0 8px 24px ${backgroundColor}30;
-                        border-color: ${backgroundColor};
-                        transform: scaleX(1.01) scaleY(1.01);
-                        opacity: 1;
-                    }
-                    70% {
-                        box-shadow: 0 0 0 1px ${backgroundColor}30, 0 4px 12px ${backgroundColor}20;
-                        border-color: ${backgroundColor}60;
-                        transform: scaleX(1) scaleY(1);
-                    }
-                    100% {
-                        box-shadow: 0 4px 12px ${backgroundColor}20;
-                        border-color: ${backgroundColor}30;
-                        transform: scaleX(1) scaleY(1);
-                        opacity: 1;
-                    }
-                }
-
-                .list-fresh-enter {
-                    animation: listBorderExpand 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-                    transform-origin: left center;
-                }
-
-                @keyframes shimmer {
-                    0% { background-position: -200% 0; }
-                    100% { background-position: 200% 0; }
-                }
-
-                .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+                .custom-scrollbar::-webkit-scrollbar { height: 7px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: ${backgroundColor}40;
-                    border-radius: 4px;
+                    background: hsl(var(--muted-foreground) / 0.2);
+                    border-radius: 9999px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: ${backgroundColor}60;
+                    background: hsl(var(--muted-foreground) / 0.35);
                 }
             `}</style>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-8 custom-scrollbar h-full">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6 custom-scrollbar h-full relative z-10">
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable
                         droppableId="board"
@@ -309,12 +269,12 @@ export function BoardView({ board }: BoardViewProps) {
                                 {...provided.droppableProps}
                                 className="flex gap-4 h-full items-start"
                             >
-                                {filteredBoard.lists.map((list, index) => (
+                                {filteredBoard.lists.map((list: ListWithCards, index: number) => (
                                     <ListColumn
                                         key={list._id}
                                         list={list}
                                         index={index}
-                                        boardColor={backgroundColor}
+                                        boardColor={board.color}
                                         isFresh={list._id === freshListId}
                                         isFiltered={hasActiveFilters}
                                         isReadOnly={isReadOnly}
@@ -322,15 +282,14 @@ export function BoardView({ board }: BoardViewProps) {
                                 ))}
                                 {provided.placeholder}
                                 {optimisticBoard.lists.length === 0 && (
-                                    <div
-                                        className="w-72 rounded-xl border border-dashed p-4 text-sm text-muted-foreground"
-                                        style={{
-                                            borderColor: `${backgroundColor}50`,
-                                            background: `${backgroundColor}08`,
-                                        }}
-                                    >
-                                        Create your first list to start adding cards and checklist
-                                        tasks.
+                                    <div className="w-80 rounded-2xl border border-dashed border-border/80 bg-background/70 backdrop-blur-sm p-6 text-center shadow-xs flex flex-col items-center">
+                                        <BoardEmptyStateGraphic color={board.color} />
+                                        <p className="text-xs font-semibold text-foreground">
+                                            No lists on this board
+                                        </p>
+                                        <p className="mt-1 text-[11px] text-muted-foreground">
+                                            Create your first list to start organizing cards and tasks.
+                                        </p>
                                     </div>
                                 )}
 
@@ -340,11 +299,7 @@ export function BoardView({ board }: BoardViewProps) {
                                         {isAddingList ? (
                                             <form
                                                 onSubmit={handleCreateList}
-                                                className="rounded-xl p-3 backdrop-blur-sm border shadow-lg"
-                                                style={{
-                                                    background: `linear-gradient(135deg, hsl(var(--background)) 0%, ${backgroundColor}08 100%)`,
-                                                    borderColor: `${backgroundColor}30`,
-                                                }}
+                                                className="rounded-xl p-3 bg-card/90 backdrop-blur-sm border border-border/70 shadow-sm space-y-2.5"
                                             >
                                                 <Input
                                                     autoFocus
@@ -367,71 +322,49 @@ export function BoardView({ board }: BoardViewProps) {
                                                             setNewListTitle("");
                                                         }
                                                     }}
-                                                    className="mb-3 border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
-                                                    style={{
-                                                        boxShadow: `0 0 0 1px ${backgroundColor}20`,
-                                                    }}
-                                                    maxLength={100}
-                                                    disabled={isCreatingList}
+                                                    className="text-xs bg-background/80"
                                                 />
-                                                <div className="flex gap-2">
+                                                <div className="flex items-center gap-1.5">
                                                     <Button
                                                         type="submit"
                                                         size="sm"
                                                         disabled={
                                                             !newListTitle.trim() || isCreatingList
                                                         }
-                                                        className="transition-all gap-2"
-                                                        style={{
-                                                            background: newListTitle.trim()
-                                                                ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`
-                                                                : undefined,
-                                                            color: newListTitle.trim()
-                                                                ? "white"
-                                                                : undefined,
-                                                        }}
+                                                        className="gap-1 text-xs h-7"
                                                     >
-                                                        {isCreatingList && (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        {isCreatingList ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Plus className="h-3.5 w-3.5" />
                                                         )}
-                                                        Add List
+                                                        <span>Add list</span>
                                                     </Button>
                                                     <Button
                                                         type="button"
-                                                        size="sm"
                                                         variant="ghost"
+                                                        size="icon"
                                                         onClick={() => {
                                                             setIsAddingList(false);
                                                             setNewListTitle("");
                                                         }}
-                                                        className="hover:bg-background/80"
-                                                        disabled={isCreatingList}
+                                                        className="h-7 w-7"
                                                     >
-                                                        Cancel
+                                                        <X className="h-3.5 w-3.5" />
                                                     </Button>
                                                 </div>
                                             </form>
                                         ) : (
-                                            <Button
-                                                variant="ghost"
-                                                className="w-full justify-start h-auto py-3 px-4 border-2 border-dashed rounded-xl transition-all hover:scale-[1.02] hover:shadow-md group"
+                                            <button
+                                                type="button"
                                                 onClick={() => setIsAddingList(true)}
-                                                style={{
-                                                    borderColor: `${backgroundColor}40`,
-                                                    background: `${backgroundColor}05`,
-                                                }}
+                                                className="flex w-full items-center gap-2 rounded-xl border border-dashed border-border/80 bg-background/40 hover:bg-background/80 p-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-150 hover:border-primary/50 shadow-2xs hover:shadow-xs active:scale-[0.99] cursor-pointer"
                                             >
-                                                <Plus
-                                                    className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90"
-                                                    style={{ color: backgroundColor }}
-                                                />
-                                                <span
-                                                    style={{ color: backgroundColor }}
-                                                    className="font-medium"
-                                                >
-                                                    Add List
-                                                </span>
-                                            </Button>
+                                                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </div>
+                                                <span>Add another list</span>
+                                            </button>
                                         )}
                                     </div>
                                 )}
@@ -443,3 +376,5 @@ export function BoardView({ board }: BoardViewProps) {
         </div>
     );
 }
+
+export default BoardView;

@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { Plus, Check, Loader2 } from "lucide-react";
+import { Plus, Check, Loader2, Tag } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -106,42 +105,48 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
     };
 
     return (
-        <div className="flex items-center gap-2">
-            {selectedLabels.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                    {selectedLabels.map((label) => (
-                        <Badge
-                            key={label._id}
-                            style={{ backgroundColor: label.color }}
-                            className="text-white text-xs"
-                        >
-                            {label.name}
-                        </Badge>
-                    ))}
-                </div>
-            )}
+        <div className="flex flex-wrap items-center gap-1.5">
+            {selectedLabels.map((label) => (
+                <span
+                    key={label._id}
+                    style={{ backgroundColor: label.color }}
+                    className="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium text-white shadow-2xs"
+                >
+                    {label.name}
+                </span>
+            ))}
 
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-6 px-2">
-                        <Plus className="w-3 h-3" />
+                    <Button
+                        variant="outline"
+                        size="xs"
+                        disabled={Object.keys(pendingLabelIds).length > 0}
+                        className="h-6 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
+                    >
+                        {Object.keys(pendingLabelIds).length > 0 ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                        ) : (
+                            <Tag className="w-3 h-3" />
+                        )}
+                        <span>Labels</span>
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-3" align="start">
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                         <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold">Labels</h4>
+                            <h4 className="text-xs font-semibold text-foreground">Labels</h4>
                         </div>
 
                         <Input
                             placeholder="Search labels..."
-                            className="h-8 text-sm"
+                            className="h-7 text-xs bg-muted/30"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
 
                         <div
-                            className="space-y-1 max-h-48 overflow-y-auto overscroll-contain pr-1"
+                            className="space-y-0.5 max-h-48 overflow-y-auto overscroll-contain pr-1"
                             onWheel={(e) => e.stopPropagation()}
                             onWheelCapture={(e) => e.stopPropagation()}
                         >
@@ -151,35 +156,36 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
 
                                 return (
                                     <button
+                                        type="button"
                                         key={label._id}
                                         onClick={() => handleToggleLabel(label._id)}
                                         disabled={isPending}
-                                        className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted transition-colors disabled:opacity-60"
+                                        className="w-full flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/70 transition-colors disabled:opacity-60 cursor-pointer text-left"
                                     >
                                         <div
-                                            className="w-8 h-4 rounded"
+                                            className="w-4 h-4 rounded-xs shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/15"
                                             style={{ backgroundColor: label.color }}
                                         />
-                                        <span className="flex-1 text-left text-sm">
+                                        <span className="flex-1 text-xs truncate">
                                             {label.name}
                                         </span>
                                         {isPending ? (
-                                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                                         ) : (
-                                            isSelected && <Check className="w-4 h-4 text-primary" />
+                                            isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                                         )}
                                     </button>
                                 );
                             })}
                             {filteredLabels.length === 0 && (
-                                <p className="text-xs text-muted-foreground px-2 py-1">
+                                <p className="text-[11px] text-muted-foreground px-2 py-1.5 text-center">
                                     No labels found.
                                 </p>
                             )}
                         </div>
 
                         {isCreating ? (
-                            <div className="space-y-2 pt-2 border-t">
+                            <div className="space-y-2 pt-2 border-t border-border/60">
                                 <Input
                                     placeholder="Label name"
                                     value={newLabelName}
@@ -189,43 +195,45 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                         if (e.key === "Escape" && !isCreatingLabel)
                                             setIsCreating(false);
                                     }}
-                                    className="h-8 text-sm"
+                                    className="h-7 text-xs"
                                     autoFocus
                                     disabled={isCreatingLabel}
                                 />
-                                <div className="grid grid-cols-5 gap-1">
+                                <div className="grid grid-cols-5 gap-1.5">
                                     {LABEL_COLORS.map((color) => (
                                         <button
+                                            type="button"
                                             key={color.value}
                                             onClick={() => setSelectedColor(color.value)}
                                             disabled={isCreatingLabel}
                                             className={cn(
-                                                "w-full h-6 rounded transition-all disabled:opacity-50",
+                                                "w-full h-5 rounded-xs transition-all disabled:opacity-50 cursor-pointer",
                                                 selectedColor === color.value &&
-                                                    "ring-2 ring-primary ring-offset-2",
+                                                "ring-2 ring-primary ring-offset-1",
                                             )}
                                             style={{ backgroundColor: color.value }}
                                             title={color.name}
                                         />
                                     ))}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex items-center gap-1.5 pt-1">
                                     <Button
-                                        size="sm"
+                                        size="xs"
                                         onClick={handleCreateLabel}
-                                        className="flex-1"
                                         disabled={!newLabelName.trim() || isCreatingLabel}
+                                        className="h-6 text-xs gap-1"
                                     >
                                         {isCreatingLabel && (
-                                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                            <Loader2 className="w-3 h-3 animate-spin" />
                                         )}
-                                        Create & Add
+                                        Create
                                     </Button>
                                     <Button
-                                        size="sm"
+                                        size="xs"
                                         variant="ghost"
                                         onClick={() => setIsCreating(false)}
                                         disabled={isCreatingLabel}
+                                        className="h-6 text-xs"
                                     >
                                         Cancel
                                     </Button>
@@ -233,13 +241,13 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                             </div>
                         ) : (
                             <Button
-                                variant="secondary"
-                                size="sm"
-                                className="w-full"
+                                variant="ghost"
+                                size="xs"
+                                className="w-full justify-start h-7 text-xs text-muted-foreground hover:text-foreground"
                                 onClick={() => setIsCreating(true)}
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Label
+                                <Plus className="w-3.5 h-3.5 mr-1" />
+                                Create new label
                             </Button>
                         )}
                     </div>

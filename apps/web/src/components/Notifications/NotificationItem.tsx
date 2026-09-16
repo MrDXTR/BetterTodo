@@ -68,7 +68,6 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
     const isBoardInvite = notification.type === "board_invite";
 
     const handleClick = async () => {
-        // Don't navigate if this is a board invite (they should use the buttons)
         if (isBoardInvite) return;
 
         if (!notification.read) {
@@ -121,22 +120,24 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
         <div
             onClick={handleClick}
             className={cn(
-                "group relative flex gap-3 p-3 rounded-lg transition-colors border",
+                "group relative flex gap-2.5 p-2.5 rounded-lg transition-colors border text-xs",
                 isBoardInvite ? "cursor-default" : "cursor-pointer",
                 notification.read
-                    ? "bg-background hover:bg-muted/50 border-transparent"
+                    ? "bg-transparent hover:bg-muted/40 border-transparent"
                     : "bg-primary/5 hover:bg-primary/10 border-primary/20",
             )}
         >
             <div
                 className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                    notification.read ? "bg-muted" : "bg-primary/10",
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-inset",
+                    notification.read
+                        ? "bg-muted/50 ring-border/50"
+                        : "bg-primary/10 ring-primary/20",
                 )}
             >
                 <Icon
                     className={cn(
-                        "h-4 w-4",
+                        "h-3.5 w-3.5",
                         notification.read ? "text-muted-foreground" : "text-primary",
                     )}
                 />
@@ -146,24 +147,28 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
                 <div className="flex items-start justify-between gap-2">
                     <p
                         className={cn(
-                            "text-sm font-medium leading-tight",
-                            !notification.read && "font-semibold",
+                            "text-xs leading-snug truncate",
+                            notification.read
+                                ? "text-foreground/90 font-medium"
+                                : "text-foreground font-semibold",
                         )}
                     >
                         {notification.title}
                     </p>
                     {!notification.read && (
-                        <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />
                     )}
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
+                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    {notification.message}
+                </p>
 
                 {/* Accept/Decline buttons for board invites */}
                 {isBoardInvite && matchingInvite && (
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-1.5 pt-1">
                         <Button
-                            size="sm"
-                            className="h-7 text-xs gap-1"
+                            size="xs"
+                            className="h-6 text-[11px] px-2 gap-1"
                             onClick={handleAccept}
                             disabled={isAccepting || isDeclining}
                         >
@@ -172,12 +177,12 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
                             ) : (
                                 <Check className="h-3 w-3" />
                             )}
-                            Accept
+                            <span>Accept</span>
                         </Button>
                         <Button
-                            size="sm"
+                            size="xs"
                             variant="outline"
-                            className="h-7 text-xs gap-1"
+                            className="h-6 text-[11px] px-2 gap-1"
                             onClick={handleDecline}
                             disabled={isAccepting || isDeclining}
                         >
@@ -186,28 +191,29 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
                             ) : (
                                 <XCircle className="h-3 w-3" />
                             )}
-                            Decline
+                            <span>Decline</span>
                         </Button>
                     </div>
                 )}
 
                 {/* Show "responded" state if invite was already handled */}
                 {isBoardInvite && !matchingInvite && pendingInvites !== undefined && (
-                    <p className="text-xs text-muted-foreground italic pt-1">
+                    <p className="text-[10px] text-muted-foreground italic pt-0.5">
                         Invite already responded to
                     </p>
                 )}
 
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground/70">
                     {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
                 </p>
             </div>
 
             <Button
                 variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2"
+                size="icon-xs"
+                className="h-5 w-5 opacity-0 group-hover:opacity-100 max-sm:opacity-70 transition-opacity absolute top-2 right-2 text-muted-foreground hover:text-foreground"
                 onClick={handleDelete}
+                title="Dismiss"
             >
                 <X className="h-3 w-3" />
             </Button>

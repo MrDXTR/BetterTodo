@@ -11,31 +11,39 @@ interface DatePickerProps {
     date?: Date;
     onDateChange: (date: Date | undefined) => void;
     placeholder?: string;
+    formatStr?: string;
     className?: string;
+    disabled?: boolean;
 }
 
 export function DatePicker({
     date,
     onDateChange,
     placeholder = "Pick a date",
+    formatStr = "MMM d, yyyy",
     className,
+    disabled = false,
 }: DatePickerProps) {
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <Button
-                    variant={"outline"}
+                    type="button"
+                    variant="outline"
+                    disabled={disabled}
                     className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal overflow-hidden max-w-full",
                         !date && "text-muted-foreground",
                         className,
                     )}
                 >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>{placeholder}</span>}
+                    <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate flex-1 text-xs">
+                        {date ? format(date, formatStr) : placeholder}
+                    </span>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 z-50" align="start">
                 <Calendar mode="single" selected={date} onSelect={onDateChange} initialFocus />
             </PopoverContent>
         </Popover>

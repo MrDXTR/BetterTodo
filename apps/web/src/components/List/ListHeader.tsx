@@ -1,20 +1,20 @@
-import { api } from "@BetterTodo/backend/convex/_generated/api";
+import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
-import { MoreHorizontal, Trash2, Archive, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { MoreHorizontal, Archive, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@BetterTodo/backend/convex/_generated/api";
 
 import type { List } from "@/types/board";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { cn } from "@/lib/utils";
 
 interface ListHeaderProps {
     list: List;
@@ -22,16 +22,18 @@ interface ListHeaderProps {
     isReadOnly?: boolean;
 }
 
-export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }: ListHeaderProps) {
+export function ListHeader({ list, boardColor, isReadOnly = false }: ListHeaderProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(list.title);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-    const [isArchiving, setIsArchiving] = useState(false);
 
-    const updateList = useMutation(api.lists.update);
-    const archiveList = useMutation(api.lists.archive);
+    useEffect(() => {
+        setTitle(list.title);
+    }, [list.title]);
+
+    const updateListTitle = useMutation(api.lists.updateTitle);
     const deleteList = useMutation(api.lists.deleteList);
+    const duplicateList = useMutation(api.lists.duplicate);
+    const archiveList = useMutation(api.lists.archive);
 
     const handleSaveTitle = async () => {
         if (!title.trim() || title === list.title) {
@@ -41,7 +43,7 @@ export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }:
         }
 
         try {
-            await updateList({
+            await updateListTitle({
                 listId: list._id,
                 title: title.trim(),
             });
@@ -54,17 +56,23 @@ export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }:
         }
     };
 
+    const handleDuplicate = async () => {
+        try {
+            await duplicateList({ listId: list._id });
+            toast.success("List duplicated!");
+        } catch (error) {
+            console.error("Error duplicating list:", error);
+            toast.error("Failed to duplicate list");
+        }
+    };
+
     const handleArchive = async () => {
-        setIsArchiving(true);
         try {
             await archiveList({ listId: list._id });
-            setShowArchiveDialog(false);
             toast.success("List archived!");
         } catch (error) {
             console.error("Error archiving list:", error);
             toast.error("Failed to archive list");
-        } finally {
-            setIsArchiving(false);
         }
     };
 
@@ -81,10 +89,7 @@ export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }:
     const cardCount = (list as any).cards?.length || 0;
 
     return (
-        <div
-            className="flex items-center justify-between gap-2 p-4 pb-3 border-b"
-            style={{ borderColor: `${boardColor}20` }}
-        >
+        <div className="flex items-center justify-between gap-1.5 p-3 pb-2 border-b border-border/50 select-none">
             {isEditingTitle && !isReadOnly ? (
                 <Input
                     autoFocus
@@ -98,34 +103,22 @@ export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }:
                             setIsEditingTitle(false);
                         }
                     }}
-                    className="h-9 font-semibold border-0 bg-background/60 backdrop-blur-sm focus-visible:ring-1"
-                    style={{
-                        boxShadow: `0 0 0 1px ${boardColor}40`,
-                    }}
+                    className="h-7 text-xs font-semibold bg-background border-border/80 focus-visible:ring-1"
                     maxLength={100}
                 />
             ) : (
                 <button
+                    type="button"
                     onClick={() => {
                         if (!isReadOnly) setIsEditingTitle(true);
                     }}
-                    className="flex-1 text-left rounded-lg px-3 py-2 font-semibold hover:bg-muted/50 transition-all group disabled:opacity-60"
+                    className="flex-1 flex items-center gap-1.5 text-left rounded-md px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/60 transition-[background-color] disabled:opacity-60 cursor-pointer min-w-0"
                     disabled={isReadOnly}
                 >
-                    <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                        {list.title}
+                    <span className="truncate">{list.title}</span>
+                    <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.2 rounded-full bg-muted/70 text-muted-foreground">
+                        {cardCount}
                     </span>
-                    {cardCount > 0 && (
-                        <span
-                            className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full"
-                            style={{
-                                background: `${boardColor}15`,
-                                color: boardColor,
-                            }}
-                        >
-                            {cardCount}
-                        </span>
-                    )}
                 </button>
             )}
 
@@ -134,53 +127,33 @@ export function ListHeader({ list, boardColor = "#0079BF", isReadOnly = false }:
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-muted/50 transition-all"
+                            size="icon-xs"
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                            aria-label="List options"
                         >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="backdrop-blur-md">
-                        <DropdownMenuItem
-                            onClick={() => setShowArchiveDialog(true)}
-                            className="cursor-pointer"
-                            disabled={isArchiving}
-                        >
-                            {isArchiving ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Archive className="mr-2 h-4 w-4" />
-                            )}
-                            Archive List
+                    <DropdownMenuContent align="end" className="w-44 text-xs">
+                        <DropdownMenuItem onClick={handleDuplicate} className="cursor-pointer gap-2">
+                            <Copy className="h-3.5 w-3.5" />
+                            <span>Duplicate list</span>
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleArchive} className="cursor-pointer gap-2">
+                            <Archive className="h-3.5 w-3.5" />
+                            <span>Archive list</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
-                            onClick={() => setShowDeleteDialog(true)}
-                            className="text-destructive cursor-pointer"
+                            onClick={handleDelete}
+                            className="cursor-pointer text-destructive focus:text-destructive gap-2"
                         >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete List
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Delete list</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
-
-            <DeleteConfirmationDialog
-                open={showDeleteDialog}
-                onOpenChange={setShowDeleteDialog}
-                onConfirm={handleDelete}
-                title="Delete List"
-                description="Are you sure? This will delete all cards in this list. This action cannot be undone."
-            />
-
-            <ConfirmationDialog
-                open={showArchiveDialog}
-                onOpenChange={setShowArchiveDialog}
-                onConfirm={handleArchive}
-                title="Archive List"
-                description="Are you sure you want to archive this list? You can restore it later from archived items."
-                confirmText="Archive"
-                isLoading={isArchiving}
-            />
         </div>
     );
 }
