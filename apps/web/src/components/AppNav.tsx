@@ -1,5 +1,6 @@
+import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import {
     Clock,
     Flame,
@@ -9,6 +10,7 @@ import {
     Menu,
     Plus,
     Search,
+    Settings,
     Shield,
     Sparkles,
 } from "lucide-react";
@@ -74,6 +76,39 @@ function NavLinks({
     );
 }
 
+function MobileWorkspacesList({ onNavigate }: { onNavigate?: () => void }) {
+    const workspaces = useQuery(api.workspaces.getMyWorkspaces);
+    if (!workspaces || workspaces.length === 0) return null;
+
+    return (
+        <div className="space-y-1.5 pt-3 border-t border-border/60">
+            <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Workspaces
+            </p>
+            <div className="space-y-0.5">
+                {workspaces.map((ws) => (
+                    <div
+                        key={ws._id}
+                        className="flex items-center justify-between rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                        <span className="truncate flex-1 font-medium">{ws.name}</span>
+                        <Link
+                            to="/workspaces/$workspaceId"
+                            params={{ workspaceId: ws._id }}
+                            onClick={onNavigate}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-muted text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                            title={`${ws.name} Settings`}
+                        >
+                            <Settings className="h-3 w-3" />
+                            <span>Settings</span>
+                        </Link>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function AppNav() {
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -133,15 +168,16 @@ export function AppNav() {
                                 <Menu className="h-4 w-4" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="w-[280px] p-4">
+                        <SheetContent side="right" className="w-[280px] p-4 flex flex-col">
                             <SheetHeader>
                                 <SheetTitle className="text-left text-base">Navigation</SheetTitle>
                             </SheetHeader>
-                            <div className="flex flex-col gap-2 pt-4">
+                            <div className="flex flex-col gap-2 pt-4 flex-1 overflow-y-auto">
                                 <Authenticated>
                                     <NavLinks vertical onNavigate={() => setMobileOpen(false)} />
+                                    <MobileWorkspacesList onNavigate={() => setMobileOpen(false)} />
                                 </Authenticated>
-                                <div className="mt-4 pt-4 border-t border-border/60">
+                                <div className="mt-auto pt-4 border-t border-border/60">
                                     <Authenticated>
                                         <UserMenu />
                                     </Authenticated>

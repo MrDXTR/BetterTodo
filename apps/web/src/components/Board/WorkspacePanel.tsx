@@ -197,7 +197,7 @@ export function WorkspaceMobileStrip({ selectedId, onSelect }: WorkspaceSelectPr
     const workspaces = useQuery(api.workspaces.getMyWorkspaces);
 
     return (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {/* All Boards pill */}
             <button
                 type="button"
@@ -218,28 +218,48 @@ export function WorkspaceMobileStrip({ selectedId, onSelect }: WorkspaceSelectPr
                 const color = workspaceColor(ws.name);
                 const active = selectedId === ws._id;
                 return (
-                    <button
+                    <div
                         key={ws._id}
-                        type="button"
-                        onClick={() => onSelect(ws._id)}
                         className={cn(
-                            "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer active:scale-[0.98]",
+                            "flex shrink-0 items-center rounded-full transition-colors",
                             active
                                 ? "bg-primary text-primary-foreground shadow-2xs"
                                 : "border border-border/70 bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                         )}
                     >
-                        <span
-                            className="h-2 w-2 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15"
-                            style={{ backgroundColor: color }}
-                        />
-                        <span>{ws.name}</span>
-                        <span className="tabular-nums text-[10px] opacity-60">({ws.boardsCount})</span>
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => onSelect(ws._id)}
+                            className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 text-xs font-medium cursor-pointer active:scale-[0.98]"
+                        >
+                            <span
+                                className="h-2 w-2 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15"
+                                style={{ backgroundColor: color }}
+                            />
+                            <span className="max-w-[120px] truncate">{ws.name}</span>
+                            <span className="tabular-nums text-[10px] opacity-70">({ws.boardsCount})</span>
+                        </button>
+                        <Link
+                            to="/workspaces/$workspaceId"
+                            params={{ workspaceId: ws._id }}
+                            className={cn(
+                                "pr-2.5 pl-1 py-1 transition-opacity cursor-pointer active:scale-90",
+                                active
+                                    ? "text-primary-foreground/80 hover:text-primary-foreground"
+                                    : "text-muted-foreground/60 hover:text-foreground",
+                            )}
+                            title={`${ws.name} settings`}
+                            aria-label={`${ws.name} settings`}
+                        >
+                            <Settings className="h-3 w-3" />
+                        </Link>
+                    </div>
                 );
             })}
 
-            <NewWorkspaceDialog variant="mobile" />
+            <div className="shrink-0">
+                <NewWorkspaceDialog variant="mobile" />
+            </div>
         </div>
     );
 }

@@ -9,6 +9,7 @@ import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import type { Board, CardPriority } from "@/types/board";
 import { ListColumn } from "@/components/List/ListColumn";
 import { BoardHeader } from "@/components/Board/BoardHeader";
+import { BoardBackgroundGraphic, BoardEmptyStateGraphic } from "@/components/Board/BoardBackgroundGraphic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -214,6 +215,9 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
 
     return (
         <div className="flex h-full flex-col overflow-hidden relative bg-muted/25 dark:bg-background/95">
+            {/* Minimal Ambient SVG Graphic in Board Color & Gradient (Light & Dark Mode) */}
+            <BoardBackgroundGraphic color={board.color} />
+
             {/* Subtle neutral dot-grid pattern */}
             <div
                 className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
@@ -241,7 +245,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
             {/* Custom scrollbars */}
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar { height: 7px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }\
                 .custom-scrollbar::-webkit-scrollbar-thumb {
                     background: hsl(var(--muted-foreground) / 0.2);
                     border-radius: 9999px;
@@ -251,7 +255,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                 }
             `}</style>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6 custom-scrollbar h-full">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6 custom-scrollbar h-full relative z-10">
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable
                         droppableId="board"
@@ -278,8 +282,14 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                                 ))}
                                 {provided.placeholder}
                                 {optimisticBoard.lists.length === 0 && (
-                                    <div className="w-72 rounded-xl border border-dashed border-border/80 bg-background/50 p-6 text-center text-xs text-muted-foreground shadow-2xs">
-                                        Create your first list to start organizing cards and tasks.
+                                    <div className="w-80 rounded-2xl border border-dashed border-border/80 bg-background/70 backdrop-blur-sm p-6 text-center shadow-xs flex flex-col items-center">
+                                        <BoardEmptyStateGraphic color={board.color} />
+                                        <p className="text-xs font-semibold text-foreground">
+                                            No lists on this board
+                                        </p>
+                                        <p className="mt-1 text-[11px] text-muted-foreground">
+                                            Create your first list to start organizing cards and tasks.
+                                        </p>
                                     </div>
                                 )}
 
@@ -312,9 +322,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                                                             setNewListTitle("");
                                                         }
                                                     }}
-                                                    className="h-8 text-xs bg-background/80 focus-visible:ring-1"
-                                                    maxLength={100}
-                                                    disabled={isCreatingList}
+                                                    className="text-xs bg-background/80"
                                                 />
                                                 <div className="flex items-center gap-1.5">
                                                     <Button
@@ -323,22 +331,24 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                                                         disabled={
                                                             !newListTitle.trim() || isCreatingList
                                                         }
-                                                        className="h-7 text-xs px-2.5 gap-1.5"
+                                                        className="gap-1 text-xs h-7"
                                                     >
-                                                        {isCreatingList && (
-                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                        {isCreatingList ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Plus className="h-3.5 w-3.5" />
                                                         )}
-                                                        Add List
+                                                        <span>Add list</span>
                                                     </Button>
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                                        size="icon"
                                                         onClick={() => {
                                                             setIsAddingList(false);
                                                             setNewListTitle("");
                                                         }}
+                                                        className="h-7 w-7"
                                                     >
                                                         <X className="h-3.5 w-3.5" />
                                                     </Button>
@@ -348,9 +358,11 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => setIsAddingList(true)}
-                                                className="flex items-center gap-2 rounded-xl border border-dashed border-border/80 bg-background/40 hover:bg-background/80 text-muted-foreground hover:text-foreground p-3 text-xs font-medium transition-[background-color,color,transform] active:scale-[0.98] cursor-pointer w-full text-left"
+                                                className="flex w-full items-center gap-2 rounded-xl border border-dashed border-border/80 bg-background/40 hover:bg-background/80 p-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-150 hover:border-primary/50 shadow-2xs hover:shadow-xs active:scale-[0.99] cursor-pointer"
                                             >
-                                                <Plus className="h-4 w-4" />
+                                                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </div>
                                                 <span>Add another list</span>
                                             </button>
                                         )}
@@ -364,3 +376,5 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
         </div>
     );
 }
+
+export default BoardView;
