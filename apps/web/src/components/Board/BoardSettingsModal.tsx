@@ -164,9 +164,8 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         className="flex flex-col min-h-0 flex-1 overflow-hidden mt-3"
                     >
                         <TabsList
-                            className={`shrink-0 w-full h-8.5 ${
-                                canEdit ? "grid grid-cols-2" : "grid grid-cols-1"
-                            }`}
+                            className={`shrink-0 w-full h-8.5 ${canEdit ? "grid grid-cols-2" : "grid grid-cols-1"
+                                }`}
                         >
                             <TabsTrigger value="general" className="w-full text-xs">
                                 General
@@ -180,7 +179,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
 
                         <TabsContent
                             value="general"
-                            className="overflow-y-auto flex-1 min-h-0 mt-3 pr-1"
+                            className="overflow-y-auto flex-1 min-h-0 mt-3 pr-1 px-2"
                         >
                             <div className="space-y-4 pb-2">
                                 {/* Title */}
@@ -216,7 +215,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                 {/* Color */}
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-medium">Board color</Label>
-                                    <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
+                                    <div className="grid grid-cols-5 sm:grid-cols-9 gap-2 px-2">
                                         {BOARD_COLORS.map((boardColor) => {
                                             const isSelected = color === boardColor.value;
                                             return (
@@ -333,8 +332,8 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         )}
                     </Tabs>
 
-                    <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between pt-4 shrink-0 mt-2 border-t border-border/60">
-                        <div className="flex flex-col gap-2 w-full sm:w-auto order-2 sm:order-1">
+                    <DialogFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 shrink-0 mt-2 border-t border-border/60">
+                        <div className="flex flex-wrap items-center gap-2 order-2 sm:order-1">
                             {isOwner && (
                                 <>
                                     {board.archived ? (
@@ -344,7 +343,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             size="sm"
                                             onClick={handleRestore}
                                             disabled={isSubmitting}
-                                            className="w-full sm:w-auto text-xs h-8 gap-1.5"
+                                            className="text-xs h-8 gap-1.5"
                                         >
                                             <Archive className="h-3.5 w-3.5" />
                                             <span>Restore board</span>
@@ -356,7 +355,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             size="sm"
                                             onClick={handleArchive}
                                             disabled={isSubmitting}
-                                            className="w-full sm:w-auto text-xs h-8 gap-1.5"
+                                            className="text-xs h-8 gap-1.5"
                                         >
                                             <Archive className="h-3.5 w-3.5" />
                                             <span>Archive board</span>
@@ -368,7 +367,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         size="sm"
                                         onClick={() => setShowDeleteConfirm(true)}
                                         disabled={isSubmitting}
-                                        className="w-full sm:w-auto text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-8 gap-1.5"
+                                        className="text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-8 gap-1.5"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                         <span>Delete board</span>
@@ -378,7 +377,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         </div>
 
                         {canEdit && (
-                            <div className="flex gap-2 justify-end w-full sm:w-auto order-1 sm:order-2">
+                            <div className="flex items-center gap-2 justify-end order-1 sm:order-2">
                                 <Button
                                     type="button"
                                     variant="outline"

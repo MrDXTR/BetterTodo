@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { LogOut, Shield, User } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 
 import {
     DropdownMenu,
@@ -56,23 +56,19 @@ export function UserMenu() {
                         <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                     </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    <DropdownMenuItem asChild>
-                        <Link to={"/profile" as any} className="flex w-full items-center">
-                            <User className="mr-2 h-4 w-4" />
-                            Profile
-                        </Link>
-                    </DropdownMenuItem>
-                    {role === "admin" && (
-                        <DropdownMenuItem asChild>
-                            <Link to="/admin" className="flex w-full items-center">
-                                <Shield className="mr-2 h-4 w-4" />
-                                Admin Panel
-                            </Link>
-                        </DropdownMenuItem>
-                    )}
-                </DropdownMenuGroup>
+                {role === "admin" && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem asChild>
+                                <Link to="/admin" className="flex w-full items-center">
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    Admin Panel
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                    </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                     onClick={async () => {
