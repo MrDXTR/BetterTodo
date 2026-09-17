@@ -1,18 +1,17 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
     Kanban,
     ListTodo,
     CheckCircle2,
-    AlertTriangle,
     CalendarClock,
     Plus,
     ArrowRight,
     CheckSquare,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateBoardModal } from "@/components/Board/CreateBoardModal";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PRIORITY_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +28,9 @@ export const Route = createFileRoute("/dashboard")({
     component: RouteComponent,
 });
 
-// ============================================
+// ===========================================
 // STAT CARD COMPONENT
-// ============================================
+// ===========================================
 
 function StatCard({
     title,
@@ -76,9 +76,9 @@ function StatCard({
     );
 }
 
-// ============================================
+// ===========================================
 // MY TASKS SECTION
-// ============================================
+// ===========================================
 
 function MyTasksSection() {
     const tasksData = useQuery(api.dashboard.getMyOpenTasks);
@@ -201,21 +201,28 @@ function MyTasksSection() {
                         <ListTodo className="h-4 w-4 text-primary shrink-0" />
                         <span>My Tasks</span>
                     </div>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-mono font-medium">
+                    <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 h-4 font-mono font-medium"
+                    >
                         {tasks.length}
                     </Badge>
                 </CardTitle>
             </CardHeader>
             <CardContent className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 space-y-4 max-h-[440px] overflow-y-auto overflow-x-hidden">
-                {(Object.entries(grouped) as Array<[
-                    string,
-                    {
-                        boardTitle: string;
-                        boardColor?: string;
-                        boardId: string;
-                        tasks: typeof tasks;
-                    },
-                ]>).map(([boardId, group]) => (
+                {(
+                    Object.entries(grouped) as Array<
+                        [
+                            string,
+                            {
+                                boardTitle: string;
+                                boardColor?: string;
+                                boardId: string;
+                                tasks: typeof tasks;
+                            },
+                        ]
+                    >
+                ).map(([boardId, group]) => (
                     <div key={boardId} className="space-y-2">
                         <Link
                             to="/boards/$boardId"
@@ -262,7 +269,8 @@ function MyTasksSection() {
                                                         checked={isCardCompleting}
                                                         disabled={isCardCompleting}
                                                         onCheckedChange={(checked) => {
-                                                            if (checked) handleCompleteCard(card._id);
+                                                            if (checked)
+                                                                handleCompleteCard(card._id);
                                                         }}
                                                         className="h-4 w-4 rounded data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 cursor-pointer"
                                                     />
@@ -276,7 +284,8 @@ function MyTasksSection() {
                                                         <p
                                                             className={cn(
                                                                 "text-xs sm:text-sm font-medium text-foreground group-hover/link:text-primary transition-colors truncate",
-                                                                isCardCompleting && "line-through text-muted-foreground",
+                                                                isCardCompleting &&
+                                                                    "line-through text-muted-foreground",
                                                             )}
                                                         >
                                                             {card.title}
@@ -297,7 +306,8 @@ function MyTasksSection() {
                                                     >
                                                         <CheckSquare className="h-2.5 w-2.5" />
                                                         <span>
-                                                            {card.completedChecklistCount}/{card.totalChecklistCount}
+                                                            {card.completedChecklistCount}/
+                                                            {card.totalChecklistCount}
                                                         </span>
                                                     </Badge>
                                                 )}
@@ -315,19 +325,20 @@ function MyTasksSection() {
                                                 {card.dueDate && (
                                                     <Badge
                                                         variant={
-                                                            card.isOverdue ? "destructive" : "secondary"
+                                                            card.isOverdue
+                                                                ? "destructive"
+                                                                : "secondary"
                                                         }
                                                         className="text-[10px] px-1.5 py-0 h-4 gap-1 shrink-0"
                                                     >
                                                         <CalendarClock className="h-2.5 w-2.5" />
                                                         <span>
-                                                            {new Date(card.dueDate).toLocaleDateString(
-                                                                undefined,
-                                                                {
-                                                                    month: "short",
-                                                                    day: "numeric",
-                                                                },
-                                                            )}
+                                                            {new Date(
+                                                                card.dueDate,
+                                                            ).toLocaleDateString(undefined, {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                            })}
                                                         </span>
                                                     </Badge>
                                                 )}
@@ -338,7 +349,9 @@ function MyTasksSection() {
                                         {card.checklistItems && card.checklistItems.length > 0 && (
                                             <div className="mt-2.5 pt-2 border-t border-border/40 space-y-1.5 pl-6 sm:pl-7">
                                                 {card.checklistItems.map((item: any) => {
-                                                    const isItemCompleting = completingIds.has(item._id);
+                                                    const isItemCompleting = completingIds.has(
+                                                        item._id,
+                                                    );
                                                     return (
                                                         <div
                                                             key={item._id}
@@ -352,16 +365,24 @@ function MyTasksSection() {
                                                                 checked={isItemCompleting}
                                                                 disabled={isItemCompleting}
                                                                 onCheckedChange={(checked) => {
-                                                                    if (checked) handleCompleteChecklistItem(item._id);
+                                                                    if (checked)
+                                                                        handleCompleteChecklistItem(
+                                                                            item._id,
+                                                                        );
                                                                 }}
                                                                 className="h-3.5 w-3.5 rounded data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 cursor-pointer"
                                                             />
                                                             <span
                                                                 className={cn(
                                                                     "text-muted-foreground hover:text-foreground transition-colors truncate cursor-pointer",
-                                                                    isItemCompleting && "line-through opacity-50",
+                                                                    isItemCompleting &&
+                                                                        "line-through opacity-50",
                                                                 )}
-                                                                onClick={() => handleCompleteChecklistItem(item._id)}
+                                                                onClick={() =>
+                                                                    handleCompleteChecklistItem(
+                                                                        item._id,
+                                                                    )
+                                                                }
                                                             >
                                                                 {item.title}
                                                             </span>
@@ -381,28 +402,15 @@ function MyTasksSection() {
     );
 }
 
-// ============================================
+// ===========================================
 // MAIN DASHBOARD
-// ============================================
+// ===========================================
 
 function RouteComponent() {
     return (
-        <>
-            <Authenticated>
-                <DashboardContent />
-            </Authenticated>
-            <Unauthenticated>
-                <RedirectToSignIn />
-            </Unauthenticated>
-            <AuthLoading>
-                <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                        <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
-                    </div>
-                </div>
-            </AuthLoading>
-        </>
+        <ProtectedRoute>
+            <DashboardContent />
+        </ProtectedRoute>
     );
 }
 
@@ -448,22 +456,22 @@ function DashboardContent() {
                             title="My Tasks"
                             icon={ListTodo}
                             value={taskCount}
-                            subtitle="Assigned with due date"
+                            subtitle="Assigned open tasks"
                             loading={tasksLoading}
                         />
                         <StatCard
                             title="Overdue"
-                            icon={AlertTriangle}
+                            icon={CalendarClock}
                             value={overdueCount}
-                            subtitle="Past due date"
+                            subtitle="Tasks past due date"
                             loading={tasksLoading}
                             accent={overdueCount > 0 ? "text-destructive" : undefined}
                         />
                         <StatCard
-                            title="Completed"
+                            title="Completed This Week"
                             icon={CheckCircle2}
                             value={completedCount ?? 0}
-                            subtitle="This week"
+                            subtitle="Cards finished"
                             loading={completedLoading}
                             accent="text-emerald-500"
                         />
@@ -497,16 +505,10 @@ function DashboardContent() {
             <CreateBoardModal
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
-                onCreated={(boardId: Id<"boards">) => navigate({ to: "/boards/$boardId", params: { boardId } })}
+                onCreated={(boardId: Id<"boards">) =>
+                    navigate({ to: "/boards/$boardId", params: { boardId } })
+                }
             />
         </>
     );
-}
-
-function RedirectToSignIn() {
-    const navigate = useNavigate();
-    useEffect(() => {
-        navigate({ to: "/" });
-    }, [navigate]);
-    return null;
 }

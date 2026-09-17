@@ -75,7 +75,11 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
         }
         if (notification.linkUrl && onNavigate) {
             onNavigate();
-            window.location.href = notification.linkUrl;
+            const trimmed = notification.linkUrl.trim();
+            // Validate that linkUrl is a safe relative URL path
+            if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.includes("\\")) {
+                window.location.href = trimmed;
+            }
         }
     };
 

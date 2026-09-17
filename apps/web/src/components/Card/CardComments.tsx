@@ -256,7 +256,12 @@ export function CardComments({ cardId, isReadOnly = false }: CardCommentsProps) 
                         <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/40 px-2 py-1 rounded-md">
                             <div className="flex items-center gap-1.5">
                                 <CornerUpRight className="h-3 w-3 text-primary" />
-                                <span>Replying to <span className="font-medium text-foreground">@{replyToAuthor.name}</span></span>
+                                <span>
+                                    Replying to{" "}
+                                    <span className="font-medium text-foreground">
+                                        @{replyToAuthor.name}
+                                    </span>
+                                </span>
                             </div>
                             <button
                                 type="button"
@@ -420,7 +425,10 @@ function CommentThread({
                             ) : (
                                 <>
                                     <ChevronDown className="h-3 w-3" />
-                                    <span>View {hiddenRepliesCount} more {hiddenRepliesCount === 1 ? "reply" : "replies"}</span>
+                                    <span>
+                                        View {hiddenRepliesCount} more{" "}
+                                        {hiddenRepliesCount === 1 ? "reply" : "replies"}
+                                    </span>
                                 </>
                             )}
                         </button>
@@ -477,7 +485,9 @@ function CommentItem({
                             {name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium text-foreground truncate">{isOwn ? "You" : name}</span>
+                    <span className="font-medium text-foreground truncate">
+                        {isOwn ? "You" : name}
+                    </span>
                     {role && role !== "You" && (
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0">
                             {role}

@@ -97,7 +97,10 @@ export function ArchivedItemsPanel({ open, onOpenChange, boardId }: ArchivedItem
                             <TabsTrigger value="cards" className="text-xs">
                                 Cards{" "}
                                 {!isLoading && (
-                                    <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0 h-4">
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-1.5 text-[10px] px-1.5 py-0 h-4"
+                                    >
                                         {cards.length}
                                     </Badge>
                                 )}
@@ -105,7 +108,10 @@ export function ArchivedItemsPanel({ open, onOpenChange, boardId }: ArchivedItem
                             <TabsTrigger value="boards" className="text-xs">
                                 Boards{" "}
                                 {!isLoading && (
-                                    <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0 h-4">
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-1.5 text-[10px] px-1.5 py-0 h-4"
+                                    >
                                         {boards.length}
                                     </Badge>
                                 )}

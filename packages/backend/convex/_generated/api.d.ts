@@ -8,13 +8,11 @@
  * @module
  */
 
-import type * as agent from "../agent.js";
 import type * as attachments from "../attachments.js";
 import type * as auth from "../auth.js";
 import type * as automations from "../automations.js";
 import type * as boards from "../boards.js";
 import type * as cards from "../cards.js";
-import type * as chat from "../chat.js";
 import type * as checklists from "../checklists.js";
 import type * as comments from "../comments.js";
 import type * as crons from "../crons.js";
@@ -41,13 +39,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  agent: typeof agent;
   attachments: typeof attachments;
   auth: typeof auth;
   automations: typeof automations;
   boards: typeof boards;
   cards: typeof cards;
-  chat: typeof chat;
   checklists: typeof checklists;
   comments: typeof comments;
   crons: typeof crons;
@@ -96,5 +92,4 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
-  agent: import("@convex-dev/agent/_generated/component.js").ComponentApi<"agent">;
 };

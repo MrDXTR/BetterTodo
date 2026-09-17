@@ -320,12 +320,11 @@ export async function assertNotRateLimited(
         throw new ConvexError("Invalid rate limit max");
     }
 
-    const rows = await ctx.db
+    const existing = await ctx.db
         .query("rateLimit")
-        .filter((q) => q.eq(q.field("key"), args.key))
-        .collect();
+        .withIndex("by_key", (q) => q.eq("key", args.key))
+        .first();
 
-    const existing = rows[0] ?? null;
     if (!existing) {
         await ctx.db.insert("rateLimit", {
             key: args.key,

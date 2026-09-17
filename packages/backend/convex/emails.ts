@@ -5,8 +5,17 @@ import { v } from "convex/values";
 import { Resend } from "resend";
 
 // ============================================
-// HELPERS
+// HELPERS & CONFIGURATION
 // ============================================
+
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 function getResend() {
     const apiKey = process.env.RESEND_API_KEY;
@@ -14,94 +23,267 @@ function getResend() {
     return new Resend(apiKey);
 }
 
-function getFromEmail() {
-    return process.env.FROM_EMAIL ?? "onboarding@resend.dev";
+function getFromEmail(): string {
+    const raw = process.env.FROM_EMAIL ?? "onboarding@resend.dev";
+    if (raw.includes("<") && raw.includes(">")) {
+        return raw;
+    }
+    return `BetterTodo <${raw}>`;
 }
 
-const BRAND_ACCENT = "#6366f1"; // indigo-500
+function capitalize(str: string): string {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
 
 // ============================================
-// SHARED TEMPLATE STRUCTURE
+// EMAIL COMPONENTS & DESIGN SYSTEM
 // ============================================
 
-function baseTemplate(content: string, previewText: string): string {
+interface BaseTemplateOptions {
+    title: string;
+    previewText: string;
+    heading: string;
+    greeting?: string;
+    bodyHtml: string;
+    metaBoxHtml?: string;
+    actionButtonHtml: string;
+    fallbackUrl?: string;
+    subtextHtml?: string;
+    recipientEmail: string;
+}
+
+function roleBadge(role: string): string {
+    const normalized = role.toLowerCase();
+    const roleLabels: Record<string, string> = {
+        admin: "Admin",
+        member: "Member",
+        viewer: "Viewer",
+    };
+    const label = roleLabels[normalized] ?? capitalize(role);
+
+    // Subtle, restrained palette: no harsh neons
+    const styles: Record<string, { bg: string; text: string; border: string }> = {
+        admin: { bg: "#f5f3ff", text: "#6d28d9", border: "#ddd6fe" },
+        member: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+        viewer: { bg: "#f4f4f5", text: "#52525b", border: "#e4e4e7" },
+    };
+
+    const style = styles[normalized] ?? { bg: "#f4f4f5", text: "#3f3f46", border: "#e4e4e7" };
+
+    return `<span class="email-badge" style="display:inline-block;padding:2px 8px;background-color:${style.bg};color:${style.text};font-size:12px;font-weight:500;border-radius:6px;border:1px solid ${style.border};line-height:1.4;">${escapeHtml(label)}</span>`;
+}
+
+function actionButton(href: string, label: string): string {
+    const safeHref = escapeHtml(href);
+    const safeLabel = escapeHtml(label);
+
+    return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
+      <tr>
+        <td align="center" style="border-radius:8px;background-color:#18181b;">
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:40px;v-text-anchor:middle;width:180px;" arcsize="20%" stroke="f" fillcolor="#18181b">
+            <w:anchorlock/>
+            <center style="color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:500;">${safeLabel}</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <a href="${safeHref}" target="_blank" class="email-btn"
+            style="display:inline-block;padding:11px 24px;background-color:#18181b;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:500;text-decoration:none;border-radius:8px;border:1px solid #18181b;letter-spacing:-0.1px;text-align:center;">
+            ${safeLabel}
+          </a>
+          <!--<![endif]-->
+        </td>
+      </tr>
+    </table>`;
+}
+
+function metaRow(label: string, valueHtml: string, isLast = false): string {
+    return `
+    <tr>
+      <td style="padding:${isLast ? "8px 0 0" : "8px 0"};font-size:13px;color:#71717a;vertical-align:middle;width:100px;" class="email-meta-label">
+        ${escapeHtml(label)}
+      </td>
+      <td align="right" style="padding:${isLast ? "8px 0 0" : "8px 0"};font-size:13px;font-weight:500;color:#09090b;vertical-align:middle;" class="email-meta-val">
+        ${valueHtml}
+      </td>
+    </tr>`;
+}
+
+function baseTemplate(options: BaseTemplateOptions): string {
+    const safeTitle = escapeHtml(options.title);
+    const safePreview = escapeHtml(options.previewText);
+    const safeRecipientEmail = escapeHtml(options.recipientEmail);
+    const safeFallbackUrl = options.fallbackUrl ? escapeHtml(options.fallbackUrl) : undefined;
+    const siteUrl = escapeHtml(process.env.SITE_URL ?? "https://bettertodo.com");
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="x-apple-disable-message-reformatting" />
-  <title>${previewText}</title>
-  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
+  <title>${safeTitle}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      body, .email-body-bg { background-color: #09090b !important; }
+      .email-card { background-color: #121215 !important; border-color: #27272a !important; }
+      .email-brand-text { color: #fafafa !important; }
+      .email-title { color: #fafafa !important; }
+      .email-text { color: #a1a1aa !important; }
+      .email-meta-box { background-color: #18181b !important; border-color: #27272a !important; }
+      .email-meta-label { color: #71717a !important; }
+      .email-meta-val { color: #f4f4f5 !important; }
+      .email-btn { background-color: #f4f4f5 !important; color: #09090b !important; border-color: #f4f4f5 !important; }
+      .email-link { color: #818cf8 !important; }
+      .email-footer-text { color: #71717a !important; }
+      .email-badge { background-color: #27272a !important; border-color: #3f3f46 !important; color: #d4d4d8 !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background-color:#0f0f13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <!-- Preview text hack -->
-  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#0f0f13;">${previewText}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
+<body class="email-body-bg" style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;">
 
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0f0f13;">
+  <!-- Preheader text for inbox preview (clean, non-spammy structure) -->
+  <div style="display:none;font-size:1px;color:#f4f4f5;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    ${safePreview}
+  </div>
+
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-body-bg" style="background-color:#f4f4f5;width:100%;">
     <tr>
-      <td align="center" style="padding:40px 16px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
-
-          <!-- LOGO / HEADER -->
+      <td align="center" style="padding:48px 16px 40px;">
+        <!--[if mso]>
+        <table role="presentation" width="540" cellspacing="0" cellpadding="0" border="0">
           <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <a href="${process.env.SITE_URL ?? "#"}" style="text-decoration:none;">
-                <div style="display:inline-flex;align-items:center;gap:8px;">
-                  <div style="width:36px;height:36px;border-radius:10px;background:${BRAND_ACCENT};display:inline-block;"></div>
-                  <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">BetterTodo</span>
-                </div>
+            <td>
+        <![endif]-->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:540px;margin:0 auto;">
+
+          <!-- BRAND HEADER -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <a href="${siteUrl}" target="_blank" style="text-decoration:none;display:inline-block;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:10px;">
+                      <!-- Minimalist Brand Icon -->
+                      <div style="width:28px;height:28px;border-radius:7px;background-color:#18181b;text-align:center;line-height:28px;">
+                        <span style="color:#ffffff;font-size:13px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:-0.5px;">&#10003;</span>
+                      </div>
+                    </td>
+                    <td style="vertical-align:middle;">
+                      <span class="email-brand-text" style="font-size:16px;font-weight:600;color:#09090b;letter-spacing:-0.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">BetterTodo</span>
+                    </td>
+                  </tr>
+                </table>
               </a>
             </td>
           </tr>
 
-          <!-- CARD -->
+          <!-- MAIN CARD -->
           <tr>
-            <td style="background:#18181f;border-radius:16px;border:1px solid #27272a;overflow:hidden;">
-              ${content}
+            <td class="email-card" style="background-color:#ffffff;border-radius:12px;border:1px solid #e4e4e7;padding:36px 36px 32px;box-shadow:0 1px 3px 0 rgba(0,0,0,0.04);">
+
+              <!-- TITLE & GREETING -->
+              <h1 class="email-title" style="margin:0 0 16px;font-size:20px;font-weight:600;color:#09090b;letter-spacing:-0.3px;line-height:1.35;">
+                ${escapeHtml(options.heading)}
+              </h1>
+
+              ${options.greeting ? `<p class="email-text" style="margin:0 0 16px;font-size:15px;color:#3f3f46;line-height:1.6;">${escapeHtml(options.greeting)}</p>` : ""}
+
+              <!-- MESSAGE BODY -->
+              <div class="email-text" style="margin:0 0 24px;font-size:15px;color:#3f3f46;line-height:1.6;">
+                ${options.bodyHtml}
+              </div>
+
+              <!-- METADATA BOX (IF PROVIDED) -->
+              ${
+                  options.metaBoxHtml
+                      ? `
+              <div class="email-meta-box" style="background-color:#f9fafb;border:1px solid #e4e4e7;border-radius:8px;padding:14px 18px;margin-bottom:28px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  ${options.metaBoxHtml}
+                </table>
+              </div>
+              `
+                      : ""
+              }
+
+              <!-- PRIMARY ACTION -->
+              <div style="text-align:center;padding-top:4px;padding-bottom:12px;">
+                ${options.actionButtonHtml}
+              </div>
+
+              <!-- OPTIONAL SUBTEXT -->
+              ${
+                  options.subtextHtml
+                      ? `
+              <p class="email-footer-text" style="margin:20px 0 0;font-size:13px;color:#71717a;text-align:center;line-height:1.5;">
+                ${options.subtextHtml}
+              </p>
+              `
+                      : ""
+              }
+
+              <!-- ACCESSIBILITY / DIRECT LINK FALLBACK -->
+              ${
+                  safeFallbackUrl
+                      ? `
+              <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f4f4f5;">
+                <p class="email-footer-text" style="margin:0 0 6px;font-size:12px;color:#71717a;line-height:1.5;">
+                  If the button above does not work, copy and paste this link into your browser:
+                </p>
+                <p style="margin:0;font-size:12px;line-height:1.5;">
+                  <a href="${safeFallbackUrl}" class="email-link" style="color:#4f46e5;text-decoration:underline;word-break:break-all;">
+                    ${safeFallbackUrl}
+                  </a>
+                </p>
+              </div>
+              `
+                      : ""
+              }
+
             </td>
           </tr>
 
           <!-- FOOTER -->
           <tr>
             <td style="padding-top:28px;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#52525b;line-height:1.6;">
-                You're receiving this email because someone invited you via BetterTodo.<br/>
-                If you think this is a mistake, you can safely ignore this email.
+              <p class="email-footer-text" style="margin:0 0 6px;font-size:12px;color:#71717a;line-height:1.5;">
+                This email was sent to <span style="font-weight:500;">${safeRecipientEmail}</span>.
+              </p>
+              <p class="email-footer-text" style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.5;">
+                BetterTodo &bull; Task and project management
               </p>
             </td>
           </tr>
 
         </table>
+        <!--[if mso]>
+            </td>
+          </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
 </body>
 </html>`;
-}
-
-function ctaButton(href: string, label: string): string {
-    return `<a href="${href}" target="_blank"
-      style="display:inline-block;padding:14px 32px;background:${BRAND_ACCENT};color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px;letter-spacing:0.1px;">
-      ${label}
-    </a>`;
-}
-
-function secondaryButton(href: string, label: string): string {
-    return `<a href="${href}" target="_blank"
-      style="display:inline-block;padding:11px 24px;background:transparent;color:#a1a1aa;font-size:13px;font-weight:500;text-decoration:none;border-radius:8px;border:1px solid #3f3f46;letter-spacing:0.1px;">
-      ${label}
-    </a>`;
-}
-
-function roleBadge(role: string): string {
-    const colors: Record<string, string> = {
-        admin: "#7c3aed",
-        member: "#0284c7",
-        viewer: "#059669",
-    };
-    const bg = colors[role] ?? "#6366f1";
-    return `<span style="display:inline-block;padding:3px 10px;background:${bg}22;color:${bg};font-size:11px;font-weight:600;border-radius:20px;border:1px solid ${bg}44;letter-spacing:0.5px;text-transform:uppercase;">${role}</span>`;
 }
 
 // ============================================
@@ -124,71 +306,78 @@ export const sendBoardInviteEmail = internalAction({
     handler: async (_ctx, args) => {
         const resend = getResend();
         const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
-        const acceptUrl = `${siteUrl}/boards/${args.boardId}?acceptInvite=${args.inviteId}`;
+        const acceptUrl = `${siteUrl}/boards/${encodeURIComponent(args.boardId)}?acceptInvite=${encodeURIComponent(args.inviteId)}`;
+
+        const safeInviterName = escapeHtml(args.inviterName);
+        const safeBoardTitle = escapeHtml(args.boardTitle);
+        const roleLabel = capitalize(args.role);
 
         const greeting = args.recipientName ? `Hi ${args.recipientName},` : "Hello,";
 
-        const content = `
-      <!-- GRADIENT TOP BAR -->
-      <div style="height:4px;background:linear-gradient(90deg,${BRAND_ACCENT},#8b5cf6,#ec4899);"></div>
+        const subject = `${args.inviterName} invited you to join ${args.boardTitle}`;
+        const previewText = `${args.inviterName} invited you to collaborate on the ${args.boardTitle} board.`;
 
-      <!-- BODY PADDING -->
-      <div style="padding:40px 40px 36px;">
+        const bodyHtml = `
+          <strong>${safeInviterName}</strong> has invited you to collaborate on the <strong>${safeBoardTitle}</strong> board as a <strong>${escapeHtml(roleLabel)}</strong>.
+        `;
 
-        <!-- ICON -->
-        <div style="text-align:center;margin-bottom:28px;">
-          <div style="display:inline-block;width:64px;height:64px;border-radius:16px;background:#1e1e2e;border:2px solid #3f3f46;text-align:center;line-height:64px;font-size:32px;">🔗</div>
-        </div>
+        const metaBoxHtml = [
+            metaRow("Board", safeBoardTitle),
+            metaRow("Role", roleBadge(args.role)),
+            metaRow("Invited by", safeInviterName, true),
+        ].join("");
 
-        <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f4f4f5;text-align:center;letter-spacing:-0.5px;">You've been invited!</h1>
-        <p style="margin:0 0 28px;font-size:15px;color:#a1a1aa;text-align:center;line-height:1.6;">
-          ${greeting.replace(/^Hi |Hello,/, "")}
-          <strong style="color:#e4e4e7;">${args.inviterName}</strong> has invited you to collaborate on a board.
-        </p>
+        const actionButtonHtml = actionButton(acceptUrl, "Accept Invitation");
+        const subtextHtml =
+            "You can also view and manage this invitation inside your BetterTodo notifications.";
 
-        <!-- BOARD INFO CARD -->
-        <div style="background:#0f0f13;border:1px solid #27272a;border-radius:12px;padding:20px 24px;margin-bottom:32px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-            <tr>
-              <td>
-                <p style="margin:0 0 4px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">Board</p>
-                <p style="margin:0;font-size:18px;font-weight:700;color:#f4f4f5;">${args.boardTitle}</p>
-              </td>
-              <td align="right" valign="middle">
-                ${roleBadge(args.role)}
-              </td>
-            </tr>
-          </table>
-        </div>
+        const html = baseTemplate({
+            title: subject,
+            previewText,
+            heading: "Board invitation",
+            greeting,
+            bodyHtml,
+            metaBoxHtml,
+            actionButtonHtml,
+            fallbackUrl: acceptUrl,
+            subtextHtml,
+            recipientEmail: args.to,
+        });
 
-        <!-- CTA BUTTON -->
-        <div style="text-align:center;margin-bottom:24px;">
-          ${ctaButton(acceptUrl, "Accept Invitation")}
-        </div>
-
-        <p style="margin:0;font-size:13px;color:#52525b;text-align:center;line-height:1.6;">
-          You can also view this invite inside the app under <strong style="color:#71717a;">Notifications</strong>.
-        </p>
-      </div>`;
+        const text = [
+            greeting,
+            "",
+            `${args.inviterName} has invited you to collaborate on the "${args.boardTitle}" board as a ${roleLabel}.`,
+            "",
+            `Board: ${args.boardTitle}`,
+            `Role: ${roleLabel}`,
+            `Invited by: ${args.inviterName}`,
+            "",
+            "Accept the invitation by clicking the link below:",
+            acceptUrl,
+            "",
+            "---",
+            `This notification was sent to ${args.to} regarding your BetterTodo account.`,
+            "BetterTodo • Task and project management",
+        ].join("\n");
 
         await resend.emails.send({
             from: getFromEmail(),
             to: args.to,
-            subject: `${args.inviterName} invited you to "${args.boardTitle}" on BetterTodo`,
-            html: baseTemplate(
-                content,
-                `${args.inviterName} invited you to join "${args.boardTitle}"`,
-            ),
+            subject,
+            html,
+            text,
         });
     },
 });
 
 /**
- * Send a board invite email to an UNREGISTERED user (with signup CTA).
+ * Send a board invite email to an UNREGISTERED user.
  */
 export const sendBoardInviteEmailExternal = internalAction({
     args: {
         to: v.string(),
+        recipientName: v.optional(v.string()),
         inviterName: v.string(),
         boardTitle: v.string(),
         role: v.string(),
@@ -197,92 +386,68 @@ export const sendBoardInviteEmailExternal = internalAction({
     handler: async (_ctx, args) => {
         const resend = getResend();
         const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
-        // After signing up/in, they'll be redirected and the invite auto-accepted
-        const inviteUrl = `${siteUrl}/sign-in?inviteToken=${args.token}`;
+        const inviteUrl = `${siteUrl}/invite/${encodeURIComponent(args.token)}`;
 
-        const content = `
-      <!-- GRADIENT TOP BAR -->
-      <div style="height:4px;background:linear-gradient(90deg,${BRAND_ACCENT},#8b5cf6,#ec4899);"></div>
+        const safeInviterName = escapeHtml(args.inviterName);
+        const safeBoardTitle = escapeHtml(args.boardTitle);
+        const roleLabel = capitalize(args.role);
 
-      <div style="padding:40px 40px 36px;">
+        const greeting = args.recipientName ? `Hi ${args.recipientName},` : "Hello,";
 
-        <!-- ICON -->
-        <div style="text-align:center;margin-bottom:28px;">
-          <div style="display:inline-block;width:64px;height:64px;border-radius:16px;background:#1e1e2e;border:2px solid #3f3f46;text-align:center;line-height:64px;font-size:32px;">🚀</div>
-        </div>
+        const subject = `${args.inviterName} invited you to join ${args.boardTitle} on BetterTodo`;
+        const previewText = `${args.inviterName} invited you to collaborate on ${args.boardTitle}.`;
 
-        <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f4f4f5;text-align:center;letter-spacing:-0.5px;">You're invited to collaborate!</h1>
-        <p style="margin:0 0 28px;font-size:15px;color:#a1a1aa;text-align:center;line-height:1.6;">
-          <strong style="color:#e4e4e7;">${args.inviterName}</strong> wants you to join their board on BetterTodo — a smarter way to manage tasks together.
-        </p>
+        const bodyHtml = `
+          <strong>${safeInviterName}</strong> has invited you to collaborate on the <strong>${safeBoardTitle}</strong> board on BetterTodo.
+          Accept the invitation to access the board and collaborate with the team.
+        `;
 
-        <!-- BOARD INFO CARD -->
-        <div style="background:#0f0f13;border:1px solid #27272a;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-            <tr>
-              <td>
-                <p style="margin:0 0 4px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">Board</p>
-                <p style="margin:0;font-size:18px;font-weight:700;color:#f4f4f5;">${args.boardTitle}</p>
-              </td>
-              <td align="right" valign="middle">
-                ${roleBadge(args.role)}
-              </td>
-            </tr>
-          </table>
-        </div>
+        const metaBoxHtml = [
+            metaRow("Board", safeBoardTitle),
+            metaRow("Role", roleBadge(args.role)),
+            metaRow("Invited by", safeInviterName, true),
+        ].join("");
 
-        <!-- STEPS -->
-        <div style="background:#0f0f13;border:1px solid #27272a;border-radius:12px;padding:20px 24px;margin-bottom:32px;">
-          <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.6px;">How it works</p>
-          <table role="presentation" cellspacing="0" cellpadding="0">
-            <tr>
-              <td style="padding:4px 0;vertical-align:top;">
-                <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:${BRAND_ACCENT};color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:22px;margin-right:10px;">1</span>
-              </td>
-              <td style="padding:4px 0;">
-                <p style="margin:0;font-size:14px;color:#d4d4d8;line-height:22px;">Create a free account (takes 30 seconds)</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:4px 0;vertical-align:top;">
-                <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:${BRAND_ACCENT};color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:22px;margin-right:10px;">2</span>
-              </td>
-              <td style="padding:4px 0;">
-                <p style="margin:0;font-size:14px;color:#d4d4d8;line-height:22px;">You'll be automatically added to the board</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:4px 0;vertical-align:top;">
-                <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:${BRAND_ACCENT};color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:22px;margin-right:10px;">3</span>
-              </td>
-              <td style="padding:4px 0;">
-                <p style="margin:0;font-size:14px;color:#d4d4d8;line-height:22px;">Start collaborating with ${args.inviterName}</p>
-              </td>
-            </tr>
-          </table>
-        </div>
+        const actionButtonHtml = actionButton(inviteUrl, "View Invitation");
+        const subtextHtml =
+            "This invitation is personal to you. If you already have an account, sign in with this email to accept.";
 
-        <!-- CTA BUTTONS -->
-        <div style="text-align:center;margin-bottom:16px;">
-          ${ctaButton(inviteUrl, "Accept & Create Account")}
-        </div>
-        <div style="text-align:center;margin-bottom:24px;">
-          ${secondaryButton(inviteUrl, "Sign in instead (I already have an account)")}
-        </div>
+        const html = baseTemplate({
+            title: subject,
+            previewText,
+            heading: "You've been invited to collaborate",
+            greeting,
+            bodyHtml,
+            metaBoxHtml,
+            actionButtonHtml,
+            fallbackUrl: inviteUrl,
+            subtextHtml,
+            recipientEmail: args.to,
+        });
 
-        <p style="margin:0;font-size:12px;color:#52525b;text-align:center;line-height:1.6;">
-          This invite link is secure and unique to you. It will expire in 7 days.
-        </p>
-      </div>`;
+        const text = [
+            greeting,
+            "",
+            `${args.inviterName} has invited you to collaborate on the "${args.boardTitle}" board on BetterTodo as a ${roleLabel}.`,
+            "",
+            `Board: ${args.boardTitle}`,
+            `Role: ${roleLabel}`,
+            `Invited by: ${args.inviterName}`,
+            "",
+            "View and accept your invitation here:",
+            inviteUrl,
+            "",
+            "---",
+            `This invitation was sent to ${args.to}. If you were not expecting this, you can safely ignore this email.`,
+            "BetterTodo • Task and project management",
+        ].join("\n");
 
         await resend.emails.send({
             from: getFromEmail(),
             to: args.to,
-            subject: `${args.inviterName} invited you to collaborate on BetterTodo`,
-            html: baseTemplate(
-                content,
-                `${args.inviterName} invited you to join "${args.boardTitle}" on BetterTodo`,
-            ),
+            subject,
+            html,
+            text,
         });
     },
 });
@@ -303,57 +468,64 @@ export const sendCardAssignmentEmail = internalAction({
     handler: async (_ctx, args) => {
         const resend = getResend();
         const siteUrl = process.env.SITE_URL ?? "http://localhost:3001";
-        const cardUrl = `${siteUrl}/boards/${args.boardId}?card=${args.cardId}`;
+        const cardUrl = `${siteUrl}/boards/${encodeURIComponent(args.boardId)}?card=${encodeURIComponent(args.cardId)}`;
 
-        const greeting = args.recipientName ? `Hi ${args.recipientName}` : "Hello";
+        const safeAssignerName = escapeHtml(args.assignerName);
+        const safeCardTitle = escapeHtml(args.cardTitle);
+        const safeBoardTitle = escapeHtml(args.boardTitle);
 
-        const content = `
-      <!-- GRADIENT TOP BAR -->
-      <div style="height:4px;background:linear-gradient(90deg,${BRAND_ACCENT},#8b5cf6,#ec4899);"></div>
+        const greeting = args.recipientName ? `Hi ${args.recipientName},` : "Hello,";
 
-      <div style="padding:40px 40px 36px;">
+        const subject = `${args.assignerName} assigned you to "${args.cardTitle}"`;
+        const previewText = `${args.assignerName} assigned you to "${args.cardTitle}" in ${args.boardTitle}.`;
 
-        <!-- ICON -->
-        <div style="text-align:center;margin-bottom:28px;">
-          <div style="display:inline-block;width:64px;height:64px;border-radius:16px;background:#1e1e2e;border:2px solid #3f3f46;text-align:center;line-height:64px;font-size:32px;">📌</div>
-        </div>
+        const bodyHtml = `
+          <strong>${safeAssignerName}</strong> assigned you to a card in <strong>${safeBoardTitle}</strong>.
+        `;
 
-        <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f4f4f5;text-align:center;letter-spacing:-0.5px;">You were assigned a task!</h1>
-        <p style="margin:0 0 28px;font-size:15px;color:#a1a1aa;text-align:center;line-height:1.6;">
-          ${greeting}, <strong style="color:#e4e4e7;">${args.assignerName}</strong> assigned you to a card.
-        </p>
+        const metaBoxHtml = [
+            metaRow("Card", safeCardTitle),
+            metaRow("Board", safeBoardTitle),
+            metaRow("Assigned by", safeAssignerName, true),
+        ].join("");
 
-        <!-- CONTEXT CARD -->
-        <div style="background:#0f0f13;border:1px solid #27272a;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-            <tr>
-              <td>
-                <p style="margin:0 0 2px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">Board</p>
-                <p style="margin:0;font-size:13px;font-weight:600;color:#d4d4d8;">${args.boardTitle}</p>
-              </td>
-              <td align="right">
-                <p style="margin:0 0 2px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">Card</p>
-                <p style="margin:0;font-size:13px;font-weight:600;color:#d4d4d8;">${args.cardTitle}</p>
-              </td>
-            </tr>
-          </table>
-        </div>
+        const actionButtonHtml = actionButton(cardUrl, "View Card");
 
-        <!-- CTA BUTTON -->
-        <div style="text-align:center;margin-bottom:24px;">
-          ${ctaButton(cardUrl, "View Card")}
-        </div>
+        const html = baseTemplate({
+            title: subject,
+            previewText,
+            heading: "Card assignment",
+            greeting,
+            bodyHtml,
+            metaBoxHtml,
+            actionButtonHtml,
+            fallbackUrl: cardUrl,
+            recipientEmail: args.to,
+        });
 
-        <p style="margin:0;font-size:13px;color:#52525b;text-align:center;line-height:1.6;">
-          Go to <strong style="color:#71717a;">${args.boardTitle}</strong> → <strong style="color:#71717a;">${args.cardTitle}</strong> to view details.
-        </p>
-      </div>`;
+        const text = [
+            greeting,
+            "",
+            `${args.assignerName} assigned you to "${args.cardTitle}" in "${args.boardTitle}".`,
+            "",
+            `Card: ${args.cardTitle}`,
+            `Board: ${args.boardTitle}`,
+            `Assigned by: ${args.assignerName}`,
+            "",
+            "View the card by visiting:",
+            cardUrl,
+            "",
+            "---",
+            `This notification was sent to ${args.to} regarding activity on your BetterTodo board.`,
+            "BetterTodo • Task and project management",
+        ].join("\n");
 
         await resend.emails.send({
             from: getFromEmail(),
             to: args.to,
-            subject: `${args.assignerName} assigned you to "${args.cardTitle}"`,
-            html: baseTemplate(content, `You were assigned to "${args.cardTitle}"`),
+            subject,
+            html,
+            text,
         });
     },
 });

@@ -31,11 +31,7 @@ export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
             {/* Cover Image with concentric radius and 1px media ring */}
             {card.coverImage && (
                 <div className="relative mb-2.5 -mx-3 -mt-3 overflow-hidden rounded-t-[11px]">
-                    <img
-                        src={card.coverImage}
-                        alt=""
-                        className="block h-32 w-full object-cover"
-                    />
+                    <img src={card.coverImage} alt="" className="block h-32 w-full object-cover" />
                     <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 pointer-events-none rounded-t-[11px]" />
                 </div>
             )}
@@ -71,9 +67,7 @@ export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
             )}
 
             {/* Card Title */}
-            <h4 className="mb-2 text-xs font-medium leading-snug text-foreground">
-                {card.title}
-            </h4>
+            <h4 className="mb-2 text-xs font-medium leading-snug text-foreground">{card.title}</h4>
 
             {/* Card Metadata Bar */}
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">

@@ -25,11 +25,20 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import type { Board } from "@/types/board";
 
 export const Route = createFileRoute("/boards/")({
-    component: BoardsRoute,
+    component: BoardsRouteComponent,
 });
+
+function BoardsRouteComponent() {
+    return (
+        <ProtectedRoute>
+            <BoardsRoute />
+        </ProtectedRoute>
+    );
+}
 
 function BoardsRoute() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

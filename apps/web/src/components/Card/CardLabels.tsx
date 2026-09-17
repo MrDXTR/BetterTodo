@@ -172,7 +172,9 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                         {isPending ? (
                                             <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                                         ) : (
-                                            isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                            isSelected && (
+                                                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                            )
                                         )}
                                     </button>
                                 );
@@ -209,7 +211,7 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
                                             className={cn(
                                                 "w-full h-5 rounded-xs transition-all disabled:opacity-50 cursor-pointer",
                                                 selectedColor === color.value &&
-                                                "ring-2 ring-primary ring-offset-1",
+                                                    "ring-2 ring-primary ring-offset-1",
                                             )}
                                             style={{ backgroundColor: color.value }}
                                             title={color.name}

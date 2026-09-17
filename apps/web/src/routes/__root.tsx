@@ -2,6 +2,8 @@ import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import AppNav from "@/components/AppNav";
+import { ErrorPage } from "@/components/ErrorPage";
+import { NotFoundPage } from "@/components/NotFoundPage";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -11,6 +13,8 @@ export interface RouterAppContext {}
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
     component: RootComponent,
+    notFoundComponent: NotFoundPage,
+    errorComponent: ErrorPage,
     head: () => ({
         meta: [
             {

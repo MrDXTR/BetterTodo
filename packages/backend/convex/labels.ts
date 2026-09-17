@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ensureBoardReadAccessForQuery, ensureBoardRole } from "./permissions";
@@ -59,10 +59,10 @@ export const update = mutation({
     },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         const label = await ctx.db.get(args.labelId);
-        if (!label) throw new Error("Label not found");
+        if (!label) throw new ConvexError("Label not found");
 
         await ensureBoardRole(ctx, label.boardId, "member");
 
@@ -83,10 +83,10 @@ export const deleteLabel = mutation({
     args: { labelId: v.id("labels") },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         const label = await ctx.db.get(args.labelId);
-        if (!label) throw new Error("Label not found");
+        if (!label) throw new ConvexError("Label not found");
 
         await ensureBoardRole(ctx, label.boardId, "admin");
 
@@ -116,10 +116,15 @@ export const addToCard = mutation({
     },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
+        if (!card) throw new ConvexError("Card not found");
+
+        const label = await ctx.db.get(args.labelId);
+        if (!label || label.boardId !== card.boardId) {
+            throw new ConvexError("Label not found on this board");
+        }
 
         await ensureBoardRole(ctx, card.boardId, "member");
 
@@ -131,7 +136,7 @@ export const addToCard = mutation({
             .first();
 
         if (existing) {
-            throw new Error("Label already added to this card");
+            throw new ConvexError("Label already added to this card");
         }
 
         await ctx.db.insert("cardLabels", {
@@ -153,10 +158,10 @@ export const removeFromCard = mutation({
     },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         const card = await ctx.db.get(args.cardId);
-        if (!card) throw new Error("Card not found");
+        if (!card) throw new ConvexError("Card not found");
 
         await ensureBoardRole(ctx, card.boardId, "member");
 
@@ -167,7 +172,7 @@ export const removeFromCard = mutation({
             .first();
 
         if (!cardLabel) {
-            throw new Error("Label not found on this card");
+            throw new ConvexError("Label not found on this card");
         }
 
         await ctx.db.delete(cardLabel._id);

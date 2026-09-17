@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Shield, Trash2, UserCog, Users, ChevronLeft, Crown, User, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,19 +29,9 @@ export const Route = createFileRoute("/admin")({
 
 function RouteComponent() {
     return (
-        <>
-            <Authenticated>
-                <AdminPageContent />
-            </Authenticated>
-            <Unauthenticated>
-                <RedirectToSignIn />
-            </Unauthenticated>
-            <AuthLoading>
-                <div className="flex h-[calc(100vh-3rem)] items-center justify-center">
-                    <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                </div>
-            </AuthLoading>
-        </>
+        <ProtectedRoute>
+            <AdminPageContent />
+        </ProtectedRoute>
     );
 }
 
@@ -371,12 +362,4 @@ function AdminPanel() {
             </AlertDialog>
         </div>
     );
-}
-
-function RedirectToSignIn() {
-    const navigate = useNavigate();
-    useEffect(() => {
-        navigate({ to: "/sign-in" });
-    }, [navigate]);
-    return null;
 }

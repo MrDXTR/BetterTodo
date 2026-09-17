@@ -14,18 +14,7 @@ export const exportBoard = query({
             throw new ConvexError("Board not found");
         }
 
-        const [
-            lists,
-            cards,
-            labels,
-            cardLabels,
-            checklists,
-            checklistItems,
-            comments,
-            attachments,
-            customFields,
-            automations,
-        ] = await Promise.all([
+        const [lists, cards, labels, customFields, automations] = await Promise.all([
             ctx.db
                 .query("lists")
                 .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
@@ -38,11 +27,6 @@ export const exportBoard = query({
                 .query("labels")
                 .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
                 .collect(),
-            ctx.db.query("cardLabels").collect(),
-            ctx.db.query("checklists").collect(),
-            ctx.db.query("checklistItems").collect(),
-            ctx.db.query("comments").collect(),
-            ctx.db.query("attachments").collect(),
             ctx.db
                 .query("customFields")
                 .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
@@ -53,40 +37,83 @@ export const exportBoard = query({
                 .collect(),
         ]);
 
-        const listIds = new Set(lists.map((list) => list._id));
-        const cardIds = new Set(cards.map((card) => card._id));
-        const checklistIds = new Set(
-            checklists
-                .filter((checklist) => cardIds.has(checklist.cardId))
-                .map((checklist) => checklist._id),
-        );
-        const customFieldIds = new Set(customFields.map((field) => field._id));
+        const [
+            cardLabelsNested,
+            checklistsNested,
+            commentsNested,
+            attachmentsNested,
+            customFieldValuesNested,
+        ] = await Promise.all([
+            Promise.all(
+                cards.map((card) =>
+                    ctx.db
+                        .query("cardLabels")
+                        .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                        .collect(),
+                ),
+            ),
+            Promise.all(
+                cards.map((card) =>
+                    ctx.db
+                        .query("checklists")
+                        .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                        .collect(),
+                ),
+            ),
+            Promise.all(
+                cards.map((card) =>
+                    ctx.db
+                        .query("comments")
+                        .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                        .collect(),
+                ),
+            ),
+            Promise.all(
+                cards.map((card) =>
+                    ctx.db
+                        .query("attachments")
+                        .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                        .collect(),
+                ),
+            ),
+            Promise.all(
+                cards.map((card) =>
+                    ctx.db
+                        .query("cardCustomFieldValues")
+                        .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                        .collect(),
+                ),
+            ),
+        ]);
 
-        const filteredCardLabels = cardLabels.filter((link) => cardIds.has(link.cardId));
-        const filteredChecklists = checklists.filter((checklist) => cardIds.has(checklist.cardId));
-        const filteredChecklistItems = checklistItems.filter((item) =>
-            checklistIds.has(item.checklistId),
+        const cardLabels = cardLabelsNested.flat();
+        const checklists = checklistsNested.flat();
+        const comments = commentsNested.flat();
+        const attachments = attachmentsNested.flat();
+        const customFieldValues = customFieldValuesNested.flat();
+
+        const checklistItemsNested = await Promise.all(
+            checklists.map((checklist) =>
+                ctx.db
+                    .query("checklistItems")
+                    .withIndex("by_checklist", (q) => q.eq("checklistId", checklist._id))
+                    .collect(),
+            ),
         );
-        const filteredComments = comments.filter((comment) => cardIds.has(comment.cardId));
-        const filteredAttachments = attachments.filter((attachment) =>
-            cardIds.has(attachment.cardId),
-        );
-        const customFieldValues = (await ctx.db.query("cardCustomFieldValues").collect()).filter(
-            (value) => cardIds.has(value.cardId) && customFieldIds.has(value.fieldId),
-        );
+        const checklistItems = checklistItemsNested.flat();
 
         return {
             exportedAt: Date.now(),
             version: 1,
             board,
-            lists: lists.filter((list) => listIds.has(list._id)),
+            lists,
             cards,
             labels,
-            cardLabels: filteredCardLabels,
-            checklists: filteredChecklists,
-            checklistItems: filteredChecklistItems,
-            comments: filteredComments,
-            attachments: filteredAttachments,
+            cardLabels,
+            checklists,
+            checklistItems,
+            comments,
+            attachments,
             customFields,
             customFieldValues,
             automations,

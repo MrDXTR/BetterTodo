@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
+import { Authenticated, AuthLoading, Unauthenticated, useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
@@ -7,9 +7,10 @@ import { api } from "@BetterTodo/backend/convex/_generated/api";
 import SignInForm from "@/components/sign-in-form";
 import SignUpForm from "@/components/sign-up-form";
 
-// Parse the inviteToken search param
+// Parse search params
 const signInSearchSchema = z.object({
     inviteToken: z.string().optional(),
+    redirect: z.string().optional(),
 });
 
 export const Route = createFileRoute("/sign-in")({
@@ -17,14 +18,19 @@ export const Route = createFileRoute("/sign-in")({
     component: SignInPage,
 });
 
+function isSafeRedirect(url?: string): boolean {
+    if (!url) return false;
+    return url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
+}
+
 function SignInPage() {
-    const { inviteToken } = Route.useSearch();
+    const { inviteToken, redirect } = Route.useSearch();
     const [showSignIn, setShowSignIn] = useState(true);
 
     return (
         <>
             <Authenticated>
-                <HandleInviteAndRedirect inviteToken={inviteToken} />
+                <HandleInviteAndRedirect inviteToken={inviteToken} redirect={redirect} />
             </Authenticated>
             <AuthLoading>
                 <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center">
@@ -62,9 +68,15 @@ function SignInPage() {
 
 /**
  * When the user is already authenticated (or just signed in/up),
- * check for an inviteToken and auto-accept it, then redirect to the board.
+ * check for an inviteToken and auto-accept it, or redirect to requested path / dashboard.
  */
-function HandleInviteAndRedirect({ inviteToken }: { inviteToken?: string }) {
+function HandleInviteAndRedirect({
+    inviteToken,
+    redirect,
+}: {
+    inviteToken?: string;
+    redirect?: string;
+}) {
     const navigate = useNavigate();
     const acceptInviteByToken = useMutation(api.boards.acceptInviteByToken);
     const [attempted, setAttempted] = useState(false);
@@ -82,21 +94,29 @@ function HandleInviteAndRedirect({ inviteToken }: { inviteToken?: string }) {
                     return;
                 } catch (err) {
                     console.warn("Failed to accept invite by token:", err);
-                    // Fall through to dashboard on error
+                    // Fall through to redirect or dashboard on error
                 }
             }
+
+            if (isSafeRedirect(redirect)) {
+                window.location.href = redirect!;
+                return;
+            }
+
             navigate({ to: "/dashboard" });
         };
 
         run();
-    }, [inviteToken, attempted, acceptInviteByToken, navigate]);
+    }, [inviteToken, redirect, attempted, acceptInviteByToken, navigate]);
 
     return (
         <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                {inviteToken && (
+                {inviteToken ? (
                     <p className="text-sm text-muted-foreground">Accepting invitation…</p>
+                ) : (
+                    <p className="text-sm text-muted-foreground">Redirecting…</p>
                 )}
             </div>
         </div>

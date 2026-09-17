@@ -22,9 +22,15 @@ function hexToHsl(hex: string): [number, number, number] {
     const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     let h = 0;
     switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+        case r:
+            h = (g - b) / d + (g < b ? 6 : 0);
+            break;
+        case g:
+            h = (b - r) / d + 2;
+            break;
+        case b:
+            h = (r - g) / d + 4;
+            break;
     }
     return [h * 60, s * 100, l * 100];
 }
@@ -44,10 +50,12 @@ function hslToHex(h: number, s: number, l: number): string {
     else if (h < 180) [r, g, b] = [0, c, x];
     else if (h < 240) [r, g, b] = [0, x, c];
     else if (h < 300) [r, g, b] = [x, 0, c];
-    else[r, g, b] = [c, 0, x];
+    else [r, g, b] = [c, 0, x];
 
     const toHex = (n: number) =>
-        Math.round((n + m) * 255).toString(16).padStart(2, "0");
+        Math.round((n + m) * 255)
+            .toString(16)
+            .padStart(2, "0");
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
@@ -117,7 +125,13 @@ export function BoardBackgroundGraphic({
                             <stop offset="55%" stopColor={secondary} stopOpacity="0.07" />
                             <stop offset="100%" stopColor={primary} stopOpacity="0.01" />
                         </linearGradient>
-                        <linearGradient id={`${uid}-grad-front`} x1="100%" y1="100%" x2="0%" y2="0%">
+                        <linearGradient
+                            id={`${uid}-grad-front`}
+                            x1="100%"
+                            y1="100%"
+                            x2="0%"
+                            y2="0%"
+                        >
                             <stop offset="0%" stopColor={secondary} stopOpacity="0.26" />
                             <stop offset="50%" stopColor={primary} stopOpacity="0.12" />
                             <stop offset="100%" stopColor={secondary} stopOpacity="0.02" />
@@ -154,7 +168,14 @@ export function BoardBackgroundGraphic({
                         />
 
                         <circle cx="900" cy="150" r="3.5" fill={accent} fillOpacity="0.85" />
-                        <circle cx="900" cy="150" r="8" stroke={accent} strokeOpacity="0.3" strokeWidth="1" />
+                        <circle
+                            cx="900"
+                            cy="150"
+                            r="8"
+                            stroke={accent}
+                            strokeOpacity="0.3"
+                            strokeWidth="1"
+                        />
                         <circle cx="720" cy="255" r="3" fill={accent} fillOpacity="0.7" />
                         <circle cx="1180" cy="360" r="2.5" fill={accent} fillOpacity="0.55" />
                     </g>
@@ -191,14 +212,26 @@ export function BoardEmptyStateGraphic({
                 </defs>
 
                 <rect
-                    x="12" y="12" width="136" height="86" rx="12"
+                    x="12"
+                    y="12"
+                    width="136"
+                    height="86"
+                    rx="12"
                     fill={`url(#${uid}-grad)`}
                     stroke={`url(#${uid}-stroke)`}
                     strokeWidth="1"
                 />
 
                 <rect x="26" y="34" width="72" height="6" rx="3" fill={primary} fillOpacity="0.2" />
-                <rect x="26" y="50" width="48" height="6" rx="3" fill={primary} fillOpacity="0.13" />
+                <rect
+                    x="26"
+                    y="50"
+                    width="48"
+                    height="6"
+                    rx="3"
+                    fill={primary}
+                    fillOpacity="0.13"
+                />
 
                 <path
                     d="M 14 66 C 46 48 76 78 112 58 C 128 49 140 55 148 52"
@@ -207,7 +240,14 @@ export function BoardEmptyStateGraphic({
                     strokeOpacity="0.5"
                 />
                 <circle cx="112" cy="58" r="3" fill={accent} fillOpacity="0.8" />
-                <circle cx="112" cy="58" r="6.5" stroke={accent} strokeOpacity="0.3" strokeWidth="1" />
+                <circle
+                    cx="112"
+                    cy="58"
+                    r="6.5"
+                    stroke={accent}
+                    strokeOpacity="0.3"
+                    strokeWidth="1"
+                />
             </svg>
         </div>
     );

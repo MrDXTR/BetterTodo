@@ -156,7 +156,9 @@ export function LabelManager({ boardId }: LabelManagerProps) {
                                     style={{ backgroundColor: color.value }}
                                     title={color.name}
                                 >
-                                    {isSelected && <Check className="h-3 w-3 text-white drop-shadow-xs" />}
+                                    {isSelected && (
+                                        <Check className="h-3 w-3 text-white drop-shadow-xs" />
+                                    )}
                                 </button>
                             );
                         })}
