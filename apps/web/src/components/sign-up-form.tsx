@@ -6,16 +6,12 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
+import { getSafeRedirectUrl } from "@/lib/auth-utils";
 import { Google } from "./ui/svgs/google";
 
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-
-function isSafeRedirect(url: string | null): boolean {
-    if (!url) return false;
-    return url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
-}
 
 function GoogleSignInButton() {
     const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +25,11 @@ function GoogleSignInButton() {
         let callbackURL = "/dashboard";
         if (token) {
             callbackURL = `/sign-in?inviteToken=${encodeURIComponent(token)}`;
-        } else if (isSafeRedirect(redirect)) {
-            callbackURL = redirect!;
+        } else {
+            const safeRedirect = getSafeRedirectUrl(redirect);
+            if (safeRedirect) {
+                callbackURL = safeRedirect;
+            }
         }
 
         await authClient.signIn.social({
@@ -81,11 +80,13 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
                         const searchParams = new URLSearchParams(window.location.search);
                         const redirect = searchParams.get("redirect");
                         if (!searchParams.has("inviteToken")) {
-                            if (isSafeRedirect(redirect)) {
-                                window.location.href = redirect!;
+                            const safeRedirect = getSafeRedirectUrl(redirect);
+                            if (safeRedirect) {
+                                window.location.replace(safeRedirect);
                             } else {
                                 navigate({
                                     to: "/dashboard",
+                                    replace: true,
                                 });
                             }
                         }
@@ -131,6 +132,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
                             <Input
                                 id={field.name}
                                 name={field.name}
+                                type="text"
                                 placeholder="John Doe"
                                 value={field.state.value}
                                 onBlur={field.handleBlur}
@@ -172,7 +174,9 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
                     name="password"
                     children={(field) => (
                         <div className="space-y-2">
-                            <Label htmlFor={field.name}>Password</Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor={field.name}>Password</Label>
+                            </div>
                             <Input
                                 id={field.name}
                                 name={field.name}
@@ -221,6 +225,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
             <div className="text-center text-sm">
                 Already have an account?{" "}
                 <button
+                    type="button"
                     onClick={onSwitchToSignIn}
                     className="font-medium text-primary hover:underline cursor-pointer"
                 >

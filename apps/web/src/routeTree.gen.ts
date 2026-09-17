@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as BoardsIndexRouteImport } from './routes/boards/index'
 import { Route as BoardsBoardIdRouteImport } from './routes/boards/$boardId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -36,6 +37,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardsIndexRoute = BoardsIndexRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/boards/$boardId': typeof BoardsBoardIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/boards/$boardId': typeof BoardsBoardIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/boards/$boardId': typeof BoardsBoardIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/sign-in'
+    | '/sign-up'
     | '/boards/$boardId'
     | '/invite/$token'
     | '/workspaces/$workspaceId'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/sign-in'
+    | '/sign-up'
     | '/boards/$boardId'
     | '/invite/$token'
     | '/workspaces/$workspaceId'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/sign-in'
+    | '/sign-up'
     | '/boards/$boardId'
     | '/invite/$token'
     | '/workspaces/$workspaceId'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   DashboardRoute: typeof DashboardRoute
   SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
   BoardsBoardIdRoute: typeof BoardsBoardIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   WorkspacesWorkspaceIdRoute: typeof WorkspacesWorkspaceIdRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boards/': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   DashboardRoute: DashboardRoute,
   SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
   BoardsBoardIdRoute: BoardsBoardIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   WorkspacesWorkspaceIdRoute: WorkspacesWorkspaceIdRoute,

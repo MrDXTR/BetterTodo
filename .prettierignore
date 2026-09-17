@@ -18,3 +18,7 @@ task.md
 PLAN.md
 walkthrough.md
 implementation_plan.md
+dev-dist
+.source
+**/_generated/**
+**/routeTree.gen.ts

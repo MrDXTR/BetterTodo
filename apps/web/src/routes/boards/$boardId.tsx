@@ -3,11 +3,12 @@ import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useConvexAuth, useQuery } from "convex/react";
 import { ArrowLeft, KanbanSquare, LayoutDashboard } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { BoardView } from "@/components/Board/BoardView";
 import { BoardSkeleton } from "@/components/Board/BoardSkeleton";
 import { Button } from "@/components/ui/button";
+import { getSafeRedirectUrl } from "@/lib/auth-utils";
 
 export const Route = createFileRoute("/boards/$boardId")({
     component: BoardRoute,
@@ -18,6 +19,7 @@ function BoardRoute() {
     const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
     const navigate = useNavigate();
     const router = useRouterState();
+    const isRedirectingRef = useRef(false);
 
     // Convex queries accept boardId as Id<"boards">
     const board = useQuery(
@@ -28,14 +30,32 @@ function BoardRoute() {
     useEffect(() => {
         // If auth finished loading and user is not authenticated, and board couldn't be loaded (private or requires auth)
         if (!isAuthLoading && !isAuthenticated && board === null) {
+            if (isRedirectingRef.current) return;
+
+            const pathname = router.location.pathname;
+            if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
+                return;
+            }
+
+            isRedirectingRef.current = true;
+            const search = router.location.searchStr;
+            const fullPath = search ? `${pathname}${search}` : pathname;
+            const safeRedirect = getSafeRedirectUrl(fullPath);
+
             navigate({
                 to: "/sign-in",
-                search: {
-                    redirect: router.location.pathname,
-                },
+                search: safeRedirect ? { redirect: safeRedirect } : {},
+                replace: true,
             });
         }
-    }, [isAuthLoading, isAuthenticated, board, navigate, router.location.pathname]);
+    }, [
+        isAuthLoading,
+        isAuthenticated,
+        board,
+        navigate,
+        router.location.pathname,
+        router.location.searchStr,
+    ]);
 
     if (board === undefined || isAuthLoading) {
         return (

@@ -44,14 +44,13 @@ export function ListColumn({
                             isFresh && "list-fresh-enter",
                         )}
                     >
-                        {/* Drag handle wraps only the header */}
-                        <div {...provided.dragHandleProps}>
-                            <ListHeader
-                                list={list}
-                                boardColor={boardColor}
-                                isReadOnly={isReadOnly}
-                            />
-                        </div>
+                        {/* List Header with dedicated drag handle */}
+                        <ListHeader
+                            list={list}
+                            boardColor={boardColor}
+                            isReadOnly={isReadOnly}
+                            dragHandleProps={provided.dragHandleProps}
+                        />
 
                         {/* Cards droppable container */}
                         <Droppable droppableId={list._id} type="card" isDropDisabled={isReadOnly}>

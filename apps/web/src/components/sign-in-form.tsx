@@ -6,16 +6,12 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
+import { getSafeRedirectUrl } from "@/lib/auth-utils";
 import { Google } from "./ui/svgs/google";
 
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-
-function isSafeRedirect(url: string | null): boolean {
-    if (!url) return false;
-    return url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
-}
 
 function GoogleSignInButton() {
     const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +25,11 @@ function GoogleSignInButton() {
         let callbackURL = "/dashboard";
         if (token) {
             callbackURL = `/sign-in?inviteToken=${encodeURIComponent(token)}`;
-        } else if (isSafeRedirect(redirect)) {
-            callbackURL = redirect!;
+        } else {
+            const safeRedirect = getSafeRedirectUrl(redirect);
+            if (safeRedirect) {
+                callbackURL = safeRedirect;
+            }
         }
 
         await authClient.signIn.social({
@@ -48,11 +47,8 @@ function GoogleSignInButton() {
             className="w-full"
             onClick={handleGoogleSignIn}
         >
-            {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-                <Google className="mr-2 h-4 w-4" />
-            )}
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Google className="mr-2 h-4 w-4" />
             Continue with Google
         </Button>
     );
@@ -79,11 +75,13 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
                         const searchParams = new URLSearchParams(window.location.search);
                         const redirect = searchParams.get("redirect");
                         if (!searchParams.has("inviteToken")) {
-                            if (isSafeRedirect(redirect)) {
-                                window.location.href = redirect!;
+                            const safeRedirect = getSafeRedirectUrl(redirect);
+                            if (safeRedirect) {
+                                window.location.replace(safeRedirect);
                             } else {
                                 navigate({
                                     to: "/dashboard",
+                                    replace: true,
                                 });
                             }
                         }
@@ -198,6 +196,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
             <div className="text-center text-sm">
                 Don't have an account?{" "}
                 <button
+                    type="button"
                     onClick={onSwitchToSignUp}
                     className="font-medium text-primary hover:underline cursor-pointer"
                 >

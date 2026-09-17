@@ -6,11 +6,13 @@ import { api } from "@BetterTodo/backend/convex/_generated/api";
 
 import SignInForm from "@/components/sign-in-form";
 import SignUpForm from "@/components/sign-up-form";
+import { getSafeRedirectUrl } from "@/lib/auth-utils";
 
 // Parse search params
 const signInSearchSchema = z.object({
     inviteToken: z.string().optional(),
     redirect: z.string().optional(),
+    mode: z.enum(["signin", "signup"]).optional(),
 });
 
 export const Route = createFileRoute("/sign-in")({
@@ -18,14 +20,17 @@ export const Route = createFileRoute("/sign-in")({
     component: SignInPage,
 });
 
-function isSafeRedirect(url?: string): boolean {
-    if (!url) return false;
-    return url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
-}
-
 function SignInPage() {
-    const { inviteToken, redirect } = Route.useSearch();
-    const [showSignIn, setShowSignIn] = useState(true);
+    const { inviteToken, redirect, mode } = Route.useSearch();
+    const [showSignIn, setShowSignIn] = useState(mode !== "signup");
+
+    useEffect(() => {
+        if (mode === "signup") {
+            setShowSignIn(false);
+        } else if (mode === "signin") {
+            setShowSignIn(true);
+        }
+    }, [mode]);
 
     return (
         <>
@@ -90,7 +95,11 @@ function HandleInviteAndRedirect({
                 try {
                     const result = await acceptInviteByToken({ token: inviteToken });
                     // Redirect to the board that was accepted
-                    navigate({ to: "/boards/$boardId", params: { boardId: result.boardId } });
+                    navigate({
+                        to: "/boards/$boardId",
+                        params: { boardId: result.boardId },
+                        replace: true,
+                    });
                     return;
                 } catch (err) {
                     console.warn("Failed to accept invite by token:", err);
@@ -98,12 +107,13 @@ function HandleInviteAndRedirect({
                 }
             }
 
-            if (isSafeRedirect(redirect)) {
-                window.location.href = redirect!;
+            const safeRedirect = getSafeRedirectUrl(redirect);
+            if (safeRedirect) {
+                window.location.replace(safeRedirect);
                 return;
             }
 
-            navigate({ to: "/dashboard" });
+            navigate({ to: "/dashboard", replace: true });
         };
 
         run();
