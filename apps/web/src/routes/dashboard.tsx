@@ -1,18 +1,17 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
     Kanban,
     ListTodo,
     CheckCircle2,
-    AlertTriangle,
     CalendarClock,
     Plus,
     ArrowRight,
     CheckSquare,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateBoardModal } from "@/components/Board/CreateBoardModal";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PRIORITY_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +28,9 @@ export const Route = createFileRoute("/dashboard")({
     component: RouteComponent,
 });
 
-// ============================================
+// ===========================================
 // STAT CARD COMPONENT
-// ============================================
+// ===========================================
 
 function StatCard({
     title,
@@ -76,9 +76,9 @@ function StatCard({
     );
 }
 
-// ============================================
+// ===========================================
 // MY TASKS SECTION
-// ============================================
+// ===========================================
 
 function MyTasksSection() {
     const tasksData = useQuery(api.dashboard.getMyOpenTasks);
@@ -381,28 +381,15 @@ function MyTasksSection() {
     );
 }
 
-// ============================================
+// ===========================================
 // MAIN DASHBOARD
-// ============================================
+// ===========================================
 
 function RouteComponent() {
     return (
-        <>
-            <Authenticated>
-                <DashboardContent />
-            </Authenticated>
-            <Unauthenticated>
-                <RedirectToSignIn />
-            </Unauthenticated>
-            <AuthLoading>
-                <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                        <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
-                    </div>
-                </div>
-            </AuthLoading>
-        </>
+        <ProtectedRoute>
+            <DashboardContent />
+        </ProtectedRoute>
     );
 }
 
@@ -448,22 +435,22 @@ function DashboardContent() {
                             title="My Tasks"
                             icon={ListTodo}
                             value={taskCount}
-                            subtitle="Assigned with due date"
+                            subtitle="Assigned open tasks"
                             loading={tasksLoading}
                         />
                         <StatCard
                             title="Overdue"
-                            icon={AlertTriangle}
+                            icon={CalendarClock}
                             value={overdueCount}
-                            subtitle="Past due date"
+                            subtitle="Tasks past due date"
                             loading={tasksLoading}
                             accent={overdueCount > 0 ? "text-destructive" : undefined}
                         />
                         <StatCard
-                            title="Completed"
+                            title="Completed This Week"
                             icon={CheckCircle2}
                             value={completedCount ?? 0}
-                            subtitle="This week"
+                            subtitle="Cards finished"
                             loading={completedLoading}
                             accent="text-emerald-500"
                         />
@@ -501,12 +488,4 @@ function DashboardContent() {
             />
         </>
     );
-}
-
-function RedirectToSignIn() {
-    const navigate = useNavigate();
-    useEffect(() => {
-        navigate({ to: "/" });
-    }, [navigate]);
-    return null;
 }

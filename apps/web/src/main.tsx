@@ -5,15 +5,20 @@ import { ConvexReactClient } from "convex/react";
 import ReactDOM from "react-dom/client";
 
 import { authClient } from "@/lib/auth-client";
+import { ErrorPage } from "@/components/ErrorPage";
+import { NotFoundPage } from "@/components/NotFoundPage";
 
 import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
+
 const convex = new ConvexReactClient(env.VITE_CONVEX_URL);
 
 const router = createRouter({
     routeTree,
     defaultPreload: "intent",
     defaultPendingComponent: () => <Loader />,
+    defaultNotFoundComponent: NotFoundPage,
+    defaultErrorComponent: ErrorPage,
     context: {},
     Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
         return (

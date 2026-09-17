@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
     Building2,
     ChevronLeft,
@@ -15,7 +15,6 @@ import {
     Settings,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -404,15 +404,8 @@ function MembersSection({
 }
 
 function WorkspaceSettingsContent({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
-    const navigate = useNavigate();
     const currentUser = useQuery(api.auth.getCurrentUser);
     const workspace = useQuery(api.workspaces.getById, { workspaceId });
-
-    useEffect(() => {
-        if (workspace === null) {
-            navigate({ to: "/boards" });
-        }
-    }, [workspace, navigate]);
 
     if (workspace === undefined || currentUser === undefined) {
         return (
@@ -422,7 +415,34 @@ function WorkspaceSettingsContent({ workspaceId }: { workspaceId: Id<"workspaces
         );
     }
 
-    if (!workspace) return null;
+    if (workspace === null) {
+        return (
+            <div className="flex min-h-[calc(100vh-3.25rem)] w-full flex-col items-center justify-center p-4 sm:p-6 bg-background">
+                <div className="mx-auto flex max-w-md flex-col items-center text-center">
+                    <div className="relative mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-border/80 bg-muted/50 shadow-xs">
+                        <Building2 className="h-10 w-10 text-muted-foreground" />
+                        <span className="absolute -top-2 -right-2 rounded-full border border-border/80 bg-background px-2 py-0.5 text-[11px] font-bold font-mono text-primary shadow-xs">
+                            404
+                        </span>
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                        Workspace not found
+                    </h1>
+                    <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-sm">
+                        This workspace doesn't exist, has been removed, or you do not have permission to view it.
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5 w-full">
+                        <Link to="/boards">
+                            <Button variant="default" className="gap-2 text-xs h-9">
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                                Back to Boards
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const myMembership = workspace.members.find((m: any) => m.userId === currentUser?._id);
     const myRole = myMembership?.role ?? "member";
@@ -470,30 +490,13 @@ function WorkspaceSettingsContent({ workspaceId }: { workspaceId: Id<"workspaces
         </div>
     );
 }
+
 function RouteComponent() {
     const { workspaceId } = Route.useParams();
 
     return (
-        <>
-            <Authenticated>
-                <WorkspaceSettingsContent workspaceId={workspaceId as Id<"workspaces">} />
-            </Authenticated>
-            <Unauthenticated>
-                <RedirectToSignIn />
-            </Unauthenticated>
-            <AuthLoading>
-                <div className="flex h-[calc(100vh-3rem)] items-center justify-center">
-                    <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                </div>
-            </AuthLoading>
-        </>
+        <ProtectedRoute>
+            <WorkspaceSettingsContent workspaceId={workspaceId as Id<"workspaces">} />
+        </ProtectedRoute>
     );
-}
-
-function RedirectToSignIn() {
-    const navigate = useNavigate();
-    useEffect(() => {
-        navigate({ to: "/sign-in" });
-    }, [navigate]);
-    return null;
 }

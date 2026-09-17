@@ -12,6 +12,11 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
+function isSafeRedirect(url: string | null): boolean {
+    if (!url) return false;
+    return url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
+}
+
 function GoogleSignInButton() {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -19,9 +24,18 @@ function GoogleSignInButton() {
         setIsLoading(true);
         const searchParams = new URLSearchParams(window.location.search);
         const token = searchParams.get("inviteToken");
+        const redirect = searchParams.get("redirect");
+
+        let callbackURL = "/dashboard";
+        if (token) {
+            callbackURL = `/sign-in?inviteToken=${encodeURIComponent(token)}`;
+        } else if (isSafeRedirect(redirect)) {
+            callbackURL = redirect!;
+        }
+
         await authClient.signIn.social({
             provider: "google",
-            callbackURL: token ? `/sign-in?inviteToken=${token}` : "/dashboard",
+            callbackURL,
         });
         setIsLoading(false);
     };
@@ -65,10 +79,15 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
                 {
                     onSuccess: () => {
                         const searchParams = new URLSearchParams(window.location.search);
+                        const redirect = searchParams.get("redirect");
                         if (!searchParams.has("inviteToken")) {
-                            navigate({
-                                to: "/dashboard",
-                            });
+                            if (isSafeRedirect(redirect)) {
+                                window.location.href = redirect!;
+                            } else {
+                                navigate({
+                                    to: "/dashboard",
+                                });
+                            }
                         }
                         toast.success("Sign up successful");
                     },
@@ -81,29 +100,19 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         validators: {
             onSubmit: z.object({
                 name: z.string().min(2, "Name must be at least 2 characters"),
-                email: z.email("Invalid email address"),
+                email: z.string().email("Invalid email address"),
                 password: z.string().min(8, "Password must be at least 8 characters"),
             }),
         },
     });
 
     return (
-        <div className="mx-auto w-full max-w-md p-6">
-            <h1 className="mb-6 text-center text-3xl font-bold">Create Account</h1>
-
-            <div className="mb-6">
-                <GoogleSignInButton />
-            </div>
-
-            <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with email
-                    </span>
-                </div>
+        <div className="mx-auto w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-6 shadow-xs">
+            <div className="space-y-2 text-center">
+                <h1 className="text-2xl font-bold tracking-tight">Sign Up</h1>
+                <p className="text-sm text-muted-foreground">
+                    Enter your information to create an account
+                </p>
             </div>
 
             <form
@@ -114,95 +123,105 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
                 }}
                 className="space-y-4"
             >
-                <div>
-                    <form.Field name="name">
-                        {(field) => (
-                            <div className="space-y-2">
-                                <Label htmlFor={field.name}>Name</Label>
-                                <Input
-                                    id={field.name}
-                                    name={field.name}
-                                    value={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) => field.handleChange(e.target.value)}
-                                />
-                                {field.state.meta.errors.map((error) => (
-                                    <p key={error?.message} className="text-red-500">
-                                        {error?.message}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-                    </form.Field>
-                </div>
+                <form.Field
+                    name="name"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor={field.name}>Name</Label>
+                            <Input
+                                id={field.name}
+                                name={field.name}
+                                placeholder="John Doe"
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                            {field.state.meta.errors.length > 0 && (
+                                <p className="text-xs text-destructive">
+                                    {field.state.meta.errors[0]?.message}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                />
 
-                <div>
-                    <form.Field name="email">
-                        {(field) => (
-                            <div className="space-y-2">
-                                <Label htmlFor={field.name}>Email</Label>
-                                <Input
-                                    id={field.name}
-                                    name={field.name}
-                                    type="email"
-                                    value={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) => field.handleChange(e.target.value)}
-                                />
-                                {field.state.meta.errors.map((error) => (
-                                    <p key={error?.message} className="text-red-500">
-                                        {error?.message}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-                    </form.Field>
-                </div>
+                <form.Field
+                    name="email"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor={field.name}>Email</Label>
+                            <Input
+                                id={field.name}
+                                name={field.name}
+                                type="email"
+                                placeholder="m@example.com"
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                            {field.state.meta.errors.length > 0 && (
+                                <p className="text-xs text-destructive">
+                                    {field.state.meta.errors[0]?.message}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                />
 
-                <div>
-                    <form.Field name="password">
-                        {(field) => (
-                            <div className="space-y-2">
-                                <Label htmlFor={field.name}>Password</Label>
-                                <Input
-                                    id={field.name}
-                                    name={field.name}
-                                    type="password"
-                                    value={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) => field.handleChange(e.target.value)}
-                                />
-                                {field.state.meta.errors.map((error) => (
-                                    <p key={error?.message} className="text-red-500">
-                                        {error?.message}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-                    </form.Field>
-                </div>
+                <form.Field
+                    name="password"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor={field.name}>Password</Label>
+                            <Input
+                                id={field.name}
+                                name={field.name}
+                                type="password"
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                            {field.state.meta.errors.length > 0 && (
+                                <p className="text-xs text-destructive">
+                                    {field.state.meta.errors[0]?.message}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                />
 
-                <form.Subscribe>
-                    {(state) => (
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={!state.canSubmit || state.isSubmitting}
-                        >
-                            {state.isSubmitting ? "Submitting..." : "Sign Up"}
+                <form.Subscribe
+                    selector={(state) => [state.canSubmit, state.isSubmitting]}
+                    children={([canSubmit, isSubmitting]) => (
+                        <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : null}
+                            Sign Up
                         </Button>
                     )}
-                </form.Subscribe>
+                />
             </form>
 
-            <div className="mt-4 text-center">
-                <Button
-                    variant="link"
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+            </div>
+
+            <GoogleSignInButton />
+
+            <div className="text-center text-sm">
+                Already have an account?{" "}
+                <button
                     onClick={onSwitchToSignIn}
-                    className="text-indigo-600 hover:text-indigo-800"
+                    className="font-medium text-primary hover:underline cursor-pointer"
                 >
-                    Already have an account? Sign In
-                </Button>
+                    Sign in
+                </button>
             </div>
         </div>
     );
