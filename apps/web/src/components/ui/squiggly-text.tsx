@@ -134,7 +134,10 @@ export function SquigglyText(props: SquigglyTextProps) {
         const Wrapper = props.as === "div" ? "div" : "span";
         return (
             <Wrapper
-                className={cn("inline-block squiggly-mobile-shimmer", props.className)}
+                className={cn(
+                    "inline-block squiggly-mobile-shimmer motion-reduce:animate-none",
+                    props.className,
+                )}
                 style={props.style}
             >
                 {props.children}

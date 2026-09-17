@@ -2,7 +2,19 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { Crown, Shield, User, Eye, UserMinus, UserPlus, ChevronDown, Loader2, Link2, Copy, Check } from "lucide-react";
+import {
+    Crown,
+    Shield,
+    User,
+    Eye,
+    UserMinus,
+    UserPlus,
+    ChevronDown,
+    Loader2,
+    Link2,
+    Copy,
+    Check,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -232,12 +244,16 @@ export function BoardMembersPanel({
                                     <Link2 className="h-3.5 w-3.5 text-primary" />
                                     <span>Share via Link</span>
                                 </p>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground">
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground"
+                                >
                                     Public Link
                                 </Badge>
                             </div>
                             <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                Anyone with this link can join this board (even if they need to sign in or create an account first).
+                                Anyone with this link can join this board (even if they need to sign
+                                in or create an account first).
                             </p>
                             <div className="flex gap-2">
                                 <DropdownMenu>
@@ -256,7 +272,10 @@ export function BoardMembersPanel({
                                         {(["member", "viewer"] as const).map((r) => (
                                             <DropdownMenuItem
                                                 key={r}
-                                                onClick={() => setShareLinkRole(r)}
+                                                onClick={() => {
+                                                    setShareLinkRole(r);
+                                                    setHasCopiedLink(false);
+                                                }}
                                                 className="text-xs cursor-pointer"
                                             >
                                                 {ROLE_CONFIG[r].label}
@@ -279,7 +298,9 @@ export function BoardMembersPanel({
                                     ) : (
                                         <Copy className="h-3.5 w-3.5" />
                                     )}
-                                    <span>{hasCopiedLink ? "Link Copied!" : "Copy Share Link"}</span>
+                                    <span>
+                                        {hasCopiedLink ? "Link Copied!" : "Copy Share Link"}
+                                    </span>
                                 </Button>
                             </div>
                         </div>
@@ -335,7 +356,10 @@ export function BoardMembersPanel({
                                         {isLoading ? (
                                             <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                                         ) : member.role === "owner" ? (
-                                            <Badge variant="secondary" className="gap-1 shrink-0 text-[10px]">
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 shrink-0 text-[10px]"
+                                            >
                                                 <Crown className="h-3 w-3 text-amber-500" />
                                                 <span>Owner</span>
                                             </Badge>
@@ -354,7 +378,10 @@ export function BoardMembersPanel({
                                                         <ChevronDown className="h-3 w-3 opacity-50" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="text-xs">
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="text-xs"
+                                                >
                                                     {(["admin", "member", "viewer"] as const).map(
                                                         (r) => {
                                                             const rc = ROLE_CONFIG[r];
@@ -419,7 +446,10 @@ export function BoardMembersPanel({
                                                 <span>Remove</span>
                                             </Button>
                                         ) : (
-                                            <Badge variant="secondary" className="gap-1 shrink-0 text-[10px]">
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 shrink-0 text-[10px]"
+                                            >
                                                 <RoleIcon className={`h-3 w-3 ${role.color}`} />
                                                 <span>{role.label}</span>
                                             </Badge>

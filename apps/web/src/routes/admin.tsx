@@ -256,6 +256,7 @@ function AdminPanel() {
                                             size="sm"
                                             variant="outline"
                                             disabled={
+                                                currentUser === undefined ||
                                                 isUpdatingRole === user.userId ||
                                                 isDeletingUser === user.userId ||
                                                 isSelf
@@ -282,6 +283,7 @@ function AdminPanel() {
                                             size="sm"
                                             variant="ghost"
                                             disabled={
+                                                currentUser === undefined ||
                                                 isUpdatingRole === user.userId ||
                                                 isDeletingUser === user.userId ||
                                                 isSelf

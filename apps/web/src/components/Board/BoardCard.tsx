@@ -59,9 +59,7 @@ export function BoardCard({
     const RoleIcon = roleConfig.icon;
 
     const timestamp = board.updatedAt || board.createdAt || board._creationTime;
-    const timeAgo = timestamp
-        ? formatDistanceToNow(timestamp, { addSuffix: true })
-        : null;
+    const timeAgo = timestamp ? formatDistanceToNow(timestamp, { addSuffix: true }) : null;
 
     const cardInner = (
         <div
@@ -71,8 +69,8 @@ export function BoardCard({
                     ? isSelected
                         ? "border-primary ring-2 ring-primary/40 shadow-md scale-[1.01]"
                         : isOwner
-                            ? "border-border/70 hover:border-primary/40 cursor-pointer"
-                            : "border-border/40 opacity-55 cursor-not-allowed"
+                          ? "border-border/70 hover:border-primary/40 cursor-pointer"
+                          : "border-border/40 opacity-55 cursor-not-allowed"
                     : "border-border/70 group-hover:border-primary/40 group-hover:shadow-lg",
             )}
         >
@@ -103,22 +101,23 @@ export function BoardCard({
                     <div className="flex items-center gap-1.5">
                         {isManageMode ? (
                             <div
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isOwner) {
-                                        onToggleSelect?.(board._id as Id<"boards">);
-                                    }
-                                }}
+                                aria-hidden="true"
                                 className={cn(
-                                    "flex items-center justify-center p-1 rounded-md bg-black/40 backdrop-blur-md border border-white/20 shadow-xs transition-transform",
-                                    isOwner ? "cursor-pointer hover:scale-105" : "opacity-40 cursor-not-allowed",
+                                    "flex items-center justify-center p-1 rounded-md bg-black/40 backdrop-blur-md border border-white/20 shadow-xs transition-transform pointer-events-none",
+                                    isOwner ? "group-hover:scale-105" : "opacity-40",
                                 )}
-                                title={isOwner ? "Select to delete" : "Only the board owner can delete this board"}
+                                title={
+                                    isOwner
+                                        ? "Select to delete"
+                                        : "Only the board owner can delete this board"
+                                }
                             >
                                 <Checkbox
                                     checked={isSelected}
+                                    tabIndex={-1}
+                                    aria-hidden="true"
                                     disabled={!isOwner}
-                                    className="border-white/60 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                    className="pointer-events-none border-white/60 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                 />
                             </div>
                         ) : (
@@ -138,7 +137,10 @@ export function BoardCard({
                                                 <MoreVertical className="h-3 w-3" />
                                             </button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                        <DropdownMenuContent
+                                            align="end"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <DropdownMenuItem
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -214,8 +216,11 @@ export function BoardCard({
     if (isManageMode) {
         return (
             <div
-                role="button"
-                tabIndex={0}
+                role="checkbox"
+                aria-checked={isSelected}
+                aria-label={`Select ${board.title}`}
+                aria-disabled={!isOwner}
+                tabIndex={isOwner ? 0 : -1}
                 onClick={() => {
                     if (isOwner) {
                         onToggleSelect?.(board._id as Id<"boards">);
@@ -229,7 +234,9 @@ export function BoardCard({
                 }}
                 className={cn(
                     "group block select-none outline-none",
-                    isOwner && "cursor-pointer active:scale-[0.98]",
+                    isOwner
+                        ? "cursor-pointer active:scale-[0.98]"
+                        : "cursor-not-allowed opacity-60",
                 )}
             >
                 {cardInner}

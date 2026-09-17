@@ -250,13 +250,15 @@
 
 @keyframes list-glow-pulse {
     0% {
-        box-shadow: 0 0 0 4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 45%, transparent),
-                    0 12px 28px -4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 35%, transparent);
+        box-shadow:
+            0 0 0 4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 45%, transparent),
+            0 12px 28px -4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 35%, transparent);
         border-color: var(--fresh-glow, var(--primary));
     }
     50% {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--fresh-glow, var(--primary)) 30%, transparent),
-                    0 8px 18px -4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 20%, transparent);
+        box-shadow:
+            0 0 0 3px color-mix(in srgb, var(--fresh-glow, var(--primary)) 30%, transparent),
+            0 8px 18px -4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 20%, transparent);
         border-color: color-mix(in srgb, var(--fresh-glow, var(--primary)) 70%, transparent);
     }
     100% {
@@ -274,7 +276,8 @@
 
 /* Mobile GPU-friendly text shimmer for SquigglyText */
 @keyframes text-mobile-shimmer {
-    0%, 100% {
+    0%,
+    100% {
         filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
         opacity: 0.96;
     }
@@ -288,4 +291,10 @@
     display: inline-block;
     animation: text-mobile-shimmer 2.8s ease-in-out infinite;
     will-change: filter, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .squiggly-mobile-shimmer {
+        animation: none;
+    }
 }

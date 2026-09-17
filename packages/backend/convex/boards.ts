@@ -4,7 +4,6 @@ import { internal } from "./_generated/api";
 import { authComponent } from "./auth";
 import {
     assertNotRateLimited,
-    ensureBoardReadAccess,
     ensureBoardReadAccessForQuery,
     ensureBoardRole,
     ensureWorkspaceAccess,
@@ -834,6 +833,12 @@ export const acceptInviteByToken = mutation({
 
         if (!invite) throw new Error("Invite not found or expired");
         if (invite.status !== "pending") throw new Error("This invite has already been used");
+
+        // Validate that board still exists and is not archived
+        const board = await ctx.db.get(invite.boardId);
+        if (!board || board.archived) {
+            throw new Error("Board not found or has been archived");
+        }
 
         // Validate the user's email matches the invited email (if set)
         if (invite.invitedEmail && user.email?.toLowerCase() !== invite.invitedEmail) {
