@@ -1,6 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
+import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
+import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
 import {
     Kanban,
     ListTodo,
@@ -9,13 +10,15 @@ import {
     CalendarClock,
     Plus,
     ArrowRight,
-    Clock,
+    CheckSquare,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateBoardModal } from "@/components/Board/CreateBoardModal";
 import { PRIORITY_CONFIG } from "@/lib/constants";
@@ -79,7 +82,45 @@ function StatCard({
 
 function MyTasksSection() {
     const tasksData = useQuery(api.dashboard.getMyOpenTasks);
+    const updateItem = useMutation(api.checklists.updateItem);
+    const updateCard = useMutation(api.cards.update);
+    const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+
     const isLoading = tasksData === undefined;
+
+    const handleCompleteCard = async (cardId: string) => {
+        if (completingIds.has(cardId)) return;
+        setCompletingIds((prev) => new Set(prev).add(cardId));
+
+        try {
+            await updateCard({ cardId: cardId as Id<"cards">, completed: true });
+            toast.success("Card marked complete");
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to complete card");
+            setCompletingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(cardId);
+                return next;
+            });
+        }
+    };
+
+    const handleCompleteChecklistItem = async (itemId: string) => {
+        if (completingIds.has(itemId)) return;
+        setCompletingIds((prev) => new Set(prev).add(itemId));
+
+        try {
+            await updateItem({ itemId: itemId as Id<"checklistItems">, completed: true });
+            toast.success("Checklist item completed");
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to complete item");
+            setCompletingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(itemId);
+                return next;
+            });
+        }
+    };
 
     if (isLoading) {
         return (
@@ -123,7 +164,7 @@ function MyTasksSection() {
                             You're all caught up!
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            No open checklist tasks assigned to you.
+                            No open assigned cards with a due date.
                         </p>
                     </div>
                 </CardContent>
@@ -165,20 +206,16 @@ function MyTasksSection() {
                     </Badge>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 space-y-4 max-h-[420px] overflow-y-auto overflow-x-hidden">
-                {(
-                    Object.entries(grouped) as Array<
-                        [
-                            string,
-                            {
-                                boardTitle: string;
-                                boardColor?: string;
-                                boardId: string;
-                                tasks: typeof tasks;
-                            },
-                        ]
-                    >
-                ).map(([boardId, group]) => (
+            <CardContent className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 space-y-4 max-h-[440px] overflow-y-auto overflow-x-hidden">
+                {(Object.entries(grouped) as Array<[
+                    string,
+                    {
+                        boardTitle: string;
+                        boardColor?: string;
+                        boardId: string;
+                        tasks: typeof tasks;
+                    },
+                ]>).map(([boardId, group]) => (
                     <div key={boardId} className="space-y-2">
                         <Link
                             to="/boards/$boardId"
@@ -194,60 +231,146 @@ function MyTasksSection() {
                             </span>
                             <ArrowRight className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Link>
-                        <div className="space-y-1.5">
-                            {group.tasks.map((task) => {
-                                if (!task) return null;
-                                const priorityConfig = task.priority
-                                    ? PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG]
+                        <div className="space-y-2">
+                            {group.tasks.map((card) => {
+                                if (!card) return null;
+                                const priorityConfig = card.priority
+                                    ? PRIORITY_CONFIG[card.priority as keyof typeof PRIORITY_CONFIG]
                                     : null;
+                                const isCardCompleting = completingIds.has(card._id);
+                                const hasChecklist = card.totalChecklistCount > 0;
+
                                 return (
-                                    <Link
-                                        key={task._id}
-                                        to="/boards/$boardId"
-                                        params={{ boardId: task.boardId }}
-                                        className="flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 sm:gap-3 p-2.5 rounded-xl border border-border/50 bg-background/60 hover:bg-muted/40 hover:border-border transition-colors group cursor-pointer active:scale-[0.99]"
+                                    <div
+                                        key={card._id}
+                                        className={cn(
+                                            "p-3 rounded-xl border border-border/50 bg-background/60 hover:bg-muted/30 hover:border-border transition-colors group",
+                                            isCardCompleting && "opacity-50 pointer-events-none",
+                                        )}
                                     >
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                                                {task.title}
-                                            </p>
-                                            <p className="text-[11px] text-muted-foreground truncate">
-                                                {task.cardTitle} · {task.listName}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 shrink-0 self-start xs:self-auto flex-wrap">
-                                            {priorityConfig && (
-                                                <Badge
-                                                    className={cn(
-                                                        "text-[10px] px-1.5 py-0 h-4 shrink-0",
-                                                        priorityConfig.color,
-                                                        "text-white",
-                                                    )}
+                                        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 sm:gap-3">
+                                            {/* Card Main Info */}
+                                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                                <div
+                                                    className="shrink-0 pt-0.5"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                    }}
                                                 >
-                                                    {priorityConfig.label}
-                                                </Badge>
-                                            )}
-                                            {task.dueDate && (
-                                                <Badge
-                                                    variant={
-                                                        task.isOverdue ? "destructive" : "secondary"
-                                                    }
-                                                    className="text-[10px] px-1.5 py-0 h-4 gap-1 shrink-0"
-                                                >
-                                                    <CalendarClock className="h-2.5 w-2.5" />
-                                                    <span>
-                                                        {new Date(task.dueDate).toLocaleDateString(
-                                                            undefined,
-                                                            {
-                                                                month: "short",
-                                                                day: "numeric",
-                                                            },
+                                                    <Checkbox
+                                                        checked={isCardCompleting}
+                                                        disabled={isCardCompleting}
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) handleCompleteCard(card._id);
+                                                        }}
+                                                        className="h-4 w-4 rounded data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 cursor-pointer"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <Link
+                                                        to="/boards/$boardId"
+                                                        params={{ boardId: card.boardId }}
+                                                        className="group/link cursor-pointer block"
+                                                    >
+                                                        <p
+                                                            className={cn(
+                                                                "text-xs sm:text-sm font-medium text-foreground group-hover/link:text-primary transition-colors truncate",
+                                                                isCardCompleting && "line-through text-muted-foreground",
+                                                            )}
+                                                        >
+                                                            {card.title}
+                                                        </p>
+                                                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                                            {card.listName}
+                                                        </p>
+                                                    </Link>
+                                                </div>
+                                            </div>
+
+                                            {/* Badges & Meta */}
+                                            <div className="flex items-center gap-1.5 shrink-0 self-start xs:self-auto flex-wrap pl-6 xs:pl-0">
+                                                {hasChecklist && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-[10px] px-1.5 py-0 h-4 gap-1 shrink-0 font-mono text-muted-foreground"
+                                                    >
+                                                        <CheckSquare className="h-2.5 w-2.5" />
+                                                        <span>
+                                                            {card.completedChecklistCount}/{card.totalChecklistCount}
+                                                        </span>
+                                                    </Badge>
+                                                )}
+                                                {priorityConfig && (
+                                                    <Badge
+                                                        className={cn(
+                                                            "text-[10px] px-1.5 py-0 h-4 shrink-0",
+                                                            priorityConfig.color,
+                                                            "text-white",
                                                         )}
-                                                    </span>
-                                                </Badge>
-                                            )}
+                                                    >
+                                                        {priorityConfig.label}
+                                                    </Badge>
+                                                )}
+                                                {card.dueDate && (
+                                                    <Badge
+                                                        variant={
+                                                            card.isOverdue ? "destructive" : "secondary"
+                                                        }
+                                                        className="text-[10px] px-1.5 py-0 h-4 gap-1 shrink-0"
+                                                    >
+                                                        <CalendarClock className="h-2.5 w-2.5" />
+                                                        <span>
+                                                            {new Date(card.dueDate).toLocaleDateString(
+                                                                undefined,
+                                                                {
+                                                                    month: "short",
+                                                                    day: "numeric",
+                                                                },
+                                                            )}
+                                                        </span>
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
-                                    </Link>
+
+                                        {/* Nested Checklist Items (if any open items exist) */}
+                                        {card.checklistItems && card.checklistItems.length > 0 && (
+                                            <div className="mt-2.5 pt-2 border-t border-border/40 space-y-1.5 pl-6 sm:pl-7">
+                                                {card.checklistItems.map((item: any) => {
+                                                    const isItemCompleting = completingIds.has(item._id);
+                                                    return (
+                                                        <div
+                                                            key={item._id}
+                                                            className="flex items-center gap-2 group/item text-xs"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                            }}
+                                                        >
+                                                            <Checkbox
+                                                                checked={isItemCompleting}
+                                                                disabled={isItemCompleting}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) handleCompleteChecklistItem(item._id);
+                                                                }}
+                                                                className="h-3.5 w-3.5 rounded data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 cursor-pointer"
+                                                            />
+                                                            <span
+                                                                className={cn(
+                                                                    "text-muted-foreground hover:text-foreground transition-colors truncate cursor-pointer",
+                                                                    isItemCompleting && "line-through opacity-50",
+                                                                )}
+                                                                onClick={() => handleCompleteChecklistItem(item._id)}
+                                                            >
+                                                                {item.title}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
@@ -325,7 +448,7 @@ function DashboardContent() {
                             title="My Tasks"
                             icon={ListTodo}
                             value={taskCount}
-                            subtitle="Open checklist tasks"
+                            subtitle="Assigned with due date"
                             loading={tasksLoading}
                         />
                         <StatCard
@@ -360,12 +483,12 @@ function DashboardContent() {
                             className="h-8 gap-1.5 text-xs"
                         >
                             <Plus className="h-3.5 w-3.5" />
-                            <span>New Board</span>
+                            <span>Create Board</span>
                         </Button>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="w-full max-w-2xl min-w-0">
+                    {/* Main Content Grid */}
+                    <div className="grid gap-6">
                         <MyTasksSection />
                     </div>
                 </div>
@@ -374,12 +497,7 @@ function DashboardContent() {
             <CreateBoardModal
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
-                onCreated={(boardId) => {
-                    navigate({
-                        to: "/boards/$boardId",
-                        params: { boardId },
-                    });
-                }}
+                onCreated={(boardId: Id<"boards">) => navigate({ to: "/boards/$boardId", params: { boardId } })}
             />
         </>
     );
@@ -388,13 +506,7 @@ function DashboardContent() {
 function RedirectToSignIn() {
     const navigate = useNavigate();
     useEffect(() => {
-        navigate({ to: "/sign-in" });
+        navigate({ to: "/" });
     }, [navigate]);
-    return (
-        <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center">
-            <p className="text-muted-foreground">Redirecting to sign in...</p>
-        </div>
-    );
+    return null;
 }
-
-export default RouteComponent;
