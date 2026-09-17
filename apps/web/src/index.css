@@ -228,3 +228,73 @@
     animation: none;
     mix-blend-mode: normal;
 }
+
+/* Option A: List Creation Spring Pop & Glow Animation */
+@keyframes list-spring-pop {
+    0% {
+        opacity: 0;
+        transform: translateY(18px) scale(0.92);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.02);
+    }
+    82% {
+        transform: translateY(1px) scale(0.995);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes list-glow-pulse {
+    0% {
+        box-shadow:
+            0 0 0 4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 45%, transparent),
+            0 12px 28px -4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 35%, transparent);
+        border-color: var(--fresh-glow, var(--primary));
+    }
+    50% {
+        box-shadow:
+            0 0 0 3px color-mix(in srgb, var(--fresh-glow, var(--primary)) 30%, transparent),
+            0 8px 18px -4px color-mix(in srgb, var(--fresh-glow, var(--primary)) 20%, transparent);
+        border-color: color-mix(in srgb, var(--fresh-glow, var(--primary)) 70%, transparent);
+    }
+    100% {
+        box-shadow: var(--shadow-2xs);
+        border-color: var(--border);
+    }
+}
+
+.list-fresh-enter {
+    transform-origin: top center;
+    animation:
+        list-spring-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) forwards,
+        list-glow-pulse 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Mobile GPU-friendly text shimmer for SquigglyText */
+@keyframes text-mobile-shimmer {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+        opacity: 0.96;
+    }
+    50% {
+        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.65));
+        opacity: 1;
+    }
+}
+
+.squiggly-mobile-shimmer {
+    display: inline-block;
+    animation: text-mobile-shimmer 2.8s ease-in-out infinite;
+    will-change: filter, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .squiggly-mobile-shimmer {
+        animation: none;
+    }
+}

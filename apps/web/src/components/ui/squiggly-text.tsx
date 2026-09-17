@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { motion, useTime, useTransform } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +48,7 @@ export interface SquigglyTextProps {
     as?: "span" | "div";
 }
 
-export function SquigglyText({
+function DesktopSquigglyText({
     children,
     steps = 5,
     stepDuration = 80,
@@ -105,4 +105,45 @@ export function SquigglyText({
             {children}
         </Wrapper>
     );
+}
+
+export function SquigglyText(props: SquigglyTextProps) {
+    const [isMobileOrReducedMotion, setIsMobileOrReducedMotion] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+        const check = () => {
+            const isTouchOrSmall =
+                typeof window !== "undefined" &&
+                (window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+                    window.innerWidth < 768);
+            const prefersReduced =
+                typeof window !== "undefined" &&
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            setIsMobileOrReducedMotion(Boolean(isTouchOrSmall || prefersReduced));
+        };
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+
+    // On mobile screens, touch devices, or reduced motion preferences,
+    // bypass the heavy SVG feTurbulence animation loop and use lightweight GPU-accelerated CSS shimmer.
+    if (!isMounted || isMobileOrReducedMotion) {
+        const Wrapper = props.as === "div" ? "div" : "span";
+        return (
+            <Wrapper
+                className={cn(
+                    "inline-block squiggly-mobile-shimmer motion-reduce:animate-none",
+                    props.className,
+                )}
+                style={props.style}
+            >
+                {props.children}
+            </Wrapper>
+        );
+    }
+
+    return <DesktopSquigglyText {...props} />;
 }

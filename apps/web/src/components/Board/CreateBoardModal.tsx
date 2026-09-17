@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LayoutTemplate, Check, ArrowLeft, Loader2 } from "lucide-react";
 
@@ -31,6 +31,7 @@ interface CreateBoardModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onCreated?: (boardId: Id<"boards">) => void;
+    defaultWorkspaceId?: Id<"workspaces">;
 }
 
 // ----- Board Templates -----
@@ -94,19 +95,30 @@ const BOARD_TEMPLATES: BoardTemplate[] = [
     },
 ];
 
-export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardModalProps) {
+export function CreateBoardModal({
+    open,
+    onOpenChange,
+    onCreated,
+    defaultWorkspaceId,
+}: CreateBoardModalProps) {
     const [step, setStep] = useState<"template" | "form">("template");
     const [selectedTemplate, setSelectedTemplate] = useState<BoardTemplate>(BOARD_TEMPLATES[0]);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [color, setColor] = useState(DEFAULT_BOARD_COLOR);
     const [visibility, setVisibility] = useState<"private" | "team" | "public">("private");
-    const [workspaceId, setWorkspaceId] = useState<string>("none");
+    const [workspaceId, setWorkspaceId] = useState<string>(defaultWorkspaceId ?? "none");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const createBoard = useMutation(api.boards.create);
     const createList = useMutation(api.lists.create);
     const workspaces = useQuery(api.workspaces.getMyWorkspaces);
+
+    useEffect(() => {
+        if (open) {
+            setWorkspaceId(defaultWorkspaceId ?? "none");
+        }
+    }, [open, defaultWorkspaceId]);
 
     const handleTemplateSelect = (template: BoardTemplate) => {
         setSelectedTemplate(template);
@@ -120,7 +132,7 @@ export function CreateBoardModal({ open, onOpenChange, onCreated }: CreateBoardM
         setDescription("");
         setColor(DEFAULT_BOARD_COLOR);
         setVisibility("private");
-        setWorkspaceId("none");
+        setWorkspaceId(defaultWorkspaceId ?? "none");
         setSelectedTemplate(BOARD_TEMPLATES[0]);
     };
 

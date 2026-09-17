@@ -83,14 +83,14 @@ function MyTasksSection() {
 
     if (isLoading) {
         return (
-            <Card className="border-border/70 bg-card/60 shadow-2xs">
-                <CardHeader className="p-4 sm:p-5 pb-2">
+            <Card className="gap-0 py-0 border-border/70 bg-card/60 shadow-2xs">
+                <CardHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                        <ListTodo className="h-4 w-4 text-primary" />
+                        <ListTodo className="h-4 w-4 text-primary shrink-0" />
                         <span>My Tasks</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
+                <CardContent className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 space-y-3">
                     {Array.from({ length: 3 }).map((_, i) => (
                         <div key={i} className="flex items-center gap-3">
                             <Skeleton className="h-4 w-4 rounded" />
@@ -109,14 +109,14 @@ function MyTasksSection() {
 
     if (tasks.length === 0) {
         return (
-            <Card className="border-border/70 bg-card/60 shadow-2xs">
-                <CardHeader className="p-4 sm:p-5 pb-2">
+            <Card className="gap-0 py-0 border-border/70 bg-card/60 shadow-2xs">
+                <CardHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                        <ListTodo className="h-4 w-4 text-primary" />
+                        <ListTodo className="h-4 w-4 text-primary shrink-0" />
                         <span>My Tasks</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-5 pt-2">
+                <CardContent className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
                     <div className="text-center py-8">
                         <CheckCircle2 className="h-10 w-10 text-emerald-500/40 mx-auto mb-2.5" />
                         <p className="text-xs sm:text-sm font-medium text-foreground">
@@ -153,19 +153,19 @@ function MyTasksSection() {
     );
 
     return (
-        <Card className="border-border/70 bg-card/60 shadow-2xs">
-            <CardHeader className="p-4 sm:p-5 pb-3">
+        <Card className="gap-0 py-0 border-border/70 bg-card/60 shadow-2xs">
+            <CardHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
                 <CardTitle className="flex items-center justify-between text-base font-semibold">
                     <div className="flex items-center gap-2">
-                        <ListTodo className="h-4 w-4 text-primary" />
+                        <ListTodo className="h-4 w-4 text-primary shrink-0" />
                         <span>My Tasks</span>
                     </div>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-mono font-medium">
                         {tasks.length}
                     </Badge>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-5 pt-0 space-y-4 max-h-[420px] overflow-y-auto overflow-x-hidden">
+            <CardContent className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 space-y-4 max-h-[420px] overflow-y-auto overflow-x-hidden">
                 {(
                     Object.entries(grouped) as Array<
                         [

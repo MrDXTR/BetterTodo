@@ -2,7 +2,19 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { Crown, Shield, User, Eye, UserMinus, UserPlus, ChevronDown, Loader2 } from "lucide-react";
+import {
+    Crown,
+    Shield,
+    User,
+    Eye,
+    UserMinus,
+    UserPlus,
+    ChevronDown,
+    Loader2,
+    Link2,
+    Copy,
+    Check,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -77,6 +89,29 @@ export function BoardMembersPanel({
     const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">("member");
     const [isInviting, setIsInviting] = useState(false);
     const addMemberByEmail = useMutation(api.boards.addMemberByEmail);
+    const getOrCreateShareLink = useMutation(api.boards.getOrCreateShareLink);
+    const [shareLinkRole, setShareLinkRole] = useState<"member" | "viewer">("member");
+    const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+    const [hasCopiedLink, setHasCopiedLink] = useState(false);
+
+    const handleCopyShareLink = async () => {
+        setIsGeneratingLink(true);
+        try {
+            const res = await getOrCreateShareLink({
+                boardId,
+                role: shareLinkRole,
+            });
+            const inviteUrl = `${window.location.origin}/invite/${res.token}`;
+            await navigator.clipboard.writeText(inviteUrl);
+            setHasCopiedLink(true);
+            toast.success("Board invite link copied to clipboard!");
+            setTimeout(() => setHasCopiedLink(false), 2500);
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to generate invite link");
+        } finally {
+            setIsGeneratingLink(false);
+        }
+    };
 
     const canManageMembers = currentUserRole === "owner" || currentUserRole === "admin";
     const isOwner = currentUserRole === "owner";
@@ -201,6 +236,76 @@ export function BoardMembersPanel({
                         </div>
                     )}
 
+                    {/* Share via Link */}
+                    {canManageMembers && (
+                        <div className="mt-3.5 p-3.5 rounded-xl border border-border/70 bg-muted/15 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+                                    <Link2 className="h-3.5 w-3.5 text-primary" />
+                                    <span>Share via Link</span>
+                                </p>
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground"
+                                >
+                                    Public Link
+                                </Badge>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Anyone with this link can join this board (even if they need to sign
+                                in or create an account first).
+                            </p>
+                            <div className="flex gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1 text-xs h-8 justify-between shrink-0"
+                                        >
+                                            <span>{ROLE_CONFIG[shareLinkRole].label}</span>
+                                            <ChevronDown className="h-3 w-3 opacity-50" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        {(["member", "viewer"] as const).map((r) => (
+                                            <DropdownMenuItem
+                                                key={r}
+                                                onClick={() => {
+                                                    setShareLinkRole(r);
+                                                    setHasCopiedLink(false);
+                                                }}
+                                                className="text-xs cursor-pointer"
+                                            >
+                                                {ROLE_CONFIG[r].label}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={handleCopyShareLink}
+                                    disabled={isGeneratingLink}
+                                    className="gap-1.5 h-8 text-xs flex-1"
+                                >
+                                    {isGeneratingLink ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : hasCopiedLink ? (
+                                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                    ) : (
+                                        <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                    <span>
+                                        {hasCopiedLink ? "Link Copied!" : "Copy Share Link"}
+                                    </span>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mt-6 space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
                         {members === undefined ? (
                             Array.from({ length: 3 }).map((_, i) => (
@@ -251,7 +356,10 @@ export function BoardMembersPanel({
                                         {isLoading ? (
                                             <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                                         ) : member.role === "owner" ? (
-                                            <Badge variant="secondary" className="gap-1 shrink-0 text-[10px]">
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 shrink-0 text-[10px]"
+                                            >
                                                 <Crown className="h-3 w-3 text-amber-500" />
                                                 <span>Owner</span>
                                             </Badge>
@@ -270,7 +378,10 @@ export function BoardMembersPanel({
                                                         <ChevronDown className="h-3 w-3 opacity-50" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="text-xs">
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="text-xs"
+                                                >
                                                     {(["admin", "member", "viewer"] as const).map(
                                                         (r) => {
                                                             const rc = ROLE_CONFIG[r];
@@ -335,7 +446,10 @@ export function BoardMembersPanel({
                                                 <span>Remove</span>
                                             </Button>
                                         ) : (
-                                            <Badge variant="secondary" className="gap-1 shrink-0 text-[10px]">
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 shrink-0 text-[10px]"
+                                            >
                                                 <RoleIcon className={`h-3 w-3 ${role.color}`} />
                                                 <span>{role.label}</span>
                                             </Badge>

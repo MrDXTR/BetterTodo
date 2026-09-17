@@ -10,6 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
@@ -65,6 +75,12 @@ function AdminPanel() {
     const currentUser = useQuery(api.auth.getCurrentUser);
 
     const [pendingDeleteUserId, setPendingDeleteUserId] = useState<string | null>(null);
+    const [pendingRoleChange, setPendingRoleChange] = useState<{
+        userId: string;
+        name: string | null;
+        email: string | null;
+        nextRole: "admin" | "user";
+    } | null>(null);
     const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null);
     const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
 
@@ -79,6 +95,7 @@ function AdminPanel() {
         try {
             await setRole({ userId, role: nextRole });
             toast.success(`Role updated to ${nextRole}`);
+            setPendingRoleChange(null);
         } catch (error: any) {
             toast.error(error?.message || "Failed to update role");
         } finally {
@@ -91,7 +108,7 @@ function AdminPanel() {
         setIsDeletingUser(pendingDeleteUserId);
         try {
             await deleteUser({ userId: pendingDeleteUserId });
-            toast.success("User and all their data deleted");
+            toast.success("User and all associated data deleted");
             setPendingDeleteUserId(null);
         } catch (error: any) {
             toast.error(error?.message || "Failed to delete user");
@@ -101,206 +118,257 @@ function AdminPanel() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-3rem)] bg-muted/30">
-            <div className="max-w-4xl mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="mb-8">
-                    <Link
-                        to="/dashboard"
-                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                        Back to Dashboard
+        <div className="min-h-[calc(100vh-3rem)] p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
+                <div className="flex items-center gap-3">
+                    <Link to="/dashboard">
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs">
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                            Dashboard
+                        </Button>
                     </Link>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <div className="h-4 w-px bg-border" />
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
                             <Shield className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
-                            <p className="text-sm text-muted-foreground">
-                                Manage user roles and accounts
-                            </p>
-                        </div>
+                            Admin Panel
+                        </h1>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Manage user accounts and administrative roles
+                        </p>
                     </div>
                 </div>
 
-                {/* Stats row */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="rounded-xl border bg-card p-4 flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                            <Crown className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">{isLoading ? "—" : adminCount}</p>
-                            <p className="text-xs text-muted-foreground">Admins</p>
-                        </div>
-                    </div>
-                    <div className="rounded-xl border bg-card p-4 flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">{isLoading ? "—" : userCount}</p>
-                            <p className="text-xs text-muted-foreground">Members</p>
-                        </div>
-                    </div>
+                {/* Stats */}
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <Badge variant="outline" className="text-xs font-normal gap-1.5 px-2.5 py-1">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Total: {isLoading ? "…" : (users?.length ?? 0)}</span>
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs font-normal gap-1.5 px-2.5 py-1">
+                        <Crown className="h-3.5 w-3.5 text-primary" />
+                        <span>Admins: {isLoading ? "…" : adminCount}</span>
+                    </Badge>
+                </div>
+            </div>
+
+            {/* Users List Card */}
+            <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
+                <div className="px-5 py-3.5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Users ({isLoading ? "…" : (users?.length ?? 0)})
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                        {userCount} standard · {adminCount} admin
+                    </p>
                 </div>
 
-                {/* User list */}
-                <div className="rounded-xl border bg-card overflow-hidden">
-                    <div className="flex items-center gap-2 px-5 py-4 border-b">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <h2 className="font-semibold text-sm">All Users</h2>
-                    </div>
-
+                <div className="divide-y divide-border/60">
                     {isLoading ? (
-                        <div className="divide-y">
-                            {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="flex items-center gap-3 px-5 py-4">
-                                    <Skeleton className="h-9 w-9 rounded-full shrink-0" />
-                                    <div className="flex-1 space-y-1.5">
-                                        <Skeleton className="h-4 w-36" />
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 sm:p-5">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-9 w-9 rounded-full" />
+                                    <div className="space-y-1.5">
+                                        <Skeleton className="h-4 w-32" />
                                         <Skeleton className="h-3 w-48" />
                                     </div>
-                                    <Skeleton className="h-7 w-16 rounded-full" />
-                                    <Skeleton className="h-8 w-20" />
-                                    <Skeleton className="h-8 w-16" />
                                 </div>
-                            ))}
-                        </div>
-                    ) : !users || users.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <Users className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                            <p className="text-sm text-muted-foreground">
-                                No other users found yet.
-                            </p>
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className="h-7 w-16 rounded-full" />
+                                    <Skeleton className="h-8 w-20 rounded-md" />
+                                </div>
+                            </div>
+                        ))
+                    ) : (users ?? []).length === 0 ? (
+                        <div className="text-center py-12 text-sm text-muted-foreground">
+                            No users found.
                         </div>
                     ) : (
-                        <div className="divide-y">
-                            {users.map((user) => {
-                                const isSelf = currentUser?._id === user.userId;
-                                const isAdmin = user.role === "admin";
-                                const initials = (user.name ?? user.email ?? "?")
-                                    .split(" ")
-                                    .map((p) => p[0])
-                                    .join("")
-                                    .toUpperCase()
-                                    .slice(0, 2);
+                        (users ?? []).map((user) => {
+                            const isSelf = currentUser?._id === user.userId;
+                            const isAdmin = user.role === "admin";
+                            const initials = user.name
+                                ? user.name
+                                      .split(" ")
+                                      .map((n: string) => n[0])
+                                      .join("")
+                                      .slice(0, 2)
+                                      .toUpperCase()
+                                : (user.email?.[0]?.toUpperCase() ?? "U");
 
-                                return (
-                                    <div
-                                        key={user.userId}
-                                        className={cn(
-                                            "flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
-                                            isSelf && "bg-muted/40",
-                                        )}
-                                    >
-                                        {/* Avatar + info */}
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <Avatar className="h-9 w-9 shrink-0">
-                                                {user.image && <AvatarImage src={user.image} />}
-                                                <AvatarFallback className="text-xs font-medium">
-                                                    {initials}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-medium text-sm truncate">
-                                                        {user.name ?? "Unnamed user"}
-                                                    </p>
-                                                    {isSelf && (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="text-[10px] px-1.5 py-0 shrink-0"
-                                                        >
-                                                            You
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground truncate">
-                                                    {user.email ?? user.userId}
+                            return (
+                                <div
+                                    key={user.userId}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 gap-3 hover:bg-muted/15 transition-colors"
+                                >
+                                    {/* User Info */}
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border">
+                                            <AvatarImage
+                                                src={user.image ?? undefined}
+                                                alt={user.name ?? "User"}
+                                            />
+                                            <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                                                {initials}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="min-w-0 space-y-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium truncate leading-tight">
+                                                    {user.name || "Unnamed User"}
                                                 </p>
+                                                {isSelf && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground"
+                                                    >
+                                                        You
+                                                    </Badge>
+                                                )}
                                             </div>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="flex items-center gap-2 shrink-0 ml-12 sm:ml-0">
-                                            <Badge
-                                                variant={isAdmin ? "default" : "secondary"}
-                                                className={cn(
-                                                    "gap-1 text-xs",
-                                                    isAdmin &&
-                                                        "bg-primary/15 text-primary border-primary/20 hover:bg-primary/20",
-                                                )}
-                                            >
-                                                {isAdmin ? (
-                                                    <Crown className="h-3 w-3" />
-                                                ) : (
-                                                    <User className="h-3 w-3" />
-                                                )}
-                                                {user.role}
-                                            </Badge>
-
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                disabled={
-                                                    isUpdatingRole === user.userId ||
-                                                    isDeletingUser === user.userId ||
-                                                    isSelf
-                                                }
-                                                onClick={() =>
-                                                    handleToggleRole(
-                                                        user.userId,
-                                                        isAdmin ? "user" : "admin",
-                                                    )
-                                                }
-                                                className="gap-1.5 h-8 text-xs"
-                                            >
-                                                {isUpdatingRole === user.userId ? (
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                ) : (
-                                                    <UserCog className="h-3.5 w-3.5" />
-                                                )}
-                                                {isAdmin ? "Demote" : "Promote"}
-                                            </Button>
-
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                disabled={
-                                                    isUpdatingRole === user.userId ||
-                                                    isDeletingUser === user.userId ||
-                                                    isSelf
-                                                }
-                                                onClick={() => setPendingDeleteUserId(user.userId)}
-                                                className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            >
-                                                {isDeletingUser === user.userId ? (
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                ) : (
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                )}
-                                                Delete
-                                            </Button>
+                                            <p className="text-xs text-muted-foreground truncate">
+                                                {user.email || user.userId}
+                                            </p>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2 shrink-0 ml-12 sm:ml-0">
+                                        <Badge
+                                            variant={isAdmin ? "default" : "secondary"}
+                                            className={cn(
+                                                "gap-1 text-xs",
+                                                isAdmin &&
+                                                    "bg-primary/15 text-primary border-primary/20 hover:bg-primary/20",
+                                            )}
+                                        >
+                                            {isAdmin ? (
+                                                <Crown className="h-3 w-3" />
+                                            ) : (
+                                                <User className="h-3 w-3" />
+                                            )}
+                                            {user.role}
+                                        </Badge>
+
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={
+                                                currentUser === undefined ||
+                                                isUpdatingRole === user.userId ||
+                                                isDeletingUser === user.userId ||
+                                                isSelf
+                                            }
+                                            onClick={() =>
+                                                setPendingRoleChange({
+                                                    userId: user.userId,
+                                                    name: user.name,
+                                                    email: user.email,
+                                                    nextRole: isAdmin ? "user" : "admin",
+                                                })
+                                            }
+                                            className="gap-1.5 h-8 text-xs"
+                                        >
+                                            {isUpdatingRole === user.userId ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <UserCog className="h-3.5 w-3.5" />
+                                            )}
+                                            {isAdmin ? "Demote" : "Promote"}
+                                        </Button>
+
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled={
+                                                currentUser === undefined ||
+                                                isUpdatingRole === user.userId ||
+                                                isDeletingUser === user.userId ||
+                                                isSelf
+                                            }
+                                            onClick={() => setPendingDeleteUserId(user.userId)}
+                                            className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                            {isDeletingUser === user.userId ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            )}
+                                            Delete
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })
                     )}
                 </div>
             </div>
 
+            {/* Delete User Modal */}
             <DeleteConfirmationDialog
                 open={pendingDeleteUserId !== null}
                 onOpenChange={(open) => !open && setPendingDeleteUserId(null)}
-                onConfirm={handleDeleteUser}
                 title="Delete user and all their data?"
                 description={`This permanently removes ${selectedForDelete?.email ?? selectedForDelete?.userId ?? "this user"} and all their boards, cards, and other data. This cannot be undone.`}
                 confirmText="Delete permanently"
+                isLoading={isDeletingUser !== null}
+                onConfirm={handleDeleteUser}
             />
+
+            {/* Promote / Demote User Confirmation Modal */}
+            <AlertDialog
+                open={pendingRoleChange !== null}
+                onOpenChange={(open) => !open && setPendingRoleChange(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {pendingRoleChange?.nextRole === "admin"
+                                ? "Promote user to Admin?"
+                                : "Demote admin to regular User?"}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {pendingRoleChange?.nextRole === "admin"
+                                ? `Are you sure you want to promote ${pendingRoleChange.name || pendingRoleChange.email || "this user"} to Admin? They will have full administrative privileges to manage all users, roles, and settings.`
+                                : `Are you sure you want to demote ${pendingRoleChange?.name || pendingRoleChange?.email || "this user"} to a regular User? They will lose access to the admin dashboard and user management capabilities.`}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isUpdatingRole !== null}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                if (pendingRoleChange) {
+                                    handleToggleRole(
+                                        pendingRoleChange.userId,
+                                        pendingRoleChange.nextRole,
+                                    );
+                                }
+                            }}
+                            disabled={isUpdatingRole !== null}
+                            className={cn(
+                                "gap-1.5",
+                                pendingRoleChange?.nextRole === "user"
+                                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90",
+                            )}
+                        >
+                            {isUpdatingRole !== null && (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                            <span>
+                                {pendingRoleChange?.nextRole === "admin"
+                                    ? "Promote to Admin"
+                                    : "Demote to User"}
+                            </span>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

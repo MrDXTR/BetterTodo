@@ -9,7 +9,10 @@ import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import type { BoardWithLists, CardPriority, ListWithCards, Card } from "@/types/board";
 import { ListColumn } from "@/components/List/ListColumn";
 import { BoardHeader } from "@/components/Board/BoardHeader";
-import { BoardBackgroundGraphic, BoardEmptyStateGraphic } from "@/components/Board/BoardBackgroundGraphic";
+import {
+    BoardBackgroundGraphic,
+    BoardEmptyStateGraphic,
+} from "@/components/Board/BoardBackgroundGraphic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -100,8 +103,11 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
             setNewListTitle("");
             setIsAddingList(false);
             if (createdList?._id) {
-                setFreshListId(createdList._id);
-                setTimeout(() => setFreshListId(null), 1200);
+                const freshId = createdList._id;
+                setFreshListId(freshId);
+                setTimeout(() => {
+                    setFreshListId((current) => (current === freshId ? null : current));
+                }, 1800);
             }
             toast.success("List created!");
         } catch (error) {
@@ -145,8 +151,12 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
         }
 
         if (type === "card") {
-            const sourceList = optimisticBoard.lists.find((l: ListWithCards) => l._id === source.droppableId);
-            const destList = optimisticBoard.lists.find((l: ListWithCards) => l._id === destination.droppableId);
+            const sourceList = optimisticBoard.lists.find(
+                (l: ListWithCards) => l._id === source.droppableId,
+            );
+            const destList = optimisticBoard.lists.find(
+                (l: ListWithCards) => l._id === destination.droppableId,
+            );
 
             if (!sourceList || !destList) return;
 
@@ -222,7 +232,8 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
             <div
                 className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
                 style={{
-                    backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+                    backgroundImage:
+                        "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
                     backgroundSize: "32px 32px",
                 }}
             />
@@ -288,7 +299,8 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
                                             No lists on this board
                                         </p>
                                         <p className="mt-1 text-[11px] text-muted-foreground">
-                                            Create your first list to start organizing cards and tasks.
+                                            Create your first list to start organizing cards and
+                                            tasks.
                                         </p>
                                     </div>
                                 )}

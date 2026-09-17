@@ -9,22 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as BoardsIndexRouteImport } from './routes/boards/index'
-import { Route as WorkspacesWorkspaceIdRouteImport } from './routes/workspaces/$workspaceId'
 import { Route as BoardsBoardIdRouteImport } from './routes/boards/$boardId'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as WorkspacesWorkspaceIdRouteImport } from './routes/workspaces/$workspaceId'
 
-const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -32,9 +28,14 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardsIndexRoute = BoardsIndexRouteImport.update({
@@ -42,14 +43,19 @@ const BoardsIndexRoute = BoardsIndexRouteImport.update({
   path: '/boards/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkspacesWorkspaceIdRoute = WorkspacesWorkspaceIdRouteImport.update({
-  id: '/workspaces/$workspaceId',
-  path: '/workspaces/$workspaceId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BoardsBoardIdRoute = BoardsBoardIdRouteImport.update({
   id: '/boards/$boardId',
   path: '/boards/$boardId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkspacesWorkspaceIdRoute = WorkspacesWorkspaceIdRouteImport.update({
+  id: '/workspaces/$workspaceId',
+  path: '/workspaces/$workspaceId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
   '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
   '/boards/': typeof BoardsIndexRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
   '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
   '/boards': typeof BoardsIndexRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
   '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
   '/boards/': typeof BoardsIndexRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/sign-in'
     | '/boards/$boardId'
+    | '/invite/$token'
     | '/workspaces/$workspaceId'
     | '/boards/'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/sign-in'
     | '/boards/$boardId'
+    | '/invite/$token'
     | '/workspaces/$workspaceId'
     | '/boards'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/sign-in'
     | '/boards/$boardId'
+    | '/invite/$token'
     | '/workspaces/$workspaceId'
     | '/boards/'
   fileRoutesById: FileRoutesById
@@ -117,24 +129,18 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   SignInRoute: typeof SignInRoute
   BoardsBoardIdRoute: typeof BoardsBoardIdRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   WorkspacesWorkspaceIdRoute: typeof WorkspacesWorkspaceIdRoute
   BoardsIndexRoute: typeof BoardsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -144,11 +150,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boards/': {
@@ -158,18 +171,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/workspaces/$workspaceId': {
-      id: '/workspaces/$workspaceId'
-      path: '/workspaces/$workspaceId'
-      fullPath: '/workspaces/$workspaceId'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/boards/$boardId': {
       id: '/boards/$boardId'
       path: '/boards/$boardId'
       fullPath: '/boards/$boardId'
       preLoaderRoute: typeof BoardsBoardIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workspaces/$workspaceId': {
+      id: '/workspaces/$workspaceId'
+      path: '/workspaces/$workspaceId'
+      fullPath: '/workspaces/$workspaceId'
+      preLoaderRoute: typeof WorkspacesWorkspaceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   SignInRoute: SignInRoute,
   BoardsBoardIdRoute: BoardsBoardIdRoute,
+  InviteTokenRoute: InviteTokenRoute,
   WorkspacesWorkspaceIdRoute: WorkspacesWorkspaceIdRoute,
   BoardsIndexRoute: BoardsIndexRoute,
 }
