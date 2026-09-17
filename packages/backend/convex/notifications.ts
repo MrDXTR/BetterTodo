@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 
 // ============================================
@@ -113,7 +113,7 @@ export const deleteNotification = mutation({
 /**
  * Create a notification (internal helper)
  */
-export const create = mutation({
+export const create = internalMutation({
     args: {
         userId: v.string(),
         type: v.string(),

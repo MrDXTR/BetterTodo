@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
+import { components } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ensureWorkspaceAccess, requireAuth } from "./permissions";
@@ -52,16 +53,17 @@ export const getById = query({
             .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
             .collect();
 
-        const membersWithUser = await Promise.all(
+        const membersWithUsers = await Promise.all(
             members.map(async (member) => {
-                const authUser = await authComponent.getAnyUserById(ctx, member.userId);
+                const user = await authComponent.getAnyUserById(ctx, member.userId);
                 return {
                     ...member,
-                    user: authUser
+                    user: user
                         ? {
-                              name: authUser.name ?? null,
-                              email: authUser.email ?? null,
-                              image: authUser.image ?? null,
+                              _id: user._id,
+                              name: user.name,
+                              email: user.email,
+                              image: user.image,
                           }
                         : null,
                 };
@@ -70,8 +72,23 @@ export const getById = query({
 
         return {
             ...workspace,
-            members: membersWithUser,
+            members: membersWithUsers,
         };
+    },
+});
+
+export const getBoards = query({
+    args: { workspaceId: v.id("workspaces") },
+    handler: async (ctx, args) => {
+        await ensureWorkspaceAccess(ctx, args.workspaceId, "member");
+
+        const boards = await ctx.db
+            .query("boards")
+            .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+            .filter((q) => q.eq(q.field("archived"), false))
+            .collect();
+
+        return boards;
     },
 });
 
@@ -85,8 +102,8 @@ export const create = mutation({
         const now = Date.now();
 
         const workspaceId = await ctx.db.insert("workspaces", {
-            name: args.name.trim(),
-            description: args.description?.trim() || undefined,
+            name: args.name,
+            description: args.description,
             createdBy: user._id,
             createdAt: now,
             updatedAt: now,
@@ -112,12 +129,9 @@ export const update = mutation({
     handler: async (ctx, args) => {
         await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
 
-        const updates: { name?: string; description?: string; updatedAt: number } = {
-            updatedAt: Date.now(),
-        };
-
-        if (args.name !== undefined) updates.name = args.name.trim();
-        if (args.description !== undefined) updates.description = args.description.trim() || "";
+        const updates: any = { updatedAt: Date.now() };
+        if (args.name !== undefined) updates.name = args.name;
+        if (args.description !== undefined) updates.description = args.description;
 
         await ctx.db.patch(args.workspaceId, updates);
 
@@ -125,32 +139,30 @@ export const update = mutation({
     },
 });
 
-export const addMember = mutation({
-    args: {
-        workspaceId: v.id("workspaces"),
-        userId: v.string(),
-        role: v.union(v.literal("admin"), v.literal("member")),
-    },
+export const deleteWorkspace = mutation({
+    args: { workspaceId: v.id("workspaces") },
     handler: async (ctx, args) => {
-        await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
+        await ensureWorkspaceAccess(ctx, args.workspaceId, "owner");
 
-        const existing = await ctx.db
-            .query("workspaceMembers")
-            .withIndex("by_workspace_user", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", args.userId),
-            )
-            .first();
+        const boards = await ctx.db
+            .query("boards")
+            .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+            .collect();
 
-        if (existing) {
-            throw new ConvexError("User is already a workspace member");
+        for (const board of boards) {
+            await ctx.db.patch(board._id, { workspaceId: undefined });
         }
 
-        await ctx.db.insert("workspaceMembers", {
-            workspaceId: args.workspaceId,
-            userId: args.userId,
-            role: args.role,
-            addedAt: Date.now(),
-        });
+        const members = await ctx.db
+            .query("workspaceMembers")
+            .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+            .collect();
+
+        for (const member of members) {
+            await ctx.db.delete(member._id);
+        }
+
+        await ctx.db.delete(args.workspaceId);
 
         return { success: true };
     },
@@ -162,7 +174,11 @@ export const removeMember = mutation({
         userId: v.string(),
     },
     handler: async (ctx, args) => {
-        await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
+        const { user, role } = await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
+
+        if (args.userId === user._id) {
+            throw new ConvexError("Cannot remove yourself from workspace");
+        }
 
         const member = await ctx.db
             .query("workspaceMembers")
@@ -176,7 +192,11 @@ export const removeMember = mutation({
         }
 
         if (member.role === "owner") {
-            throw new ConvexError("Cannot remove workspace owner");
+            throw new ConvexError("Cannot remove the workspace owner");
+        }
+
+        if (member.role === "admin" && role !== "owner") {
+            throw new ConvexError("Only owners can remove admins");
         }
 
         await ctx.db.delete(member._id);
@@ -192,7 +212,7 @@ export const updateMemberRole = mutation({
         role: v.union(v.literal("admin"), v.literal("member")),
     },
     handler: async (ctx, args) => {
-        await ensureWorkspaceAccess(ctx, args.workspaceId, "admin");
+        await ensureWorkspaceAccess(ctx, args.workspaceId, "owner");
 
         const member = await ctx.db
             .query("workspaceMembers")
@@ -206,7 +226,7 @@ export const updateMemberRole = mutation({
         }
 
         if (member.role === "owner") {
-            throw new ConvexError("Cannot change the role of the workspace owner");
+            throw new ConvexError("Cannot change owner role");
         }
 
         await ctx.db.patch(member._id, { role: args.role });
@@ -228,23 +248,10 @@ export const addMemberByEmail = mutation({
         const normalizedEmail = args.email.trim().toLowerCase();
         const now = Date.now();
 
-        const [boardMemberRows, wsMemberRows] = await Promise.all([
-            ctx.db.query("boardMembers").collect(),
-            ctx.db.query("workspaceMembers").collect(),
-        ]);
-
-        const allUserIds = new Set<string>();
-        for (const r of boardMemberRows) allUserIds.add(r.userId);
-        for (const r of wsMemberRows) allUserIds.add(r.userId);
-
-        let targetUser: Awaited<ReturnType<typeof authComponent.getAnyUserById>> | null = null;
-        for (const uid of allUserIds) {
-            const authUser = await authComponent.getAnyUserById(ctx, uid);
-            if (authUser?.email?.toLowerCase() === normalizedEmail) {
-                targetUser = authUser;
-                break;
-            }
-        }
+        const targetUser = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+            model: "user",
+            where: [{ field: "email", value: normalizedEmail }],
+        })) as { _id: string; name?: string; email?: string } | null;
 
         if (!targetUser) {
             throw new ConvexError("No account found with that email. Ask them to sign up first.");
@@ -253,7 +260,7 @@ export const addMemberByEmail = mutation({
         const existing = await ctx.db
             .query("workspaceMembers")
             .withIndex("by_workspace_user", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", targetUser!._id),
+                q.eq("workspaceId", args.workspaceId).eq("userId", targetUser._id),
             )
             .first();
 

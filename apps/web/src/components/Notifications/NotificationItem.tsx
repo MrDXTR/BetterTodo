@@ -75,7 +75,11 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
         }
         if (notification.linkUrl && onNavigate) {
             onNavigate();
-            window.location.href = notification.linkUrl;
+            const trimmed = notification.linkUrl.trim();
+            // Validate that linkUrl is a safe relative URL path
+            if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.includes("\\")) {
+                window.location.href = trimmed;
+            }
         }
     };
 
@@ -155,8 +159,7 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
                     >
                         {notification.title}
                     </p>
-                    {!notification.read && (
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />
+                    {!notification.read && (<div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />
                     )}
                 </div>
                 <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
@@ -210,7 +210,15 @@ export const move = mutation({
         const { card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
         const targetList = await ctx.db.get(args.targetListId);
-        if (!targetList) throw new Error("Target list not found");
+        if (!targetList) throw new ConvexError("Target list not found");
+
+        if (targetList.boardId !== card.boardId) {
+            throw new ConvexError("Cannot move card to a list in a different board");
+        }
+
+        if (targetList.archived) {
+            throw new ConvexError("Cannot move card to an archived list");
+        }
 
         const oldListId = card.listId;
         const oldPosition = card.position;
@@ -396,6 +404,20 @@ export const assignUser = mutation({
     handler: async (ctx, args) => {
         const { user, card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
+        const board = await ctx.db.get(card.boardId);
+        if (!board) throw new ConvexError("Board not found");
+
+        const isMember = await ctx.db
+            .query("boardMembers")
+            .withIndex("by_board_user", (q) =>
+                q.eq("boardId", card.boardId).eq("userId", args.userId),
+            )
+            .first();
+
+        if (!isMember && board.createdBy !== args.userId) {
+            throw new ConvexError("Cannot assign a user who is not a member of this board");
+        }
+
         // Check if already assigned
         const existing = await ctx.db
             .query("cardAssignments")
@@ -404,7 +426,7 @@ export const assignUser = mutation({
             .first();
 
         if (existing) {
-            throw new Error("User already assigned to this card");
+            throw new ConvexError("User already assigned to this card");
         }
 
         const now = Date.now();
@@ -419,7 +441,6 @@ export const assignUser = mutation({
         if (args.userId !== user._id) {
             const assignedUser = await authComponent.getAnyUserById(ctx, args.userId);
             const assignerUser = await authComponent.getAnyUserById(ctx, user._id);
-            const board = await ctx.db.get(card.boardId);
 
             const assignerName = assignerUser?.name ?? assignerUser?.email ?? "Someone";
 
@@ -442,7 +463,7 @@ export const assignUser = mutation({
                         recipientName: assignedUser.name ?? undefined,
                         assignerName,
                         cardTitle: card.title,
-                        boardTitle: board?.title ?? "a board",
+                        boardTitle: board.title,
                         boardId: card.boardId,
                         cardId: args.cardId,
                     });
@@ -472,7 +493,7 @@ export const unassignUser = mutation({
             .first();
 
         if (!assignment) {
-            throw new Error("User not assigned to this card");
+            throw new ConvexError("User not assigned to this card");
         }
 
         await ctx.db.delete(assignment._id);

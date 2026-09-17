@@ -12,8 +12,7 @@
             "typescript": "^5.9.3",
             "convex": "^1.32.0",
             "better-auth": "1.4.9",
-            "@convex-dev/better-auth": "^0.10.9",
-            "@convex-dev/agent": "^0.3.2"
+            "@convex-dev/better-auth": "^0.10.9"
         }
     },
     "type": "module",
