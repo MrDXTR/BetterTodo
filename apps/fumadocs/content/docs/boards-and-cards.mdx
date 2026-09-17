@@ -1,64 +1,101 @@
 ---
-title: Boards & Cards
-description: Kanban boards, lists, and cards in BetterTodo.
+title: Boards, Lists & Cards
+description: Kanban boards, 2-column inspector, inline editing, batch operations, and drag-and-drop workflows in BetterTodo.
 ---
 
-# Boards & Cards
+# Boards, Lists & Cards
 
-BetterTodo organizes work with Kanban-style boards, lists, and cards.
+BetterTodo organizes work with Kanban-style boards, lists, and cards, designed with modern design engineering principles and tactile micro-interactions.
 
-## Structure
+## Structure Overview
 
-- **Board** – Top-level container. Has a title, description, color, and visibility (private/team/public).
-- **List** – Column within a board (e.g., To Do, In Progress, Done). Ordered by position.
-- **Card** – Task item within a list. Can have title, description, due date, priority, labels, checklists, and assigned members.
+- **Board** – Top-level workspace container. Features a title, description, color theme, visibility (Private, Team, Public), and workspace assignment.
+- **List** – Column within a board (e.g., To Do, In Progress, Done). Can be reordered, duplicated, and animated on creation.
+- **Card** – Work item within a list. Managed via a modern 2-column inspector modal with inline editing, attachments, checklists, and custom fields.
 
-## Features
+---
 
-### Boards
+## Boards
 
-- Create, edit, archive, and delete boards
-- Board settings modal: title, description, color, visibility, workspace
-- Member management (owner, admin, member, viewer)
-- Team workspaces for grouping boards
+### Dashboard & Aesthetics
+- **Dynamic Gradient Mesh Headers** – Board cards display multi-stop gradient meshes derived from the board's color theme with a subtle 3-column kanban silhouette watermark.
+- **Role Badges & Metadata** – Cards display role indicators (Crown for Owner, Shield for Admin, Users for Member), visibility pills, and relative update timestamps (`Updated X ago`).
+- **Live Search & Filter** – Instant live search filter by title or description with a single-click clear button.
+- **Interactive Create Tile** – Dashed "+ Create new board" tile directly inside the boards grid for fast creation.
 
-### Lists
+### Batch Deletion & Management
+- **"Manage Boards" Mode** – Toggle batch mode on the boards page to select multiple owned boards at once.
+- **Select All Owned** – One-click selection for all boards you own.
+- **Bulk Delete Modal** – Confirmation dialog displaying the count and list of selected boards before permanent deletion.
+- **Direct Card Menu Deletion** – Delete individual boards directly from the board card menu without entering batch mode.
 
-- Create, rename, and delete lists
-- Reorder lists via drag and drop
-- Add cards to lists
+---
 
-### Cards
+## Lists
 
-- Title and description (markdown)
-- Due date and priority (low, medium, high, urgent)
-- Labels (board-level, assignable to cards)
-- Checklists with progress tracking
-- Member assignments
-- Custom fields (text, number, date, select, checkbox)
-- Move between lists via drag and drop
-- Archive, copy, and delete
+### Column Creation & Animations
+- **Spring Pop & Glow** – Newly created lists enter with a dynamic spring pop animation (`list-spring-pop`) and an accent glow pulse (`list-glow-pulse`) matching the board's theme color.
+- **List Duplication** – Duplicate any list along with all its cards, checklists, and labels in a single click.
+- **Drag Handles & Reordering** – Reorder columns horizontally with dedicated `GripVertical` drag handles for reliable touch and mouse interaction.
 
-### Automation
+---
 
-- Board-level due date reminder rule
-- Background cron processor runs every 15 minutes
-- Reminder notifications are deduplicated
+## Cards & 2-Column Inspector
 
-### Import / Export
+### Modern 2-Column Architecture
+Card details are presented in a 2-column inspector architecture:
 
-- Export complete board data as JSON
-- Import board backups into a fresh board
+1. **Left Primary Workspace**:
+   - **Edge-to-Edge Cover Banner** – Displays uploaded cover images or presets.
+   - **Inline Editable Title** – Click to edit directly. Press `Enter` to save or `Esc` to cancel.
+   - **Markdown Description** – Rich text description with inline editing and markdown preview. Press `Cmd+Enter` (Mac) or `Ctrl+Enter` (Windows) to save.
+   - **Checklist Trees** – Subtasks with completion checkboxes and automatic progress bars.
+   - **Threaded Activity & Comments** – Comment stream with timestamps and author avatars.
 
-## Drag & Drop
+2. **Right Inspector Sidebar (270px)**:
+   - **Mark Complete Pill** – Tactile toggle (`CheckCircle2` / `Circle`) with emerald status feedback and active scale response.
+   - **Priority & Due Date** – Priority levels (Low, Medium, High, Urgent) and compact date formatting (`MMM d, yyyy`) with overflow prevention.
+   - **Custom Fields Section** – Rendered when custom fields exist; automatically hidden when none are configured.
+   - **Attachments** – File uploads and cover image controls.
+   - **Card Actions** – Copy card, duplicate, move, archive, and delete.
 
-Uses [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (react-beautiful-dnd successor):
+### Custom Fields
+Boards support custom field definitions across 5 distinct data types:
+- **Text** – Short single-line text inputs.
+- **Number** – Numeric values with validation.
+- **Date** – Calendar date picker.
+- **Select (Dropdown)** – Custom option lists.
+- **Checkbox** – Boolean toggles.
 
-- **Cards** – Drag within a list or between lists
-- **Lists** – Drag to reorder columns
+Each custom field includes an informative tooltip describing the field type and requirements.
 
-## Convex Schema
+### Drag & Drop System
+- Powered by `@hello-pangea/dnd`.
+- **Portal Rendering** – Dragged cards portal to `document.body` with a fixed width (`268px`) to prevent coordinate desyncs and overflow clipping.
+- **Dedicated Drag Handles** – Explicit `GripVertical` grab handles ensure smooth dragging on both desktop and mobile touch devices.
+- **Cross-Board Boundary Protections** – Backend enforces that cards can only move between lists belonging to the same board, and target lists must not be archived.
 
-Core tables: `boards`, `lists`, `cards`, `labels`, `cardLabels`, `boardMembers`, `cardAssignments`, `checklists`, `checklistItems`, `comments`, `boardInvites`, `notifications`, `workspaces`, `workspaceMembers`, `customFields`, `cardCustomFieldValues`, `automationRules`.
+---
 
-See `packages/backend/convex/schema.ts` for the full schema.
+## Viewer Mode (Read-Only)
+
+Users with the **Viewer** role experience a complete read-only board:
+- Board title, color, and settings cannot be altered.
+- List creation, reordering, duplication, and deletion are disabled.
+- Cards cannot be dragged, moved, edited, or deleted.
+- Checklists, comments, and custom fields are visible in read-only mode without mutation controls.
+
+---
+
+## Automation Rules
+
+- **Due Date Reminders** – Configure board-level reminder lead times (e.g. 24 hours before due date).
+- **Background Cron Engine** – Scheduled Convex cron runs every 15 minutes to evaluate upcoming deadlines and dispatch in-app notifications.
+- **Deduplication** – Reminders track sent states to prevent duplicate alerts.
+
+---
+
+## Board Import & Export
+
+- **JSON Export** – Export the entire board structure (lists, cards, labels, custom fields, checklists) into a structured JSON file.
+- **JSON Import** – Import backup JSON files to instantiate a new board with all assets and relationships accurately restored.

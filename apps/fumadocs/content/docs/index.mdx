@@ -1,48 +1,75 @@
 ---
 title: Introduction
-description: BetterTodo is a Trello-like collaborative task management app built with React, Convex, and Better Auth.
+description: BetterTodo is a modern collaborative task management application built with React 19, TanStack Router, Convex, and Better Auth.
 ---
 
 # BetterTodo
 
-A Trello-like collaborative task management app built with React, TanStack Router, Convex, and Better Auth.
+A modern, full-featured collaborative task management application built with React 19, TanStack Router, Convex real-time database, and Better Auth.
 
-## Features
+## Explore Documentation
 
 <Cards>
     <Card
         title="Getting Started"
         href="/docs/getting-started"
-        description="Setup, install, and run the app"
+        description="Setup, install, environment variables, and initial admin configuration"
     />
     <Card
         title="Authentication"
         href="/docs/authentication"
-        description="Email/password and Google OAuth"
+        description="Email/password, Google OAuth, route protection, and redirects"
     />
     <Card
         title="Boards & Cards"
         href="/docs/boards-and-cards"
-        description="Kanban boards, lists, and cards"
+        description="Kanban workflows, 2-column inspector, inline editing, and batch management"
+    />
+    <Card
+        title="Workspaces"
+        href="/docs/workspaces"
+        description="Multi-tenant workspaces, member roles, and settings"
+    />
+    <Card
+        title="Sharing & Collaboration"
+        href="/docs/sharing-and-collaboration"
+        description="Universal share links, email invites, and viewer mode"
+    />
+    <Card
+        title="Admin Management"
+        href="/docs/admin"
+        description="User roles, promotions, confirmation dialogs, and deletion"
+    />
+    <Card
+        title="Security & Architecture"
+        href="/docs/security"
+        description="Row-level security, input sanitization, and data integrity checks"
     />
 </Cards>
 
-- **Authentication** – Email/password and Google OAuth via Better Auth.
-- **Email Notifications** – Transactional emails for board invites and @mentions via Resend.
-- **Real-time** – Convex-powered reactive updates across all clients.
-- **PWA** – Progressive Web App support for install and offline readiness.
-- **Dark/Light Mode** – Theme toggle with system preference support.
+## Core Highlights
+
+- **Modern Kanban & 2-Column Inspector** – Drag-and-drop cards and columns with dedicated drag handles, spring-pop column animations, list duplication, inline title/description editing, and tactile "Mark Complete" pill toggles.
+- **Universal Share Links & Invites** – Shareable role-specific invite tokens (Member or Viewer) with public preview and auto-acceptance for guests and existing users.
+- **Team Workspaces** – Organize boards into workspaces with role management (Owner, Admin, Member), email invitations, and owner-managed workspace deletion.
+- **Batch Board Management** – Multi-select owned boards for batch deletion or delete single boards directly from card menus.
+- **Custom Fields & Automations** – Board custom fields (5 types: Text, Number, Date, Select, Checkbox) and automated due-date reminders via scheduled Convex cron jobs.
+- **Viewer Role Support** – Safe read-only mode across boards, lists, cards, attachments, checklists, and comments.
+- **Full Board Import / Export** – Backup boards to JSON and restore into new boards with complete card hierarchies and custom fields.
+- **Admin Panel** – Manage user roles with preview confirmation dialogs, loading indicators, and user deletion.
+- **Security Hardened** – Protected internal mutations, HTML-escaped emails, strict relative URL validation, rate limiting, and cross-board integrity checks.
 
 ## Tech Stack
 
-| Layer       | Technology                                        |
-| ----------- | ------------------------------------------------- |
-| Frontend    | React 19, TanStack Router, TailwindCSS, shadcn/ui |
-| Backend     | Convex (BaaS)                                     |
-| Auth        | Better Auth (email + Google OAuth)                |
-| Emails      | Resend                                            |
-| Styling     | TailwindCSS                                       |
-| Drag & Drop | @hello-pangea/dnd                                 |
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, TanStack Router, Vite, TailwindCSS, shadcn/ui |
+| Backend & Real-time | Convex (BaaS) |
+| Auth | Better Auth (Email/Password + Google OAuth) |
+| Emails | Resend |
+| Drag & Drop | `@hello-pangea/dnd` |
+| UI & Polish | Aceternity UI, Tailwind animations, Emil Kowalski design principles |
+| PWA | Vite PWA plugin, Web Manifest |
 
 ## Quick Start
 
@@ -52,4 +79,4 @@ bun run dev:setup
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) to use the app.
+Open [http://localhost:3001](http://localhost:3001) to view the web app, or [http://localhost:4000](http://localhost:4000) for the documentation site.

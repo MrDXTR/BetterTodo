@@ -1,0 +1,13 @@
+{
+    "title": "Documentation",
+    "pages": [
+        "index",
+        "getting-started",
+        "authentication",
+        "boards-and-cards",
+        "workspaces",
+        "sharing-and-collaboration",
+        "admin",
+        "security"
+    ]
+}

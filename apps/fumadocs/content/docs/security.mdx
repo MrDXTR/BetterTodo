@@ -1,0 +1,72 @@
+---
+title: Security & Architecture
+description: Security architecture, data integrity validations, sanitization, and access controls in BetterTodo.
+---
+
+# Security & Architecture
+
+BetterTodo implements defense-in-depth security across authentication, authorization, data integrity validation, and runtime execution.
+
+For detailed vulnerability findings and remediation history, refer to the root [`SECURITY_AUDIT.md`](file:///Users/manav/Developer/BetterTodo/SECURITY_AUDIT.md).
+
+---
+
+## Authorization & Row-Level Access Control
+
+Every backend mutation and sensitive query validates the caller's session via Better Auth and checks membership tables:
+
+### 1. Board-Level Role Enforcement
+- **Owner / Admin** – Can modify board settings, create lists, manage custom fields, and issue invites.
+- **Member** – Can create, edit, move, and comment on cards.
+- **Viewer** – Strictly restricted to read-only access. Any attempt by a viewer to invoke mutating functions (card moves, label additions, checklist updates, comments) throws an authorization exception.
+
+### 2. Workspace-Level Permissions
+- Workspace settings, member invites, and role updates are restricted to workspace Admins and Owners.
+- Workspace deletion and ownership transfers are strictly restricted to the workspace Owner.
+
+### 3. System Admin Privileges
+- Sensitive administrative operations (`admin.ts`) enforce `assertIsAdmin(ctx)`.
+
+---
+
+## Internal Mutation Isolation
+
+Privileged functions that should never be invoked directly by client browsers are strictly designated as `internalMutation`:
+
+- **`notifications:create`** – Internalized to prevent malicious clients from arbitrarily injecting spoofed notifications to other users. Notifications are dispatched only by trusted server functions (such as card assignments or mentions).
+- **`auth:createAdmin`** – Internalized so administrative privileges can only be bootstrapped via the Convex dashboard or server environment, eliminating public privilege escalation endpoints.
+
+---
+
+## Data Integrity & Cross-Board Validations
+
+To prevent cross-tenant or cross-board data corruption, mutations validate parent-child entity boundaries:
+
+- **List & Card Moves** – In `cards.ts:move`, the handler verifies that `targetList.boardId === card.boardId` and that the target list is not archived.
+- **Card Assignments** – In `cards.ts:assignUser`, the assigned user must be an active board member or the board creator before the assignment is persisted.
+- **Label Associations** – In `labels.ts:addToCard`, the handler validates that `label.boardId === card.boardId`, preventing cross-board label leaks.
+
+---
+
+## Email Template Sanitization & URL Security
+
+Transactional emails generated via Resend undergo strict escaping and sanitization in `emails.ts`:
+
+- **HTML Entity Escaping** – All user-controlled variables (`inviterName`, `boardTitle`, `cardTitle`, `recipientName`, `role`) pass through `escapeHtml()` before insertion into email markup, preventing HTML injection.
+- **URL Parameter Encoding** – All token and URL parameters are encoded using `encodeURIComponent()`.
+
+---
+
+## Client URL Sanitization & Open Redirect Prevention
+
+- **Notification Navigation** – Navigation links in `NotificationItem.tsx` validate that target URLs are strict relative paths (`startsWith('/')`), rejecting protocol-relative URLs (`//example.com`) and backslashes (`\`) to prevent open redirects and `javascript:` execution.
+- **Protected Route Redirection** – The `ProtectedRoute` component and authentication forms validate return URLs, ensuring users are only redirected to authorized internal application routes after login.
+
+---
+
+## Performance & Table Scan Eliminators
+
+To ensure scalable security checks, table queries utilize indexed lookups:
+- **Rate Limiting** – In `permissions.ts:assertNotRateLimited`, rate limit records are looked up using `.withIndex("by_key", (q) => q.eq("key", args.key))`, avoiding full table scans.
+- **Member Lookups** – Email lookups use indexed adapter queries rather than scanning member collections.
+- **Board Export** – Scoped to card-indexed sub-queries rather than scanning global tables.

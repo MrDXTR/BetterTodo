@@ -1,0 +1,58 @@
+---
+title: Workspaces
+description: Multi-tenant team workspaces, membership roles, and workspace administration in BetterTodo.
+---
+
+# Workspaces
+
+Workspaces allow teams and organizations to group related boards, manage centralized team membership, and govern access across projects.
+
+## Overview
+
+A workspace acts as an umbrella organization for boards and collaborators:
+- **Board Organization** – Group project boards by department, team, or client.
+- **Centralized Membership** – Add team members once at the workspace level.
+- **Workspace Navigation** – Switch between workspaces instantly using the sidebar selector or mobile header switcher.
+
+---
+
+## Workspace Roles & Permissions
+
+| Role | Permissions |
+| --- | --- |
+| **Owner** | Full control over the workspace, including renaming, member management, transferring ownership, and deleting the workspace. |
+| **Admin** | Can rename the workspace, invite new members by email, and manage roles of standard members. Cannot delete workspace or transfer ownership. |
+| **Member** | Access to boards in the workspace according to board-specific permissions. Cannot alter workspace settings or invite other workspace members. |
+
+---
+
+## Workspace Settings (`/workspaces/$workspaceId`)
+
+Workspace owners and admins can manage their workspace by clicking the settings gear in the workspace panel or navigating directly to `/workspaces/$workspaceId`.
+
+### Key Capabilities
+
+1. **Rename Workspace**
+   - Update the workspace display name with real-time saving and validation.
+
+2. **Invite Members by Email**
+   - Add new collaborators directly using their registered email address.
+   - Choose their starting workspace role (**Admin** or **Member**).
+
+3. **Role Management**
+   - Promote members to Admin or demote Admins to Member.
+   - Owners can transfer workspace ownership to another active member.
+
+4. **Member Removal**
+   - Remove members from the workspace with immediate revocation of workspace access.
+
+5. **Workspace Deletion**
+   - Strictly reserved for the workspace Owner.
+   - Displays a confirmation dialog showing associated boards before executing deletion.
+
+---
+
+## Assigning Boards to Workspaces
+
+- **Board Creation** – When creating a board, select the destination workspace from the dropdown. If you are already inside a workspace, it is preselected automatically.
+- **Board Settings** – Move boards between workspaces at any time from the board's **Settings Modal** under the **Workspace** tab.
