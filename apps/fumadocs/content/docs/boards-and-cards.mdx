@@ -18,12 +18,14 @@ BetterTodo organizes work with Kanban-style boards, lists, and cards, designed w
 ## Boards
 
 ### Dashboard & Aesthetics
+
 - **Dynamic Gradient Mesh Headers** – Board cards display multi-stop gradient meshes derived from the board's color theme with a subtle 3-column kanban silhouette watermark.
 - **Role Badges & Metadata** – Cards display role indicators (Crown for Owner, Shield for Admin, Users for Member), visibility pills, and relative update timestamps (`Updated X ago`).
 - **Live Search & Filter** – Instant live search filter by title or description with a single-click clear button.
 - **Interactive Create Tile** – Dashed "+ Create new board" tile directly inside the boards grid for fast creation.
 
 ### Batch Deletion & Management
+
 - **"Manage Boards" Mode** – Toggle batch mode on the boards page to select multiple owned boards at once.
 - **Select All Owned** – One-click selection for all boards you own.
 - **Bulk Delete Modal** – Confirmation dialog displaying the count and list of selected boards before permanent deletion.
@@ -34,6 +36,7 @@ BetterTodo organizes work with Kanban-style boards, lists, and cards, designed w
 ## Lists
 
 ### Column Creation & Animations
+
 - **Spring Pop & Glow** – Newly created lists enter with a dynamic spring pop animation (`list-spring-pop`) and an accent glow pulse (`list-glow-pulse`) matching the board's theme color.
 - **List Duplication** – Duplicate any list along with all its cards, checklists, and labels in a single click.
 - **Drag Handles & Reordering** – Reorder columns horizontally with dedicated `GripVertical` drag handles for reliable touch and mouse interaction.
@@ -43,24 +46,27 @@ BetterTodo organizes work with Kanban-style boards, lists, and cards, designed w
 ## Cards & 2-Column Inspector
 
 ### Modern 2-Column Architecture
+
 Card details are presented in a 2-column inspector architecture:
 
 1. **Left Primary Workspace**:
-   - **Edge-to-Edge Cover Banner** – Displays uploaded cover images or presets.
-   - **Inline Editable Title** – Click to edit directly. Press `Enter` to save or `Esc` to cancel.
-   - **Markdown Description** – Rich text description with inline editing and markdown preview. Press `Cmd+Enter` (Mac) or `Ctrl+Enter` (Windows) to save.
-   - **Checklist Trees** – Subtasks with completion checkboxes and automatic progress bars.
-   - **Threaded Activity & Comments** – Comment stream with timestamps and author avatars.
+    - **Edge-to-Edge Cover Banner** – Displays uploaded cover images or presets.
+    - **Inline Editable Title** – Click to edit directly. Press `Enter` to save or `Esc` to cancel.
+    - **Markdown Description** – Rich text description with inline editing and markdown preview. Press `Cmd+Enter` (Mac) or `Ctrl+Enter` (Windows) to save.
+    - **Checklist Trees** – Subtasks with completion checkboxes and automatic progress bars.
+    - **Threaded Activity & Comments** – Comment stream with timestamps and author avatars.
 
 2. **Right Inspector Sidebar (270px)**:
-   - **Mark Complete Pill** – Tactile toggle (`CheckCircle2` / `Circle`) with emerald status feedback and active scale response.
-   - **Priority & Due Date** – Priority levels (Low, Medium, High, Urgent) and compact date formatting (`MMM d, yyyy`) with overflow prevention.
-   - **Custom Fields Section** – Rendered when custom fields exist; automatically hidden when none are configured.
-   - **Attachments** – File uploads and cover image controls.
-   - **Card Actions** – Copy card, duplicate, move, archive, and delete.
+    - **Mark Complete Pill** – Tactile toggle (`CheckCircle2` / `Circle`) with emerald status feedback and active scale response.
+    - **Priority & Due Date** – Priority levels (Low, Medium, High, Urgent) and compact date formatting (`MMM d, yyyy`) with overflow prevention.
+    - **Custom Fields Section** – Rendered when custom fields exist; automatically hidden when none are configured.
+    - **Attachments** – File uploads and cover image controls.
+    - **Card Actions** – Copy card, duplicate, move, archive, and delete.
 
 ### Custom Fields
+
 Boards support custom field definitions across 5 distinct data types:
+
 - **Text** – Short single-line text inputs.
 - **Number** – Numeric values with validation.
 - **Date** – Calendar date picker.
@@ -70,6 +76,7 @@ Boards support custom field definitions across 5 distinct data types:
 Each custom field includes an informative tooltip describing the field type and requirements.
 
 ### Drag & Drop System
+
 - Powered by `@hello-pangea/dnd`.
 - **Portal Rendering** – Dragged cards portal to `document.body` with a fixed width (`268px`) to prevent coordinate desyncs and overflow clipping.
 - **Dedicated Drag Handles** – Explicit `GripVertical` grab handles ensure smooth dragging on both desktop and mobile touch devices.
@@ -80,6 +87,7 @@ Each custom field includes an informative tooltip describing the field type and 
 ## Viewer Mode (Read-Only)
 
 Users with the **Viewer** role experience a complete read-only board:
+
 - Board title, color, and settings cannot be altered.
 - List creation, reordering, duplication, and deletion are disabled.
 - Cards cannot be dragged, moved, edited, or deleted.

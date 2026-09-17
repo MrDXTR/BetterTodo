@@ -11,12 +11,12 @@ BetterTodo provides seamless sharing mechanisms for both internal teammates and 
 
 Each board member is assigned one of four distinct roles:
 
-| Role | Badges | Permissions |
-| --- | --- | --- |
-| **Owner** | Crown icon | Full control over the board, settings, invitations, member roles, and board deletion. |
-| **Admin** | Shield icon | Can manage lists, cards, board settings, labels, custom fields, and invite new members. Cannot delete the board. |
-| **Member** | Users icon | Can create and edit cards, check off checklist items, post comments, and upload attachments. Cannot modify board-level settings. |
-| **Viewer** | Eye icon | Complete read-only access. Can view board columns, cards, checklists, and comments, but cannot modify, move, or delete any content. |
+| Role       | Badges      | Permissions                                                                                                                         |
+| ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Owner**  | Crown icon  | Full control over the board, settings, invitations, member roles, and board deletion.                                               |
+| **Admin**  | Shield icon | Can manage lists, cards, board settings, labels, custom fields, and invite new members. Cannot delete the board.                    |
+| **Member** | Users icon  | Can create and edit cards, check off checklist items, post comments, and upload attachments. Cannot modify board-level settings.    |
+| **Viewer** | Eye icon    | Complete read-only access. Can view board columns, cards, checklists, and comments, but cannot modify, move, or delete any content. |
 
 ---
 
@@ -25,27 +25,31 @@ Each board member is assigned one of four distinct roles:
 Board Admins and Owners can generate shareable invite links directly from the **Board Members Panel**.
 
 ### Role-Specific Invite Generation
+
 - When generating a link, choose the target role:
-  - **Member Share Link** – Grants write permissions upon joining.
-  - **Viewer Share Link** – Grants read-only access upon joining.
+    - **Member Share Link** – Grants write permissions upon joining.
+    - **Viewer Share Link** – Grants read-only access upon joining.
 - A secure, unique token is generated and attached to a shareable link: `/invite/:token`.
 
 ### Public Invite Acceptance Flow (`/invite/$token`)
+
 The invite route supports both existing users and brand-new visitors:
+
 1. **Authenticated Users**:
-   - Immediately view the invitation card displaying the board title, inviter details, and granted role.
-   - Click **Accept & Join Board** to be added to the board and redirected directly to the board view.
+    - Immediately view the invitation card displaying the board title, inviter details, and granted role.
+    - Click **Accept & Join Board** to be added to the board and redirected directly to the board view.
 2. **Unauthenticated Visitors**:
-   - See an invitation preview banner prompting them to sign in or sign up.
-   - The invite token is retained through the authentication flow, automatically enrolling them upon successful login or registration.
+    - See an invitation preview banner prompting them to sign in or sign up.
+    - The invite token is retained through the authentication flow, automatically enrolling them upon successful login or registration.
 3. **Invalid or Expired Invites**:
-   - Displays clear contextual error states with navigation links back to the home page or dashboard.
+    - Displays clear contextual error states with navigation links back to the home page or dashboard.
 
 ---
 
 ## Transactional Email Invitations
 
 In addition to universal share links, board owners can send direct email invitations:
+
 - Powered by [Resend](https://resend.com).
 - Fully HTML-escaped and sanitized email templates protect against injection attacks.
 - Secure, tokenized join links embedded directly in the email body.

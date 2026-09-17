@@ -16,15 +16,18 @@ For detailed vulnerability findings and remediation history, refer to the root [
 Every backend mutation and sensitive query validates the caller's session via Better Auth and checks membership tables:
 
 ### 1. Board-Level Role Enforcement
+
 - **Owner / Admin** – Can modify board settings, create lists, manage custom fields, and issue invites.
 - **Member** – Can create, edit, move, and comment on cards.
 - **Viewer** – Strictly restricted to read-only access. Any attempt by a viewer to invoke mutating functions (card moves, label additions, checklist updates, comments) throws an authorization exception.
 
 ### 2. Workspace-Level Permissions
+
 - Workspace settings, member invites, and role updates are restricted to workspace Admins and Owners.
 - Workspace deletion and ownership transfers are strictly restricted to the workspace Owner.
 
 ### 3. System Admin Privileges
+
 - Sensitive administrative operations (`admin.ts`) enforce `assertIsAdmin(ctx)`.
 
 ---
@@ -67,6 +70,7 @@ Transactional emails generated via Resend undergo strict escaping and sanitizati
 ## Performance & Table Scan Eliminators
 
 To ensure scalable security checks, table queries utilize indexed lookups:
+
 - **Rate Limiting** – In `permissions.ts:assertNotRateLimited`, rate limit records are looked up using `.withIndex("by_key", (q) => q.eq("key", args.key))`, avoiding full table scans.
 - **Member Lookups** – Email lookups use indexed adapter queries rather than scanning member collections.
 - **Board Export** – Scoped to card-indexed sub-queries rather than scanning global tables.

@@ -10,6 +10,7 @@ BetterTodo includes a dedicated administrative panel (`/admin`) for system admin
 ## Access & Permissions
 
 The Admin Panel is strictly protected on both the client and server:
+
 - **Client Route Guard** – Redirects or blocks non-admin users with an Access Denied banner.
 - **Server Authorization** – All administrative mutations invoke `assertIsAdmin(ctx)` to verify that the requesting user possesses the `admin` role in the `users` table.
 
@@ -23,15 +24,15 @@ For security reasons, the first admin account cannot be created via standard pub
 2. **Open Convex Dashboard** – Navigate to [https://dashboard.convex.dev](https://dashboard.convex.dev) and select your BetterTodo project.
 3. **Copy User ID** – Open the **Data** tab, click on the `users` table, find your account record, and copy the `_id` field.
 4. **Execute `createAdmin` Function** –
-   - Switch to the **Functions** tab.
-   - Search for `auth:createAdmin`.
-   - In the argument JSON editor, enter:
-     ```json
-     {
-       "userId": "YOUR_COPIED_USER_ID"
-     }
-     ```
-   - Click **Run Function**.
+    - Switch to the **Functions** tab.
+    - Search for `auth:createAdmin`.
+    - In the argument JSON editor, enter:
+        ```json
+        {
+            "userId": "YOUR_COPIED_USER_ID"
+        }
+        ```
+    - Click **Run Function**.
 5. Once complete, refresh the application. Your account will now have `role: "admin"`, unlocking the `/admin` navigation link in the user menu.
 
 ---
@@ -41,14 +42,17 @@ For security reasons, the first admin account cannot be created via standard pub
 Located at `/admin`, administrators have access to:
 
 ### 1. User Directory
+
 - Search and browse all registered accounts.
 - View user avatars, display names, email addresses, registration dates, and current roles (`admin` or `user`).
 
 ### 2. Role Management with Confirmation Dialogs
+
 - Promote standard users to `admin` or demote administrators back to `user`.
 - **Role Change Confirmation Modal** – Displays an explicit preview of the user being modified, their current role, and the target role before committing the change.
 - **Safety Indicators** – Visual spinners and disabled states during execution to prevent accidental double-submissions.
 
 ### 3. User Deletion
+
 - Securely remove inactive or abusive accounts.
 - Confirmation dialog prevents accidental account removal.
