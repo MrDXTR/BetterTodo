@@ -39,7 +39,7 @@ export function UserMenu() {
                     className="h-8 gap-2 px-2 rounded-full border border-border/60 hover:bg-accent hover:text-accent-foreground active:scale-[0.97]"
                 >
                     <Avatar className="h-5 w-5">
-                        <AvatarImage src={user?.image} alt={user?.name} />
+                        <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? undefined} />
                         <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
                             {initials}
                         </AvatarFallback>
@@ -59,7 +59,7 @@ export function UserMenu() {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
-                        <Link to="/profile" className="flex w-full items-center">
+                        <Link to={"/profile" as any} className="flex w-full items-center">
                             <User className="mr-2 h-4 w-4" />
                             Profile
                         </Link>

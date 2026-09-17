@@ -2,7 +2,7 @@ import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { Archive, Loader2, Plus, RotateCcw, Search, Settings, X } from "lucide-react";
+import { Archive, CheckSquare, Loader2, Plus, RotateCcw, Search, Settings, Trash2, X } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import type { Board } from "@/types/board";
 
 export const Route = createFileRoute("/boards/")({
     component: BoardsRoute,
@@ -25,10 +27,19 @@ function BoardsRoute() {
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<Id<"workspaces"> | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
+    // Option C: Manage / Batch Mode
+    const [isManageMode, setIsManageMode] = useState(false);
+    const [selectedBoardIds, setSelectedBoardIds] = useState<Id<"boards">[]>([]);
+    const [boardToDelete, setBoardToDelete] = useState<Board | null>(null);
+    const [isDeletingSingle, setIsDeletingSingle] = useState(false);
+    const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+    const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
+
     const boards = useQuery(api.boards.getAll);
     const archived = useQuery(api.boards.getArchived, {});
     const workspaces = useQuery(api.workspaces.getMyWorkspaces);
     const restoreBoard = useMutation(api.boards.restore);
+    const deleteBoard = useMutation(api.boards.deleteBoard);
 
     const isLoading = boards === undefined || archived === undefined;
     const archivedBoards = archived?.boards ?? [];
@@ -49,6 +60,10 @@ function BoardsRoute() {
         );
     }, [workspaceFilteredBoards, searchQuery]);
 
+    const ownedBoards = useMemo(() => {
+        return filteredBoards.filter((b) => b.role === "owner");
+    }, [filteredBoards]);
+
     const selectedWorkspaceName =
         selectedWorkspaceId === null
             ? "All Boards"
@@ -63,6 +78,54 @@ function BoardsRoute() {
             toast.error(error?.message || "Failed to restore board");
         } finally {
             setRestoringBoardId(null);
+        }
+    };
+
+    const toggleSelectBoard = (boardId: Id<"boards">) => {
+        setSelectedBoardIds((prev) =>
+            prev.includes(boardId) ? prev.filter((id) => id !== boardId) : [...prev, boardId],
+        );
+    };
+
+    const handleSelectAllOwned = () => {
+        if (selectedBoardIds.length === ownedBoards.length) {
+            setSelectedBoardIds([]);
+        } else {
+            setSelectedBoardIds(ownedBoards.map((b) => b._id as Id<"boards">));
+        }
+    };
+
+    const handleDeleteSingle = async () => {
+        if (!boardToDelete) return;
+        setIsDeletingSingle(true);
+        try {
+            await deleteBoard({ boardId: boardToDelete._id as Id<"boards"> });
+            toast.success(`Board "${boardToDelete.title}" deleted`);
+            setBoardToDelete(null);
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to delete board");
+        } finally {
+            setIsDeletingSingle(false);
+        }
+    };
+
+    const handleBatchDelete = async () => {
+        if (selectedBoardIds.length === 0) return;
+        setIsBatchDeleting(true);
+        try {
+            let count = 0;
+            for (const id of selectedBoardIds) {
+                await deleteBoard({ boardId: id });
+                count++;
+            }
+            toast.success(`Deleted ${count} board${count === 1 ? "" : "s"}`);
+            setSelectedBoardIds([]);
+            setIsBatchConfirmOpen(false);
+            setIsManageMode(false);
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to delete some boards");
+        } finally {
+            setIsBatchDeleting(false);
         }
     };
 
@@ -86,8 +149,7 @@ function BoardsRoute() {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <Skeleton key={i} className="h-56 w-full rounded-2xl" />
-                        ))}
-                    </div>
+                        ))}\n                    </div>
                 </div>
             </div>
         );
@@ -138,15 +200,66 @@ function BoardsRoute() {
                                     : `${workspaceFilteredBoards.length} board${workspaceFilteredBoards.length === 1 ? "" : "s"} in this workspace.`}
                             </p>
                         </div>
-                        <Button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            size="sm"
-                            className="w-full sm:w-auto shrink-0 h-9 gap-1.5 text-xs"
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>Create Board</span>
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant={isManageMode ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                    setIsManageMode((prev) => !prev);
+                                    setSelectedBoardIds([]);
+                                }}
+                                className="h-9 gap-1.5 text-xs shrink-0"
+                            >
+                                <CheckSquare className="h-3.5 w-3.5" />
+                                <span>{isManageMode ? "Exit Manage" : "Manage Boards"}</span>
+                            </Button>
+                            <Button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                size="sm"
+                                className="w-full sm:w-auto shrink-0 h-9 gap-1.5 text-xs"
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span>Create Board</span>
+                            </Button>
+                        </div>
                     </div>
+
+                    {/* Option C Manage Toolbar */}
+                    {isManageMode && (
+                        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/30 bg-primary/5 shadow-2xs">
+                            <div className="flex items-center gap-2.5 text-xs">
+                                <Badge variant="secondary" className="font-semibold px-2 py-0.5 text-xs">
+                                    {selectedBoardIds.length} of {ownedBoards.length} selected
+                                </Badge>
+                                <span className="text-muted-foreground text-xs hidden sm:inline">
+                                    Click owned boards to select and delete in batch.
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleSelectAllOwned}
+                                    disabled={ownedBoards.length === 0}
+                                    className="h-8 text-xs px-2.5"
+                                >
+                                    {selectedBoardIds.length === ownedBoards.length && ownedBoards.length > 0
+                                        ? "Deselect All"
+                                        : "Select All Owned"}
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setIsBatchConfirmOpen(true)}
+                                    disabled={selectedBoardIds.length === 0}
+                                    className="h-8 gap-1.5 text-xs px-3"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>Delete ({selectedBoardIds.length})</span>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Tabs & Search Row */}
                     <Tabs defaultValue="active" className="space-y-5">
@@ -223,24 +336,33 @@ function BoardsRoute() {
                             ) : (
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {/* Create New Board Quick Tile */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="group relative flex min-h-[170px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/80 bg-card/40 p-6 text-center transition-all hover:border-primary/50 hover:bg-muted/30 cursor-pointer active:scale-[0.98]"
-                                    >
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-muted/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors">
-                                            <Plus className="h-5 w-5 transition-transform group-hover:rotate-90 duration-200" />
-                                        </div>
-                                        <span className="mt-3 text-xs font-semibold text-foreground">
-                                            Create new board
-                                        </span>
-                                        <span className="mt-0.5 text-[11px] text-muted-foreground">
-                                            Start with an empty board
-                                        </span>
-                                    </button>
+                                    {!isManageMode && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCreateModalOpen(true)}
+                                            className="group relative flex min-h-[170px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/80 bg-card/40 p-6 text-center transition-all hover:border-primary/50 hover:bg-muted/30 cursor-pointer active:scale-[0.98]"
+                                        >
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-muted/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors">
+                                                <Plus className="h-5 w-5 transition-transform group-hover:rotate-90 duration-200" />
+                                            </div>
+                                            <span className="mt-3 text-xs font-semibold text-foreground">
+                                                Create new board
+                                            </span>
+                                            <span className="mt-0.5 text-[11px] text-muted-foreground">
+                                                Start with an empty board
+                                            </span>
+                                        </button>
+                                    )}
 
                                     {filteredBoards.map((board) => (
-                                        <BoardCard key={board._id} board={board} />
+                                        <BoardCard
+                                            key={board._id}
+                                            board={board}
+                                            isManageMode={isManageMode}
+                                            isSelected={selectedBoardIds.includes(board._id as Id<"boards">)}
+                                            onToggleSelect={toggleSelectBoard}
+                                            onDeleteSingle={(b) => setBoardToDelete(b)}
+                                        />
                                     ))}
                                 </div>
                             )}
@@ -311,6 +433,28 @@ function BoardsRoute() {
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
                 defaultWorkspaceId={selectedWorkspaceId ?? undefined}
+            />
+
+            {/* Single Board Delete Confirmation */}
+            <DeleteConfirmationDialog
+                open={boardToDelete !== null}
+                onOpenChange={(open) => !open && setBoardToDelete(null)}
+                title="Delete Board"
+                description={`Are you sure you want to delete "${boardToDelete?.title}"? All lists, cards, attachments, and history within this board will be permanently deleted. This action cannot be undone.`}
+                confirmText="Delete Board"
+                isLoading={isDeletingSingle}
+                onConfirm={handleDeleteSingle}
+            />
+
+            {/* Batch Delete Confirmation (Option C) */}
+            <DeleteConfirmationDialog
+                open={isBatchConfirmOpen}
+                onOpenChange={setIsBatchConfirmOpen}
+                title={`Delete ${selectedBoardIds.length} Board${selectedBoardIds.length === 1 ? "" : "s"}`}
+                description={`Are you sure you want to delete ${selectedBoardIds.length} selected board(s)? All lists, cards, attachments, and history within these boards will be permanently removed. This action cannot be undone.`}
+                confirmText={`Delete ${selectedBoardIds.length} Board${selectedBoardIds.length === 1 ? "" : "s"}`}
+                isLoading={isBatchDeleting}
+                onConfirm={handleBatchDelete}
             />
         </div>
     );

@@ -861,14 +861,97 @@ export const acceptInviteByToken = mutation({
             });
         }
 
-        // Mark invite as accepted
-        await ctx.db.patch(invite._id, {
-            status: "accepted",
-            invitedUserId: user._id, // link the user account to the invite
-            respondedAt: now,
-        });
+        // Mark invite as accepted only if it was an individual email invite
+        if (invite.invitedEmail) {
+            await ctx.db.patch(invite._id, {
+                status: "accepted",
+                invitedUserId: user._id, // link the user account to the invite
+                respondedAt: now,
+            });
+        }
 
         return { success: true, boardId: invite.boardId };
+    },
+});
+
+/**
+ * Get or create a reusable shareable link for a board
+ */
+export const getOrCreateShareLink = mutation({
+    args: {
+        boardId: v.id("boards"),
+        role: v.optional(v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"))),
+    },
+    handler: async (ctx, args) => {
+        const { user } = await ensureBoardRole(ctx, args.boardId, "admin");
+        const role = args.role ?? "member";
+
+        // Check for existing active share link for this board and role
+        const existingInvites = await ctx.db
+            .query("boardInvites")
+            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+            .collect();
+
+        const existing = existingInvites.find(
+            (inv) =>
+                inv.status === "pending" &&
+                !inv.invitedUserId &&
+                !inv.invitedEmail &&
+                inv.role === role &&
+                Boolean(inv.token),
+        );
+
+        if (existing?.token) {
+            return { token: existing.token, role: existing.role };
+        }
+
+        // Generate a new secure token
+        const randomBytes = new Uint8Array(18);
+        crypto.getRandomValues(randomBytes);
+        const token = `${Date.now().toString(36)}-${Array.from(randomBytes, (byte) =>
+            byte.toString(16).padStart(2, "0"),
+        ).join("")}`;
+
+        await ctx.db.insert("boardInvites", {
+            boardId: args.boardId,
+            invitedByUserId: user._id,
+            role,
+            status: "pending",
+            token,
+            createdAt: Date.now(),
+        });
+
+        return { token, role };
+    },
+});
+
+/**
+ * Publicly queryable info for an invite token before joining
+ */
+export const getInviteInfo = query({
+    args: { token: v.string() },
+    handler: async (ctx, args) => {
+        const invite = await ctx.db
+            .query("boardInvites")
+            .withIndex("by_token", (q) => q.eq("token", args.token))
+            .first();
+
+        if (!invite || invite.status !== "pending") return null;
+
+        const board = await ctx.db.get(invite.boardId);
+        if (!board || board.archived) return null;
+
+        const inviter = await authComponent.getAnyUserById(ctx, invite.invitedByUserId);
+        const inviterName = inviter?.name ?? inviter?.email ?? "Someone";
+
+        return {
+            boardTitle: board.title,
+            boardDescription: board.description,
+            boardColor: board.color,
+            inviterName,
+            role: invite.role,
+            isShareLink: !invite.invitedEmail,
+        };
     },
 });
 

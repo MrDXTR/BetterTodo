@@ -228,14 +228,14 @@ function LandingContent() {
                             borderWidth={1}
                         />
                         {/* Fake board UI */}
-                        <div className="p-6">
-                            <div className="flex items-center gap-2 mb-5">
-                                <div className="w-3 h-3 rounded-full bg-red-400/70" />
-                                <div className="w-3 h-3 rounded-full bg-yellow-400/70" />
-                                <div className="w-3 h-3 rounded-full bg-green-400/70" />
-                                <div className="ml-4 h-5 w-40 rounded bg-muted" />
+                        <div className="p-3 sm:p-6">
+                            <div className="flex items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-5">
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-400/70" />
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-400/70" />
+                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-400/70" />
+                                <div className="ml-2.5 sm:ml-4 h-4 sm:h-5 w-24 sm:w-40 rounded bg-muted" />
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4">
                                 {[
                                     { title: "Backlog", count: 4, colClass: "bg-muted/50" },
                                     {
@@ -247,26 +247,26 @@ function LandingContent() {
                                 ].map((col) => (
                                     <div
                                         key={col.title}
-                                        className={`rounded-xl p-3 ${col.colClass} border border-border`}
+                                        className={`rounded-xl p-2 sm:p-3 ${col.colClass} border border-border overflow-hidden min-w-0`}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        <div className="flex items-center justify-between gap-1 mb-2 sm:mb-3 min-w-0">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-normal sm:tracking-wider truncate min-w-0">
                                                 {col.title}
                                             </span>
-                                            <span className="text-xs bg-muted rounded-full px-2 py-0.5 text-muted-foreground">
+                                            <span className="text-[10px] sm:text-xs bg-muted rounded-full px-1.5 sm:px-2 py-0.5 text-muted-foreground shrink-0 font-mono">
                                                 {col.count}
                                             </span>
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5 sm:space-y-2">
                                             {Array.from({
                                                 length: col.count > 2 ? 2 : col.count,
                                             }).map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    className="rounded-lg bg-card border border-border p-2.5"
+                                                    className="rounded-lg bg-card border border-border p-2 sm:p-2.5 overflow-hidden"
                                                 >
-                                                    <div className="h-2 w-3/4 rounded bg-muted mb-1.5" />
-                                                    <div className="h-1.5 w-1/2 rounded bg-muted/60" />
+                                                    <div className="h-1.5 sm:h-2 w-3/4 rounded bg-muted mb-1 sm:mb-1.5" />
+                                                    <div className="h-1 sm:h-1.5 w-1/2 rounded bg-muted/60" />
                                                 </div>
                                             ))}
                                         </div>

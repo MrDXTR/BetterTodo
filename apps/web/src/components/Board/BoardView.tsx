@@ -101,7 +101,7 @@ export function BoardView({ board, isReadOnly = false }: BoardViewProps) {
             setIsAddingList(false);
             if (createdList?._id) {
                 setFreshListId(createdList._id);
-                setTimeout(() => setFreshListId(null), 1200);
+                setTimeout(() => setFreshListId(null), 1800);
             }
             toast.success("List created!");
         } catch (error) {
