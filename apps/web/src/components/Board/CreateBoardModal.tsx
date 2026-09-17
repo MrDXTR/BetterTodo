@@ -220,7 +220,9 @@ export function CreateBoardModal({
                                             {template.emoji}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-xs text-foreground">{template.name}</p>
+                                            <p className="font-semibold text-xs text-foreground">
+                                                {template.name}
+                                            </p>
                                             <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
                                                 {template.description}
                                             </p>
@@ -273,7 +275,9 @@ export function CreateBoardModal({
 
                             {/* Description */}
                             <div className="space-y-1.5">
-                                <Label htmlFor="description" className="text-xs font-medium">Description (optional)</Label>
+                                <Label htmlFor="description" className="text-xs font-medium">
+                                    Description (optional)
+                                </Label>
                                 <Textarea
                                     id="description"
                                     placeholder="What is this board about?"
@@ -316,7 +320,9 @@ export function CreateBoardModal({
 
                             {/* Visibility */}
                             <div className="space-y-1.5">
-                                <Label htmlFor="visibility" className="text-xs font-medium">Visibility</Label>
+                                <Label htmlFor="visibility" className="text-xs font-medium">
+                                    Visibility
+                                </Label>
                                 <Select
                                     value={visibility}
                                     onValueChange={(value: any) => setVisibility(value)}
@@ -354,7 +360,9 @@ export function CreateBoardModal({
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="workspace" className="text-xs font-medium">Workspace</Label>
+                                <Label htmlFor="workspace" className="text-xs font-medium">
+                                    Workspace
+                                </Label>
                                 <Select value={workspaceId} onValueChange={setWorkspaceId}>
                                     <SelectTrigger id="workspace" className="h-8 text-xs">
                                         <SelectValue placeholder="Choose workspace (optional)" />
@@ -406,9 +414,7 @@ export function CreateBoardModal({
                                 disabled={isSubmitting || !title.trim()}
                                 className="h-8 text-xs px-4 gap-1.5"
                             >
-                                {isSubmitting ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : null}
+                                {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                                 <span>Create board</span>
                             </Button>
                         </DialogFooter>

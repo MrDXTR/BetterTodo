@@ -51,12 +51,7 @@ interface CardModalProps {
     isReadOnly?: boolean;
 }
 
-export function CardModal({
-    cardId,
-    isOpen,
-    onClose,
-    isReadOnly = false,
-}: CardModalProps) {
+export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardModalProps) {
     const card = useQuery(api.cards.getById, { cardId });
     const updateCard = useMutation(api.cards.update);
     const deleteCard = useMutation(api.cards.deleteCard);
@@ -316,7 +311,8 @@ export function CardModal({
                                                     }}
                                                     className={cn(
                                                         "text-lg md:text-xl font-semibold leading-snug text-foreground rounded-md transition-colors cursor-pointer",
-                                                        !isReadOnly && "hover:bg-muted/50 px-1 -mx-1 py-0.5",
+                                                        !isReadOnly &&
+                                                            "hover:bg-muted/50 px-1 -mx-1 py-0.5",
                                                     )}
                                                 >
                                                     {card.title}
@@ -344,7 +340,9 @@ export function CardModal({
                                                 ) : (
                                                     <Circle className="h-3.5 w-3.5" />
                                                 )}
-                                                <span>{card.completed ? "Completed" : "Mark done"}</span>
+                                                <span>
+                                                    {card.completed ? "Completed" : "Mark done"}
+                                                </span>
                                             </button>
 
                                             {!card.coverImage && (
@@ -375,7 +373,9 @@ export function CardModal({
                                                 {!isReadOnly && !isEditingDescription && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => setIsEditingDescription(true)}
+                                                        onClick={() =>
+                                                            setIsEditingDescription(true)
+                                                        }
                                                         className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                                                     >
                                                         Edit
@@ -440,7 +440,8 @@ export function CardModal({
                                                     }}
                                                     className={cn(
                                                         "text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap [word-break:break-word] rounded-md p-1 -m-1 transition-colors",
-                                                        !isReadOnly && "hover:bg-muted/40 cursor-pointer",
+                                                        !isReadOnly &&
+                                                            "hover:bg-muted/40 cursor-pointer",
                                                     )}
                                                 >
                                                     <TextWithLinkPreviews text={card.description} />
@@ -516,9 +517,13 @@ export function CardModal({
                                                     </SelectTrigger>
                                                     <SelectContent className="text-xs">
                                                         <SelectItem value="low">Low</SelectItem>
-                                                        <SelectItem value="medium">Medium</SelectItem>
+                                                        <SelectItem value="medium">
+                                                            Medium
+                                                        </SelectItem>
                                                         <SelectItem value="high">High</SelectItem>
-                                                        <SelectItem value="urgent">Urgent</SelectItem>
+                                                        <SelectItem value="urgent">
+                                                            Urgent
+                                                        </SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>

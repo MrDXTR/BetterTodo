@@ -7,12 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 interface CardMembersProps {
@@ -119,7 +114,9 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
                 <PopoverContent className="w-64 p-3" align="start">
                     <div className="space-y-2.5">
                         <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-semibold text-foreground">Assign Members</h4>
+                            <h4 className="text-xs font-semibold text-foreground">
+                                Assign Members
+                            </h4>
                         </div>
 
                         {/* Search */}
@@ -135,7 +132,8 @@ export function CardMembers({ cardId, boardId }: CardMembersProps) {
                             {filteredMembers.map((member: any) => {
                                 const isAssigned = assignedUserIds.includes(member.userId);
                                 const isToggling = togglingUserId === member.userId;
-                                const displayName = member.user?.name || member.user?.email || "Unknown";
+                                const displayName =
+                                    member.user?.name || member.user?.email || "Unknown";
                                 const initial = displayName.trim().charAt(0).toUpperCase() || "M";
 
                                 return (

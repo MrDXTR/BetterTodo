@@ -212,13 +212,17 @@ function baseTemplate(options: BaseTemplateOptions): string {
               </div>
 
               <!-- METADATA BOX (IF PROVIDED) -->
-              ${options.metaBoxHtml ? `
+              ${
+                  options.metaBoxHtml
+                      ? `
               <div class="email-meta-box" style="background-color:#f9fafb;border:1px solid #e4e4e7;border-radius:8px;padding:14px 18px;margin-bottom:28px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   ${options.metaBoxHtml}
                 </table>
               </div>
-              ` : ""}
+              `
+                      : ""
+              }
 
               <!-- PRIMARY ACTION -->
               <div style="text-align:center;padding-top:4px;padding-bottom:12px;">
@@ -226,14 +230,20 @@ function baseTemplate(options: BaseTemplateOptions): string {
               </div>
 
               <!-- OPTIONAL SUBTEXT -->
-              ${options.subtextHtml ? `
+              ${
+                  options.subtextHtml
+                      ? `
               <p class="email-footer-text" style="margin:20px 0 0;font-size:13px;color:#71717a;text-align:center;line-height:1.5;">
                 ${options.subtextHtml}
               </p>
-              ` : ""}
+              `
+                      : ""
+              }
 
               <!-- ACCESSIBILITY / DIRECT LINK FALLBACK -->
-              ${safeFallbackUrl ? `
+              ${
+                  safeFallbackUrl
+                      ? `
               <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f4f4f5;">
                 <p class="email-footer-text" style="margin:0 0 6px;font-size:12px;color:#71717a;line-height:1.5;">
                   If the button above does not work, copy and paste this link into your browser:
@@ -244,7 +254,9 @@ function baseTemplate(options: BaseTemplateOptions): string {
                   </a>
                 </p>
               </div>
-              ` : ""}
+              `
+                      : ""
+              }
 
             </td>
           </tr>
@@ -316,7 +328,8 @@ export const sendBoardInviteEmail = internalAction({
         ].join("");
 
         const actionButtonHtml = actionButton(acceptUrl, "Accept Invitation");
-        const subtextHtml = "You can also view and manage this invitation inside your BetterTodo notifications.";
+        const subtextHtml =
+            "You can also view and manage this invitation inside your BetterTodo notifications.";
 
         const html = baseTemplate({
             title: subject,
@@ -396,7 +409,8 @@ export const sendBoardInviteEmailExternal = internalAction({
         ].join("");
 
         const actionButtonHtml = actionButton(inviteUrl, "View Invitation");
-        const subtextHtml = "This invitation is personal to you. If you already have an account, sign in with this email to accept.";
+        const subtextHtml =
+            "This invitation is personal to you. If you already have an account, sign in with this email to accept.";
 
         const html = baseTemplate({
             title: subject,

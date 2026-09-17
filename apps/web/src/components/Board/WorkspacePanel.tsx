@@ -88,7 +88,9 @@ function NewWorkspaceDialog({ variant }: { variant: "sidebar" | "mobile" }) {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                     <div className="space-y-1.5">
-                        <Label htmlFor="new-ws-name" className="text-xs font-medium">Name</Label>
+                        <Label htmlFor="new-ws-name" className="text-xs font-medium">
+                            Name
+                        </Label>
                         <Input
                             id="new-ws-name"
                             value={name}
@@ -100,7 +102,11 @@ function NewWorkspaceDialog({ variant }: { variant: "sidebar" | "mobile" }) {
                         />
                     </div>
                     <DialogFooter className="pt-2">
-                        <Button type="submit" disabled={!name.trim() || busy} className="w-full h-8 text-xs">
+                        <Button
+                            type="submit"
+                            disabled={!name.trim() || busy}
+                            className="w-full h-8 text-xs"
+                        >
                             {busy ? "Creating…" : "Create Workspace"}
                         </Button>
                     </DialogFooter>
@@ -237,7 +243,9 @@ export function WorkspaceMobileStrip({ selectedId, onSelect }: WorkspaceSelectPr
                                 style={{ backgroundColor: color }}
                             />
                             <span className="max-w-[120px] truncate">{ws.name}</span>
-                            <span className="tabular-nums text-[10px] opacity-70">({ws.boardsCount})</span>
+                            <span className="tabular-nums text-[10px] opacity-70">
+                                ({ws.boardsCount})
+                            </span>
                         </button>
                         <Link
                             to="/workspaces/$workspaceId"

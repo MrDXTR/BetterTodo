@@ -20,7 +20,8 @@ export function NotFoundPage() {
                     Page not found
                 </h1>
                 <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-sm">
-                    The page you are looking for doesn't exist, has been removed, or is temporarily unavailable.
+                    The page you are looking for doesn't exist, has been removed, or is temporarily
+                    unavailable.
                 </p>
 
                 {/* Action buttons */}

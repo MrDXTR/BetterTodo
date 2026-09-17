@@ -152,7 +152,9 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent className="sm:max-w-[620px] w-[95vw] max-h-[90dvh] flex flex-col p-5 sm:p-6 rounded-2xl border border-border/70 shadow-2xl">
                     <DialogHeader className="shrink-0 pb-1">
-                        <DialogTitle className="text-base font-semibold">Board settings</DialogTitle>
+                        <DialogTitle className="text-base font-semibold">
+                            Board settings
+                        </DialogTitle>
                         <DialogDescription className="text-xs">
                             Edit board details and manage visibility. Only owners can archive or
                             delete.
@@ -164,8 +166,9 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         className="flex flex-col min-h-0 flex-1 overflow-hidden mt-3"
                     >
                         <TabsList
-                            className={`shrink-0 w-full h-8.5 ${canEdit ? "grid grid-cols-2" : "grid grid-cols-1"
-                                }`}
+                            className={`shrink-0 w-full h-8.5 ${
+                                canEdit ? "grid grid-cols-2" : "grid grid-cols-1"
+                            }`}
                         >
                             <TabsTrigger value="general" className="w-full text-xs">
                                 General
@@ -199,7 +202,12 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
 
                                 {/* Description */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="settings-description" className="text-xs font-medium">Description</Label>
+                                    <Label
+                                        htmlFor="settings-description"
+                                        className="text-xs font-medium"
+                                    >
+                                        Description
+                                    </Label>
                                     <Textarea
                                         id="settings-description"
                                         value={description}
@@ -248,7 +256,12 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
 
                                 {/* Visibility */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="settings-visibility" className="text-xs font-medium">Visibility</Label>
+                                    <Label
+                                        htmlFor="settings-visibility"
+                                        className="text-xs font-medium"
+                                    >
+                                        Visibility
+                                    </Label>
                                     <Select
                                         value={visibility}
                                         onValueChange={(value: "private" | "team" | "public") =>
@@ -256,7 +269,10 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         }
                                         disabled={!canEdit}
                                     >
-                                        <SelectTrigger id="settings-visibility" className="h-8 text-xs">
+                                        <SelectTrigger
+                                            id="settings-visibility"
+                                            className="h-8 text-xs"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="text-xs">
@@ -289,13 +305,21 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="settings-workspace" className="text-xs font-medium">Workspace</Label>
+                                    <Label
+                                        htmlFor="settings-workspace"
+                                        className="text-xs font-medium"
+                                    >
+                                        Workspace
+                                    </Label>
                                     <Select
                                         value={workspaceId}
                                         onValueChange={setWorkspaceId}
                                         disabled={!canEdit}
                                     >
-                                        <SelectTrigger id="settings-workspace" className="h-8 text-xs">
+                                        <SelectTrigger
+                                            id="settings-workspace"
+                                            className="h-8 text-xs"
+                                        >
                                             <SelectValue placeholder="No workspace" />
                                         </SelectTrigger>
                                         <SelectContent className="text-xs">
@@ -333,7 +357,35 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                     </Tabs>
 
                     <DialogFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 shrink-0 mt-2 border-t border-border/60">
-                        <div className="flex flex-wrap items-center gap-2 order-2 sm:order-1">
+                        {canEdit && (
+                            <div className="flex items-center gap-2 sm:order-2 sm:justify-end">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onOpenChange(false)}
+                                    disabled={isSubmitting}
+                                    className="flex-1 sm:flex-none text-xs h-9"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={handleSave}
+                                    disabled={isSubmitting}
+                                    className="flex-1 sm:flex-none text-xs h-9 px-4"
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        "Save changes"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-2 sm:order-1">
                             {isOwner && (
                                 <>
                                     {board.archived ? (
@@ -343,7 +395,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             size="sm"
                                             onClick={handleRestore}
                                             disabled={isSubmitting}
-                                            className="text-xs h-8 gap-1.5"
+                                            className="flex-1 sm:flex-none text-xs h-9 gap-1.5"
                                         >
                                             <Archive className="h-3.5 w-3.5" />
                                             <span>Restore board</span>
@@ -355,7 +407,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                             size="sm"
                                             onClick={handleArchive}
                                             disabled={isSubmitting}
-                                            className="text-xs h-8 gap-1.5"
+                                            className="flex-1 sm:flex-none text-xs h-9 gap-1.5"
                                         >
                                             <Archive className="h-3.5 w-3.5" />
                                             <span>Archive board</span>
@@ -367,7 +419,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                         size="sm"
                                         onClick={() => setShowDeleteConfirm(true)}
                                         disabled={isSubmitting}
-                                        className="text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-8 gap-1.5"
+                                        className="flex-1 sm:flex-none text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-9 gap-1.5"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                         <span>Delete board</span>
@@ -375,34 +427,6 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                                 </>
                             )}
                         </div>
-
-                        {canEdit && (
-                            <div className="flex items-center gap-2 justify-end order-1 sm:order-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onOpenChange(false)}
-                                    disabled={isSubmitting}
-                                    className="text-xs h-8"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={handleSave}
-                                    disabled={isSubmitting}
-                                    className="text-xs h-8 px-4"
-                                >
-                                    {isSubmitting ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        "Save changes"
-                                    )}
-                                </Button>
-                            </div>
-                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

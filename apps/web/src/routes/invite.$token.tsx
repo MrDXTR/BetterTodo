@@ -53,7 +53,9 @@ function InvitePage() {
                         <AuthLoading>
                             <Card className="border-border/70 bg-card shadow-lg p-6 flex flex-col items-center justify-center text-center">
                                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-                                <p className="text-sm text-muted-foreground">Loading your account…</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Loading your account…
+                                </p>
                             </Card>
                         </AuthLoading>
                     </>
@@ -119,7 +121,9 @@ function AutoAcceptInvite({ token, inviteInfo }: { token: string; inviteInfo: an
             ) : (
                 <>
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="font-semibold text-sm">Accepting invite to "{inviteInfo.boardTitle}"…</p>
+                    <p className="font-semibold text-sm">
+                        Accepting invite to "{inviteInfo.boardTitle}"…
+                    </p>
                     <p className="text-xs text-muted-foreground">Please wait a moment.</p>
                 </>
             )}
@@ -128,11 +132,12 @@ function AutoAcceptInvite({ token, inviteInfo }: { token: string; inviteInfo: an
 }
 
 function InvitePreview({ token, inviteInfo }: { token: string; inviteInfo: any }) {
-    const roleIcon = {
-        admin: Shield,
-        member: User,
-        viewer: Eye,
-    }[inviteInfo.role as "admin" | "member" | "viewer"] ?? User;
+    const roleIcon =
+        {
+            admin: Shield,
+            member: User,
+            viewer: Eye,
+        }[inviteInfo.role as "admin" | "member" | "viewer"] ?? User;
     const RoleIcon = roleIcon;
 
     return (
@@ -150,7 +155,10 @@ function InvitePreview({ token, inviteInfo }: { token: string; inviteInfo: any }
                     {inviteInfo.boardTitle}
                 </CardTitle>
                 <CardDescription className="text-xs max-w-sm mx-auto mt-1">
-                    <strong className="font-medium text-foreground">{inviteInfo.inviterName}</strong> invited you to collaborate on this board.
+                    <strong className="font-medium text-foreground">
+                        {inviteInfo.inviterName}
+                    </strong>{" "}
+                    invited you to collaborate on this board.
                 </CardDescription>
             </CardHeader>
 
@@ -170,11 +178,7 @@ function InvitePreview({ token, inviteInfo }: { token: string; inviteInfo: any }
                 </div>
 
                 <div className="pt-2 space-y-2">
-                    <Link
-                        to="/sign-in"
-                        search={{ inviteToken: token }}
-                        className="w-full block"
-                    >
+                    <Link to="/sign-in" search={{ inviteToken: token }} className="w-full block">
                         <Button className="w-full gap-2 h-9 text-xs">
                             <span>Sign in or Sign up to Join</span>
                             <ArrowRight className="h-3.5 w-3.5" />

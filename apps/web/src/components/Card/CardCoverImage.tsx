@@ -77,13 +77,9 @@ export function CardCoverImage({ cardId, coverImage, variant = "banner" }: CardC
 
             {coverImage && variant === "banner" ? (
                 <div className="relative group w-full h-36 sm:h-44 overflow-hidden rounded-t-2xl bg-muted">
-                    <img
-                        src={coverImage}
-                        alt="Card cover"
-                        className="w-full h-full object-cover"
-                    />
+                    <img src={coverImage} alt="Card cover" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 pointer-events-none rounded-t-2xl" />
-                    
+
                     {/* Floating action pill on hover: positioned at bottom right of cover banner */}
                     <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-background/85 backdrop-blur-md border border-border/60 rounded-lg p-1 shadow-md">
                         <Button

@@ -72,18 +72,25 @@ function BoardRoute() {
                         Board not found
                     </h1>
                     <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-sm">
-                        This board doesn't exist, has been deleted, or you don't have permission to view it.
+                        This board doesn't exist, has been deleted, or you don't have permission to
+                        view it.
                     </p>
 
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5 w-full">
                         <Link to="/boards" className="w-full sm:w-auto">
-                            <Button variant="default" className="w-full sm:w-auto gap-2 text-xs h-9">
+                            <Button
+                                variant="default"
+                                className="w-full sm:w-auto gap-2 text-xs h-9"
+                            >
                                 <ArrowLeft className="h-3.5 w-3.5" />
                                 Back to Boards
                             </Button>
                         </Link>
                         <Link to="/dashboard" className="w-full sm:w-auto">
-                            <Button variant="outline" className="w-full sm:w-auto gap-2 text-xs h-9">
+                            <Button
+                                variant="outline"
+                                className="w-full sm:w-auto gap-2 text-xs h-9"
+                            >
                                 <LayoutDashboard className="h-3.5 w-3.5" />
                                 Go to Dashboard
                             </Button>

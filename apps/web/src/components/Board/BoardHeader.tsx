@@ -403,11 +403,7 @@ export function BoardHeader({
                 boardId={board._id}
             />
 
-            <BoardSettingsModal
-                open={settingsOpen}
-                onOpenChange={setSettingsOpen}
-                board={board}
-            />
+            <BoardSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} board={board} />
         </header>
     );
 }

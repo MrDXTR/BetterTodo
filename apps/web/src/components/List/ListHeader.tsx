@@ -135,7 +135,10 @@ export function ListHeader({ list, boardColor, isReadOnly = false }: ListHeaderP
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44 text-xs">
-                        <DropdownMenuItem onClick={handleDuplicate} className="cursor-pointer gap-2">
+                        <DropdownMenuItem
+                            onClick={handleDuplicate}
+                            className="cursor-pointer gap-2"
+                        >
                             <Copy className="h-3.5 w-3.5" />
                             <span>Duplicate list</span>
                         </DropdownMenuItem>

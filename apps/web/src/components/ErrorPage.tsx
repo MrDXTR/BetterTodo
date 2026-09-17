@@ -41,7 +41,8 @@ export function ErrorPage({ error, reset }: ErrorPageProps) {
                     Something went wrong
                 </h1>
                 <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-sm">
-                    We encountered an unexpected error while loading this page. You can try refreshing or returning to the home screen.
+                    We encountered an unexpected error while loading this page. You can try
+                    refreshing or returning to the home screen.
                 </p>
 
                 {/* Action buttons */}

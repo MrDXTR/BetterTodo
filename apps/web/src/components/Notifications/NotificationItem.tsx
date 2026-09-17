@@ -159,7 +159,8 @@ export function NotificationItem({ notification, onNavigate }: NotificationItemP
                     >
                         {notification.title}
                     </p>
-                    {!notification.read && (<div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />
+                    {!notification.read && (
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />
                     )}
                 </div>
                 <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">

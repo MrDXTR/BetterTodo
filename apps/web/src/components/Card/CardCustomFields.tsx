@@ -14,12 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CardCustomFieldsProps {
     cardId: Id<"cards">;
@@ -85,10 +80,15 @@ export function CardCustomFields({ cardId, isEditable }: CardCustomFieldsProps) 
                         >
                             {/* Property Label with Info Tooltip */}
                             <div className="flex items-center gap-1.5 min-w-0 max-w-[110px] shrink-0 text-muted-foreground">
-                                <span className="truncate text-xs font-medium text-foreground/85" title={field.name}>
+                                <span
+                                    className="truncate text-xs font-medium text-foreground/85"
+                                    title={field.name}
+                                >
                                     {field.name}
                                 </span>
-                                {field.required && <span className="text-destructive font-bold text-xs">*</span>}
+                                {field.required && (
+                                    <span className="text-destructive font-bold text-xs">*</span>
+                                )}
                                 <TooltipProvider delayDuration={150}>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -99,7 +99,9 @@ export function CardCustomFields({ cardId, isEditable }: CardCustomFieldsProps) 
                                         <TooltipContent side="top" className="text-xs py-1 px-2.5">
                                             <p className="font-semibold">{typeLabel}</p>
                                             {field.required && (
-                                                <p className="text-[10px] text-destructive mt-0.5">Required</p>
+                                                <p className="text-[10px] text-destructive mt-0.5">
+                                                    Required
+                                                </p>
                                             )}
                                         </TooltipContent>
                                     </Tooltip>
@@ -147,7 +149,9 @@ export function CardCustomFields({ cardId, isEditable }: CardCustomFieldsProps) 
                                         disabled={!isEditable || isSaving}
                                         defaultValue={
                                             value?.dateValue
-                                                ? new Date(value.dateValue).toISOString().slice(0, 10)
+                                                ? new Date(value.dateValue)
+                                                      .toISOString()
+                                                      .slice(0, 10)
                                                 : ""
                                         }
                                         onBlur={(e) => {
@@ -193,7 +197,11 @@ export function CardCustomFields({ cardId, isEditable }: CardCustomFieldsProps) 
                                             </SelectTrigger>
                                             <SelectContent className="text-xs">
                                                 {(field.options ?? []).map((option) => (
-                                                    <SelectItem key={option} value={option} className="text-xs">
+                                                    <SelectItem
+                                                        key={option}
+                                                        value={option}
+                                                        className="text-xs"
+                                                    >
                                                         {option}
                                                     </SelectItem>
                                                 ))}

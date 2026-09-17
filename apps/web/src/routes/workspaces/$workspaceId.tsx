@@ -429,7 +429,8 @@ function WorkspaceSettingsContent({ workspaceId }: { workspaceId: Id<"workspaces
                         Workspace not found
                     </h1>
                     <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-sm">
-                        This workspace doesn't exist, has been removed, or you do not have permission to view it.
+                        This workspace doesn't exist, has been removed, or you do not have
+                        permission to view it.
                     </p>
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5 w-full">
                         <Link to="/boards">

@@ -145,7 +145,9 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
 
             <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
                 {(fields ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground py-2 text-center">No custom fields yet.</p>
+                    <p className="text-xs text-muted-foreground py-2 text-center">
+                        No custom fields yet.
+                    </p>
                 ) : (
                     fields!.map((field) => (
                         <div
@@ -153,7 +155,9 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
                             className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 shadow-2xs"
                         >
                             <div className="min-w-0">
-                                <p className="truncate text-xs font-medium text-foreground">{field.name}</p>
+                                <p className="truncate text-xs font-medium text-foreground">
+                                    {field.name}
+                                </p>
                                 <p className="text-[10px] text-muted-foreground capitalize">
                                     {field.type}
                                     {field.required ? " · required" : ""}

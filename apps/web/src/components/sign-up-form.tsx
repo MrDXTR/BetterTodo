@@ -193,7 +193,11 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
                 <form.Subscribe
                     selector={(state) => [state.canSubmit, state.isSubmitting]}
                     children={([canSubmit, isSubmitting]) => (
-                        <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={!canSubmit || isSubmitting}
+                        >
                             {isSubmitting ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : null}
