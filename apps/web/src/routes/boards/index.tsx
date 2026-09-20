@@ -249,7 +249,7 @@ function BoardsRoute() {
                                     : `${workspaceFilteredBoards.length} board${workspaceFilteredBoards.length === 1 ? "" : "s"} in this workspace.`}
                             </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Button
                                 variant={isManageMode ? "secondary" : "outline"}
                                 size="sm"
@@ -257,7 +257,7 @@ function BoardsRoute() {
                                     setIsManageMode((prev) => !prev);
                                     setSelectedBoardIds([]);
                                 }}
-                                className="h-9 gap-1.5 text-xs shrink-0"
+                                className="h-9 gap-1.5 text-xs flex-1 sm:flex-initial shrink-0"
                             >
                                 <CheckSquare className="h-3.5 w-3.5" />
                                 <span>{isManageMode ? "Exit Manage" : "Manage Boards"}</span>
@@ -265,7 +265,7 @@ function BoardsRoute() {
                             <Button
                                 onClick={() => setIsCreateModalOpen(true)}
                                 size="sm"
-                                className="w-full sm:w-auto shrink-0 h-9 gap-1.5 text-xs"
+                                className="h-9 gap-1.5 text-xs flex-1 sm:flex-initial shrink-0 justify-center"
                             >
                                 <Plus className="h-4 w-4" />
                                 <span>Create Board</span>
