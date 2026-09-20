@@ -126,38 +126,38 @@ export function ArchivedItemsPanel({ open, onOpenChange, boardId }: ArchivedItem
                     </SheetHeader>
 
                     <Tabs defaultValue="cards" className="mt-5">
-                        <TabsList className="grid w-full grid-cols-3 h-8">
-                            <TabsTrigger value="cards" className="text-xs gap-1">
-                                <CreditCard className="h-3.5 w-3.5" />
+                        <TabsList className="grid w-full grid-cols-3 h-9 p-1 gap-1">
+                            <TabsTrigger value="cards" className="text-xs gap-1.5 px-2">
+                                <CreditCard className="h-3.5 w-3.5 shrink-0" />
                                 <span>Cards</span>
                                 {!isLoading && (
                                     <Badge
                                         variant="secondary"
-                                        className="ml-1 text-[10px] px-1.5 py-0 h-4"
+                                        className="ml-0.5 text-[10px] font-mono px-1.5 py-0 h-4 leading-none"
                                     >
                                         {cards.length}
                                     </Badge>
                                 )}
                             </TabsTrigger>
-                            <TabsTrigger value="lists" className="text-xs gap-1">
-                                <List className="h-3.5 w-3.5" />
+                            <TabsTrigger value="lists" className="text-xs gap-1.5 px-2">
+                                <List className="h-3.5 w-3.5 shrink-0" />
                                 <span>Lists</span>
                                 {!isLoading && (
                                     <Badge
                                         variant="secondary"
-                                        className="ml-1 text-[10px] px-1.5 py-0 h-4"
+                                        className="ml-0.5 text-[10px] font-mono px-1.5 py-0 h-4 leading-none"
                                     >
                                         {lists.length}
                                     </Badge>
                                 )}
                             </TabsTrigger>
-                            <TabsTrigger value="boards" className="text-xs gap-1">
-                                <Layout className="h-3.5 w-3.5" />
+                            <TabsTrigger value="boards" className="text-xs gap-1.5 px-2">
+                                <Layout className="h-3.5 w-3.5 shrink-0" />
                                 <span>Boards</span>
                                 {!isLoading && (
                                     <Badge
                                         variant="secondary"
-                                        className="ml-1 text-[10px] px-1.5 py-0 h-4"
+                                        className="ml-0.5 text-[10px] font-mono px-1.5 py-0 h-4 leading-none"
                                     >
                                         {boards.length}
                                     </Badge>
