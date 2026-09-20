@@ -105,14 +105,15 @@ export function CardLabels({ cardId, boardId }: CardLabelsProps) {
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 max-w-full">
             {selectedLabels.map((label) => (
                 <span
                     key={label._id}
                     style={{ backgroundColor: label.color }}
-                    className="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium text-white shadow-2xs"
+                    title={label.name}
+                    className="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium text-white shadow-2xs max-w-[200px] truncate"
                 >
-                    {label.name}
+                    <span className="truncate">{label.name}</span>
                 </span>
             ))}
 

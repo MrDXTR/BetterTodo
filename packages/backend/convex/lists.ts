@@ -247,3 +247,18 @@ export const deleteList = mutation({
         return { success: true };
     },
 });
+
+/**
+ * Restore an archived list
+ */
+export const restore = mutation({
+    args: { listId: v.id("lists") },
+    handler: async (ctx, args) => {
+        await ensureListWriteAccess(ctx, args.listId, "member");
+
+        await ctx.db.patch(args.listId, { archived: false });
+
+        return { success: true };
+    },
+});
+

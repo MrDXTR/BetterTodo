@@ -39,6 +39,7 @@ export function CardComments({ cardId, isReadOnly = false }: CardCommentsProps) 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deletingCommentId, setDeletingCommentId] = useState<Id<"comments"> | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const commentsListRef = useRef<HTMLDivElement | null>(null);
 
     // Mentions autocomplete state
     const [mentionQuery, setMentionQuery] = useState<{
@@ -94,6 +95,14 @@ export function CardComments({ cardId, isReadOnly = false }: CardCommentsProps) 
             });
             setContent("");
             setReplyToId(null);
+            setTimeout(() => {
+                if (commentsListRef.current) {
+                    commentsListRef.current.scrollTo({
+                        top: commentsListRef.current.scrollHeight,
+                        behavior: "smooth",
+                    });
+                }
+            }, 100);
         } catch (error) {
             console.error("Failed to create comment", error);
         } finally {
@@ -234,21 +243,26 @@ export function CardComments({ cardId, isReadOnly = false }: CardCommentsProps) 
                 </p>
             )}
 
-            <div className="space-y-3">
-                {rootComments.map((comment) => (
-                    <CommentThread
-                        key={comment._id}
-                        comment={comment}
-                        getReplies={getReplies}
-                        onReply={handleReply}
-                        onDelete={handleDelete}
-                        resolveAuthor={resolveAuthor}
-                        currentUserId={currentUser?._id}
-                        deletingCommentId={deletingCommentId}
-                        isReadOnly={isReadOnly}
-                    />
-                ))}
-            </div>
+            {rootComments.length > 0 && (
+                <div
+                    ref={commentsListRef}
+                    className="space-y-3 max-h-[320px] overflow-y-auto pr-1.5 scrollbar-thin"
+                >
+                    {rootComments.map((comment) => (
+                        <CommentThread
+                            key={comment._id}
+                            comment={comment}
+                            getReplies={getReplies}
+                            onReply={handleReply}
+                            onDelete={handleDelete}
+                            resolveAuthor={resolveAuthor}
+                            currentUserId={currentUser?._id}
+                            deletingCommentId={deletingCommentId}
+                            isReadOnly={isReadOnly}
+                        />
+                    ))}
+                </div>
+            )}
 
             {!isReadOnly && (
                 <form onSubmit={handleSubmit} className="space-y-2 relative pt-2">
