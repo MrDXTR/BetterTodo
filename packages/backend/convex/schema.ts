@@ -161,6 +161,7 @@ export default defineSchema({
         role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
         status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("declined")),
         token: v.optional(v.string()), // secure token for email link acceptance
+        expiresAt: v.optional(v.number()), // expiration timestamp in milliseconds
         createdAt: v.number(),
         respondedAt: v.optional(v.number()),
     })

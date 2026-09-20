@@ -10,6 +10,9 @@ import {
     requireAuth,
 } from "./permissions";
 
+const EMAIL_INVITE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const SHARE_LINK_EXPIRATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 // ============================================
 // QUERIES
 // ============================================
@@ -104,13 +107,14 @@ export const getArchived = query({
         // Get archived cards (optionally scoped to a board)
         let archivedCards: any[] = [];
         if (args.boardId) {
+            const { board } = await ensureBoardReadAccessForQuery(ctx, args.boardId);
+
             const cards = await ctx.db
                 .query("cards")
                 .withIndex("by_board", (q) => q.eq("boardId", args.boardId!))
                 .filter((q) => q.eq(q.field("archived"), true))
                 .collect();
 
-            const board = await ctx.db.get(args.boardId);
             archivedCards = cards.map((c) => ({
                 ...c,
                 boardTitle: board?.title ?? "Unknown",
@@ -635,7 +639,7 @@ export const addMemberByEmail = mutation({
             }
         }
 
-        // ── Step 2a: Registered user flow ──────────────────────────────────────
+        // ── Step 2a: Registered user flow ────────────────────────────────────
         if (targetUser) {
             // Check if already a member
             const existing = await ctx.db
@@ -662,7 +666,11 @@ export const addMemberByEmail = mutation({
                 .first();
 
             if (existingInvite) {
-                throw new ConvexError("An invite is already pending for this user");
+                if (existingInvite.expiresAt && Date.now() > existingInvite.expiresAt) {
+                    await ctx.db.delete(existingInvite._id);
+                } else {
+                    throw new ConvexError("An invite is already pending for this user");
+                }
             }
 
             // Create the invite record
@@ -672,6 +680,7 @@ export const addMemberByEmail = mutation({
                 invitedByUserId: user._id,
                 role: args.role,
                 status: "pending",
+                expiresAt: now + EMAIL_INVITE_EXPIRATION_MS,
                 createdAt: now,
             });
 
@@ -700,7 +709,7 @@ export const addMemberByEmail = mutation({
             return { success: true, isNewUser: false, userName: targetUser.name };
         }
 
-        // ── Step 2b: Unregistered user flow ────────────────────────────────────
+        // ── Step 2b: Unregistered user flow ──────────────────────────────────
         // Check if there's already a pending external invite for this email
         const existingEmailInvite = await ctx.db
             .query("boardInvites")
@@ -711,7 +720,11 @@ export const addMemberByEmail = mutation({
             .first();
 
         if (existingEmailInvite) {
-            throw new ConvexError("An invite is already pending for this email");
+            if (existingEmailInvite.expiresAt && Date.now() > existingEmailInvite.expiresAt) {
+                await ctx.db.delete(existingEmailInvite._id);
+            } else {
+                throw new ConvexError("An invite is already pending for this email");
+            }
         }
 
         // Generate a unique secure token
@@ -729,6 +742,7 @@ export const addMemberByEmail = mutation({
             role: args.role,
             status: "pending",
             token,
+            expiresAt: now + EMAIL_INVITE_EXPIRATION_MS,
             createdAt: now,
         });
 
@@ -752,17 +766,21 @@ export const acceptInvite = mutation({
     args: { inviteId: v.id("boardInvites") },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         const invite = await ctx.db.get(args.inviteId);
-        if (!invite) throw new Error("Invite not found");
+        if (!invite) throw new ConvexError("Invite not found");
 
         if (invite.invitedUserId !== user._id) {
-            throw new Error("This invite is not for you");
+            throw new ConvexError("This invite is not for you");
         }
 
         if (invite.status !== "pending") {
-            throw new Error("This invite has already been responded to");
+            throw new ConvexError("This invite has already been responded to");
+        }
+
+        if (invite.expiresAt && Date.now() > invite.expiresAt) {
+            throw new ConvexError("This invite has expired");
         }
 
         const now = Date.now();
@@ -793,17 +811,17 @@ export const declineInvite = mutation({
     args: { inviteId: v.id("boardInvites") },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         const invite = await ctx.db.get(args.inviteId);
-        if (!invite) throw new Error("Invite not found");
+        if (!invite) throw new ConvexError("Invite not found");
 
         if (invite.invitedUserId !== user._id) {
-            throw new Error("This invite is not for you");
+            throw new ConvexError("This invite is not for you");
         }
 
         if (invite.status !== "pending") {
-            throw new Error("This invite has already been responded to");
+            throw new ConvexError("This invite has already been responded to");
         }
 
         await ctx.db.patch(args.inviteId, {
@@ -823,7 +841,7 @@ export const acceptInviteByToken = mutation({
     args: { token: v.string() },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) throw new Error("Unauthorized");
+        if (!user) throw new ConvexError("Unauthorized");
 
         // Find invite by token
         const invite = await ctx.db
@@ -831,18 +849,22 @@ export const acceptInviteByToken = mutation({
             .withIndex("by_token", (q) => q.eq("token", args.token))
             .first();
 
-        if (!invite) throw new Error("Invite not found or expired");
-        if (invite.status !== "pending") throw new Error("This invite has already been used");
+        if (!invite) throw new ConvexError("Invite not found or expired");
+        if (invite.status !== "pending") throw new ConvexError("This invite has already been used");
+
+        if (invite.expiresAt && Date.now() > invite.expiresAt) {
+            throw new ConvexError("This invite link has expired");
+        }
 
         // Validate that board still exists and is not archived
         const board = await ctx.db.get(invite.boardId);
         if (!board || board.archived) {
-            throw new Error("Board not found or has been archived");
+            throw new ConvexError("Board not found or has been archived");
         }
 
         // Validate the user's email matches the invited email (if set)
         if (invite.invitedEmail && user.email?.toLowerCase() !== invite.invitedEmail) {
-            throw new Error("This invite was sent to a different email address");
+            throw new ConvexError("This invite was sent to a different email address");
         }
 
         const now = Date.now();
@@ -903,7 +925,8 @@ export const getOrCreateShareLink = mutation({
                 !inv.invitedUserId &&
                 !inv.invitedEmail &&
                 inv.role === role &&
-                Boolean(inv.token),
+                Boolean(inv.token) &&
+                (!inv.expiresAt || inv.expiresAt > Date.now()),
         );
 
         if (existing?.token) {
@@ -923,6 +946,7 @@ export const getOrCreateShareLink = mutation({
             role,
             status: "pending",
             token,
+            expiresAt: Date.now() + SHARE_LINK_EXPIRATION_MS,
             createdAt: Date.now(),
         });
 
@@ -942,6 +966,10 @@ export const getInviteInfo = query({
             .first();
 
         if (!invite || invite.status !== "pending") return null;
+
+        if (invite.expiresAt && Date.now() > invite.expiresAt) {
+            return null;
+        }
 
         const board = await ctx.db.get(invite.boardId);
         if (!board || board.archived) return null;
@@ -975,9 +1003,13 @@ export const getPendingInvites = query({
             )
             .collect();
 
+        const activeInvites = invites.filter(
+            (inv) => !inv.expiresAt || inv.expiresAt > Date.now(),
+        );
+
         // Enrich with board details
         const enriched = await Promise.all(
-            invites.map(async (invite) => {
+            activeInvites.map(async (invite) => {
                 const board = await ctx.db.get(invite.boardId);
                 const inviter = await authComponent.getAnyUserById(ctx, invite.invitedByUserId);
                 return {
