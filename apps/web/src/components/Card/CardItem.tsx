@@ -1,8 +1,10 @@
 import { Draggable, type DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import {
+    AlertCircle,
     AlignLeft,
     Calendar,
     CheckSquare,
+    Clock,
     GripVertical,
     MessageSquare,
     Paperclip,
@@ -21,18 +23,77 @@ interface CardItemProps {
     isReadOnly?: boolean;
 }
 
+function getDueDateInfo(dueDateMs?: number, completed?: boolean) {
+    if (!dueDateMs) return null;
+    const due = new Date(dueDateMs);
+    const now = new Date();
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfDue = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const diffDays = Math.round((startOfDue - startOfToday) / oneDayMs);
+
+    if (completed) {
+        return {
+            text: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            status: "completed" as const,
+            label: "Completed",
+        };
+    }
+
+    if (diffDays < 0) {
+        return {
+            text: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            status: "overdue" as const,
+            label: "Overdue",
+        };
+    }
+
+    if (diffDays === 0) {
+        return {
+            text: "Today",
+            status: "today" as const,
+            label: "Due today",
+        };
+    }
+
+    if (diffDays === 1) {
+        return {
+            text: "Tomorrow",
+            status: "tomorrow" as const,
+            label: "Due tomorrow",
+        };
+    }
+
+    const sameYear = due.getFullYear() === now.getFullYear();
+    return {
+        text: due.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: sameYear ? undefined : "numeric",
+        }),
+        status: "upcoming" as const,
+        label: "Upcoming due date",
+    };
+}
+
 export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const isMobile = useIsMobile();
 
-    const hasDueDate = !!card.dueDate;
-    const isPastDue = hasDueDate && !card.completed && card.dueDate! < Date.now();
+    const dueDateInfo = getDueDateInfo(card.dueDate, card.completed);
     const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
     const checklistItemsTotal = card.checklistItemsTotal ?? 0;
     const checklistItemsCompleted = card.checklistItemsCompleted ?? 0;
-    const labels = (card as any).labels || [];
+    const labels = card.labels || (card as any).labels || [];
     const attachmentsCount = (card as any).attachments?.length || 0;
     const commentsCount = (card as any).commentsCount || 0;
+    const hasMetadata =
+        Boolean(dueDateInfo) ||
+        checklistItemsTotal > 0 ||
+        Boolean(card.description) ||
+        commentsCount > 0 ||
+        attachmentsCount > 0;
 
     const renderCardContent = (dragHandleProps?: DraggableProvidedDragHandleProps | null) => (
         <>
@@ -53,10 +114,11 @@ export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
                             {labels.slice(0, 3).map((label: any) => (
                                 <span
                                     key={label._id}
-                                    className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium text-white shadow-2xs"
+                                    className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium text-white shadow-2xs max-w-[140px] truncate"
                                     style={{ backgroundColor: label.color }}
+                                    title={label.name}
                                 >
-                                    {label.name}
+                                    <span className="truncate">{label.name}</span>
                                 </span>
                             ))}
                             {labels.length > 3 && (
@@ -78,7 +140,12 @@ export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
                     )}
 
                     {/* Card Title */}
-                    <h4 className="mb-2 text-xs font-medium leading-snug text-foreground break-words">
+                    <h4
+                        className={cn(
+                            "mb-2 text-xs font-medium leading-snug text-foreground break-words transition-colors",
+                            card.completed && "line-through text-muted-foreground/75",
+                        )}
+                    >
                         {card.title}
                     </h4>
                 </div>
@@ -98,67 +165,80 @@ export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
             </div>
 
             {/* Card Metadata Bar */}
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                {/* Due Date */}
-                {hasDueDate && (
-                    <div
-                        className={cn(
-                            "flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
-                            isPastDue
-                                ? "bg-destructive/10 text-destructive dark:bg-destructive/20"
-                                : "bg-muted text-muted-foreground",
-                        )}
-                    >
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                            {new Date(card.dueDate!).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                            })}
-                        </span>
-                    </div>
-                )}
+            {hasMetadata && (
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    {/* Due Date */}
+                    {dueDateInfo && (
+                        <div
+                            className={cn(
+                                "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium transition-colors shadow-2xs",
+                                dueDateInfo.status === "completed" &&
+                                    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25",
+                                dueDateInfo.status === "overdue" &&
+                                    "bg-destructive/15 text-destructive dark:bg-destructive/25 border border-destructive/30 font-semibold",
+                                dueDateInfo.status === "today" &&
+                                    "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 font-semibold",
+                                dueDateInfo.status === "tomorrow" &&
+                                    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25",
+                                dueDateInfo.status === "upcoming" &&
+                                    "bg-muted/80 text-muted-foreground border border-border/50",
+                            )}
+                            title={dueDateInfo.label}
+                        >
+                            {dueDateInfo.status === "completed" ? (
+                                <CheckSquare className="h-3 w-3" />
+                            ) : dueDateInfo.status === "overdue" ? (
+                                <AlertCircle className="h-3 w-3 text-destructive" />
+                            ) : dueDateInfo.status === "today" ? (
+                                <Clock className="h-3 w-3 text-amber-700 dark:text-amber-400" />
+                            ) : (
+                                <Calendar className="h-3 w-3" />
+                            )}
+                            <span>{dueDateInfo.text}</span>
+                        </div>
+                    )}
 
-                {/* Checklist Progress */}
-                {checklistItemsTotal > 0 && (
-                    <div
-                        className={cn(
-                            "flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
-                            checklistItemsCompleted === checklistItemsTotal
-                                ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                                : "bg-muted text-muted-foreground",
-                        )}
-                    >
-                        <CheckSquare className="h-3 w-3" />
-                        <span>
-                            {checklistItemsCompleted}/{checklistItemsTotal}
-                        </span>
-                    </div>
-                )}
+                    {/* Checklist Progress */}
+                    {checklistItemsTotal > 0 && (
+                        <div
+                            className={cn(
+                                "flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
+                                checklistItemsCompleted === checklistItemsTotal
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                                    : "bg-muted text-muted-foreground",
+                            )}
+                        >
+                            <CheckSquare className="h-3 w-3" />
+                            <span>
+                                {checklistItemsCompleted}/{checklistItemsTotal}
+                            </span>
+                        </div>
+                    )}
 
-                {/* Description Indicator */}
-                {card.description && (
-                    <div className="flex items-center gap-0.5" title="Has description">
-                        <AlignLeft className="h-3 w-3" />
-                    </div>
-                )}
+                    {/* Description Indicator */}
+                    {card.description && (
+                        <div className="flex items-center gap-0.5" title="Has description">
+                            <AlignLeft className="h-3 w-3" />
+                        </div>
+                    )}
 
-                {/* Comments Count */}
-                {commentsCount > 0 && (
-                    <div className="flex items-center gap-1">
-                        <MessageSquare className="h-3 w-3" />
-                        <span>{commentsCount}</span>
-                    </div>
-                )}
+                    {/* Comments Count */}
+                    {commentsCount > 0 && (
+                        <div className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{commentsCount}</span>
+                        </div>
+                    )}
 
-                {/* Attachments Count */}
-                {attachmentsCount > 0 && (
-                    <div className="flex items-center gap-1">
-                        <Paperclip className="h-3 w-3" />
-                        <span>{attachmentsCount}</span>
-                    </div>
-                )}
-            </div>
+                    {/* Attachments Count */}
+                    {attachmentsCount > 0 && (
+                        <div className="flex items-center gap-1">
+                            <Paperclip className="h-3 w-3" />
+                            <span>{attachmentsCount}</span>
+                        </div>
+                    )}
+                </div>
+            )}
         </>
     );
 
@@ -180,9 +260,10 @@ export function CardItem({ card, index, isReadOnly = false }: CardItemProps) {
                             }
                         }}
                         className={cn(
-                            "group cursor-pointer select-none rounded-xl border border-border/70 bg-card p-3 shadow-2xs hover:shadow-xs hover:border-border transition-[box-shadow,border-color] duration-150 ease-out",
+                            "group cursor-pointer select-none rounded-xl border border-border/70 bg-card p-3 shadow-2xs hover:shadow-xs hover:border-border transition-[box-shadow,border-color,opacity] duration-150 ease-out",
                             snapshot.isDragging &&
                                 "shadow-2xl border-primary/50 ring-2 ring-primary/30 z-[9999] opacity-95",
+                            card.completed && "opacity-85 hover:opacity-100",
                         )}
                     >
                         {renderCardContent(isMobile ? provided.dragHandleProps : undefined)}

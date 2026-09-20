@@ -10,6 +10,7 @@ import {
     Users,
     MoreVertical,
     Trash2,
+    Archive,
 } from "lucide-react";
 import type { Board } from "@/types/board";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ export interface BoardCardProps {
     isSelected?: boolean;
     onToggleSelect?: (boardId: Id<"boards">) => void;
     onDeleteSingle?: (board: Board) => void;
+    onArchive?: (board: Board) => void;
 }
 
 export function BoardCard({
@@ -36,6 +38,7 @@ export function BoardCard({
     isSelected = false,
     onToggleSelect,
     onDeleteSingle,
+    onArchive,
 }: BoardCardProps) {
     const color = board.color || "#0079BF";
     const role = board.role || "member";
@@ -141,16 +144,30 @@ export function BoardCard({
                                             align="end"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onDeleteSingle(board);
-                                                }}
-                                                className="text-xs text-destructive focus:text-destructive cursor-pointer gap-2"
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                                <span>Delete Board</span>
-                                            </DropdownMenuItem>
+                                            {onArchive && (
+                                                <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onArchive(board);
+                                                    }}
+                                                    className="text-xs cursor-pointer gap-2"
+                                                >
+                                                    <Archive className="h-3.5 w-3.5" />
+                                                    <span>Archive</span>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {onDeleteSingle && (
+                                                <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteSingle(board);
+                                                    }}
+                                                    className="text-xs text-destructive focus:text-destructive cursor-pointer gap-2"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    <span>Delete Board</span>
+                                                </DropdownMenuItem>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 )}

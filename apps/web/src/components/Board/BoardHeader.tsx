@@ -376,11 +376,12 @@ export function BoardHeader({
                                         type="button"
                                         key={id}
                                         onClick={() => toggleLabelFilter(id)}
-                                        className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow-2xs hover:opacity-85 transition-opacity cursor-pointer"
+                                        className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow-2xs hover:opacity-85 transition-opacity cursor-pointer max-w-[160px]"
                                         style={{ background: label.color }}
+                                        title={label.name}
                                     >
-                                        <span>{label.name}</span>
-                                        <X className="h-2.5 w-2.5" />
+                                        <span className="truncate">{label.name}</span>
+                                        <X className="h-2.5 w-2.5 shrink-0" />
                                     </button>
                                 );
                             })}

@@ -86,7 +86,7 @@ export const getArchived = query({
     args: { boardId: v.optional(v.id("boards")) },
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
-        if (!user) return { boards: [], cards: [] };
+        if (!user) return { boards: [], cards: [], lists: [] };
 
         // Get archived boards
         const memberships = await ctx.db
@@ -104,8 +104,9 @@ export const getArchived = query({
                 role: memberships.find((m) => m.boardId === board!._id)?.role,
             }));
 
-        // Get archived cards (optionally scoped to a board)
+        // Get archived cards & lists (optionally scoped to a board)
         let archivedCards: any[] = [];
+        let archivedLists: any[] = [];
         if (args.boardId) {
             const { board } = await ensureBoardReadAccessForQuery(ctx, args.boardId);
 
@@ -120,11 +121,29 @@ export const getArchived = query({
                 boardTitle: board?.title ?? "Unknown",
                 boardColor: board?.color,
             }));
+
+            const lists = await ctx.db
+                .query("lists")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId!))
+                .filter((q) => q.eq(q.field("archived"), true))
+                .collect();
+
+            archivedLists = lists.map((l) => ({
+                ...l,
+                boardTitle: board?.title ?? "Unknown",
+                boardColor: board?.color,
+            }));
         } else {
-            // Get archived cards from all user's boards
+            // Get archived cards & lists from all user's boards
             for (const boardId of boardIds) {
                 const cards = await ctx.db
                     .query("cards")
+                    .withIndex("by_board", (q) => q.eq("boardId", boardId))
+                    .filter((q) => q.eq(q.field("archived"), true))
+                    .collect();
+
+                const lists = await ctx.db
+                    .query("lists")
                     .withIndex("by_board", (q) => q.eq("boardId", boardId))
                     .filter((q) => q.eq(q.field("archived"), true))
                     .collect();
@@ -137,10 +156,17 @@ export const getArchived = query({
                         boardColor: board?.color,
                     });
                 }
+                for (const l of lists) {
+                    archivedLists.push({
+                        ...l,
+                        boardTitle: board?.title ?? "Unknown",
+                        boardColor: board?.color,
+                    });
+                }
             }
         }
 
-        return { boards: archivedBoards, cards: archivedCards };
+        return { boards: archivedBoards, cards: archivedCards, lists: archivedLists };
     },
 });
 
@@ -152,6 +178,13 @@ export const getById = query({
     handler: async (ctx, args) => {
         try {
             const access = await ensureBoardReadAccessForQuery(ctx, args.boardId);
+
+            // Get all board labels once for quick lookup
+            const boardLabels = await ctx.db
+                .query("labels")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect();
+            const labelMap = new Map(boardLabels.map((l) => [l._id, l]));
 
             // Get lists for this board
             const lists = await ctx.db
@@ -189,11 +222,15 @@ export const getById = query({
                                 .collect();
 
                             const labelIds = cardLabelLinks.map((l) => l.labelId);
+                            const labels = cardLabelLinks
+                                .map((l) => labelMap.get(l.labelId))
+                                .filter((l) => l !== undefined);
 
                             if (checklists.length === 0) {
                                 return {
                                     ...card,
                                     labelIds,
+                                    labels,
                                     checklistCount: 0,
                                     checklistItemsCompleted: 0,
                                     checklistItemsTotal: 0,
@@ -219,6 +256,7 @@ export const getById = query({
                             return {
                                 ...card,
                                 labelIds,
+                                labels,
                                 checklistCount: checklists.length,
                                 checklistItemsCompleted,
                                 checklistItemsTotal: checklistItems.length,

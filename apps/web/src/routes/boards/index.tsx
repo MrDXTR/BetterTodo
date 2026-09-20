@@ -57,6 +57,7 @@ function BoardsRoute() {
     const boards = useQuery(api.boards.getAll);
     const archived = useQuery(api.boards.getArchived, {});
     const workspaces = useQuery(api.workspaces.getMyWorkspaces);
+    const archiveBoard = useMutation(api.boards.archive);
     const restoreBoard = useMutation(api.boards.restore);
     const deleteBoard = useMutation(api.boards.deleteBoard);
 
@@ -101,6 +102,15 @@ function BoardsRoute() {
     const handleSearchChange = (value: string) => {
         setSearchQuery(value);
         setSelectedBoardIds([]);
+    };
+
+    const handleArchiveBoard = async (board: Board) => {
+        try {
+            await archiveBoard({ boardId: board._id as Id<"boards"> });
+            toast.success("Board archived");
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to archive board");
+        }
     };
 
     const handleRestoreBoard = async (boardId: Id<"boards">) => {
@@ -239,7 +249,7 @@ function BoardsRoute() {
                                     : `${workspaceFilteredBoards.length} board${workspaceFilteredBoards.length === 1 ? "" : "s"} in this workspace.`}
                             </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Button
                                 variant={isManageMode ? "secondary" : "outline"}
                                 size="sm"
@@ -247,7 +257,7 @@ function BoardsRoute() {
                                     setIsManageMode((prev) => !prev);
                                     setSelectedBoardIds([]);
                                 }}
-                                className="h-9 gap-1.5 text-xs shrink-0"
+                                className="h-9 gap-1.5 text-xs flex-1 sm:flex-initial shrink-0"
                             >
                                 <CheckSquare className="h-3.5 w-3.5" />
                                 <span>{isManageMode ? "Exit Manage" : "Manage Boards"}</span>
@@ -255,7 +265,7 @@ function BoardsRoute() {
                             <Button
                                 onClick={() => setIsCreateModalOpen(true)}
                                 size="sm"
-                                className="w-full sm:w-auto shrink-0 h-9 gap-1.5 text-xs"
+                                className="h-9 gap-1.5 text-xs flex-1 sm:flex-initial shrink-0 justify-center"
                             >
                                 <Plus className="h-4 w-4" />
                                 <span>Create Board</span>
@@ -416,6 +426,7 @@ function BoardsRoute() {
                                                 board._id as Id<"boards">,
                                             )}
                                             onToggleSelect={toggleSelectBoard}
+                                            onArchive={handleArchiveBoard}
                                             onDeleteSingle={(b) => setBoardToDelete(b)}
                                         />
                                     ))}
