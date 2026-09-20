@@ -57,6 +57,7 @@ function BoardsRoute() {
     const boards = useQuery(api.boards.getAll);
     const archived = useQuery(api.boards.getArchived, {});
     const workspaces = useQuery(api.workspaces.getMyWorkspaces);
+    const archiveBoard = useMutation(api.boards.archive);
     const restoreBoard = useMutation(api.boards.restore);
     const deleteBoard = useMutation(api.boards.deleteBoard);
 
@@ -101,6 +102,15 @@ function BoardsRoute() {
     const handleSearchChange = (value: string) => {
         setSearchQuery(value);
         setSelectedBoardIds([]);
+    };
+
+    const handleArchiveBoard = async (board: Board) => {
+        try {
+            await archiveBoard({ boardId: board._id as Id<"boards"> });
+            toast.success("Board archived");
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to archive board");
+        }
     };
 
     const handleRestoreBoard = async (boardId: Id<"boards">) => {
@@ -416,6 +426,7 @@ function BoardsRoute() {
                                                 board._id as Id<"boards">,
                                             )}
                                             onToggleSelect={toggleSelectBoard}
+                                            onArchive={handleArchiveBoard}
                                             onDeleteSingle={(b) => setBoardToDelete(b)}
                                         />
                                     ))}
