@@ -163,9 +163,9 @@ function MyTasksSection() {
                         <p className="text-xs sm:text-sm font-medium text-foreground">
                             You're all caught up!
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        {/* <p className="text-xs text-muted-foreground mt-0.5">
                             No open assigned cards with a due date.
-                        </p>
+                        </p> */}
                     </div>
                 </CardContent>
             </Card>
@@ -285,7 +285,7 @@ function MyTasksSection() {
                                                             className={cn(
                                                                 "text-xs sm:text-sm font-medium text-foreground group-hover/link:text-primary transition-colors truncate",
                                                                 isCardCompleting &&
-                                                                    "line-through text-muted-foreground",
+                                                                "line-through text-muted-foreground",
                                                             )}
                                                         >
                                                             {card.title}
@@ -376,7 +376,7 @@ function MyTasksSection() {
                                                                 className={cn(
                                                                     "text-muted-foreground hover:text-foreground transition-colors truncate cursor-pointer",
                                                                     isItemCompleting &&
-                                                                        "line-through opacity-50",
+                                                                    "line-through opacity-50",
                                                                 )}
                                                                 onClick={() =>
                                                                     handleCompleteChecklistItem(
