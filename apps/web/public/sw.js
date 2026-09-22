@@ -1,4 +1,4 @@
-/** Display an incoming push message as a system notification. */
+/** Display an incoming push message and notify open application windows. */
 self.addEventListener("push", (event) => {
     if (!event.data) return;
 

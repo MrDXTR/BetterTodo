@@ -4,7 +4,11 @@ const SUPPORTED_PUSH_SERVICE_ORIGINS = new Set([
     "https://web.push.apple.com",
 ]);
 
-/** Reject malformed endpoints and endpoints outside the supported push services. */
+/**
+ * Validate that an endpoint belongs to a supported push service.
+ *
+ * @throws {Error} If the endpoint is malformed, contains credentials, or uses an unsupported origin.
+ */
 export function validatePushEndpoint(endpoint: string) {
     let url: URL;
     try {

@@ -74,6 +74,7 @@ export const remove = mutation({
     },
 });
 
+/** Create deduplicated in-app and push reminders for assigned cards that are due soon. */
 export const processDueDateReminders = internalMutation({
     args: {},
     handler: async (ctx) => {

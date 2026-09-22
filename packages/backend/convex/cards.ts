@@ -393,9 +393,7 @@ export const deleteCard = mutation({
     },
 });
 
-/**
- * Assign a user to a card
- */
+/** Assign an eligible user to a card and notify them in-app and by push unless self-assigned. */
 export const assignUser = mutation({
     args: {
         cardId: v.id("cards"),

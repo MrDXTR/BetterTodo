@@ -32,9 +32,7 @@ export const getByCard = query({
 // MUTATIONS
 // ============================================
 
-/**
- * Add a comment to a card
- */
+/** Add a comment and notify distinct mentioned board members in-app and by push. */
 export const create = mutation({
     args: {
         cardId: v.id("cards"),

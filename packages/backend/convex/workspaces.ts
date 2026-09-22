@@ -235,6 +235,7 @@ export const updateMemberRole = mutation({
     },
 });
 
+/** Add an existing account to a workspace and notify them in-app and by push. */
 export const addMemberByEmail = mutation({
     args: {
         workspaceId: v.id("workspaces"),

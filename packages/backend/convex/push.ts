@@ -8,7 +8,7 @@ import { internalAction } from "./_generated/server";
 
 let configured = false;
 
-/** Configure the web-push client once when all required VAPID credentials are available. */
+/** Configure push delivery once, returning `false` when VAPID credentials are unavailable. */
 function configurePush(): boolean {
     if (configured) return true;
     const publicKey = process.env.VAPID_PUBLIC_KEY;
@@ -24,7 +24,10 @@ function configurePush(): boolean {
     return true;
 }
 
-/** Deliver a push payload to each active subscription registered for a user. */
+/**
+ * Attempt delivery to every subscription for a user and return the successful delivery count.
+ * Missing VAPID credentials skip delivery, and expired subscriptions are removed.
+ */
 export const sendPushToUser = internalAction({
     args: {
         userId: v.string(),

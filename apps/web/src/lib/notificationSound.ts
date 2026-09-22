@@ -1,6 +1,4 @@
-/**
- * Play a crisp notification chime using Web Audio API (matching aluxbound-web)
- */
+/** Play a short notification chime when browser audio is available. */
 export function playNotificationChime() {
     if (typeof window === "undefined") return;
 

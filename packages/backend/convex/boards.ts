@@ -639,7 +639,8 @@ export const addMember = mutation({
 
 /**
  * Invite a member by email address.
- * - If the email belongs to an existing user: creates an in-app invite + notification + sends invite email.
+ * - If the email belongs to an existing user: creates an invite, sends in-app and push
+ *   notifications, and sends an invite email.
  * - If the email is unregistered: creates a token-based invite and sends an external signup email.
  */
 export const addMemberByEmail = mutation({

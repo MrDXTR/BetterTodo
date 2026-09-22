@@ -44,7 +44,8 @@ export const getUnreadCount = query({
 });
 
 /**
- * Check if the user is subscribed to push notifications
+ * Report whether the signed-in user owns the supplied endpoint, or has any subscription when the
+ * endpoint is omitted. Unauthenticated callers receive `{ isSubscribed: false }`.
  */
 export const getPushSubscriptionStatus = query({
     args: { endpoint: v.optional(v.string()) },
@@ -140,7 +141,9 @@ export const deleteNotification = mutation({
 });
 
 /**
- * Subscribe current user to browser push notifications
+ * Create or update a browser push subscription for the signed-in user.
+ *
+ * @throws {Error} If the caller is unauthenticated or the endpoint is invalid or unsupported.
  */
 export const subscribeToPush = mutation({
     args: {
@@ -183,7 +186,9 @@ export const subscribeToPush = mutation({
 });
 
 /**
- * Unsubscribe current user endpoint from browser push notifications
+ * Delete the signed-in user's subscriptions for an endpoint, succeeding when none exist.
+ *
+ * @throws {Error} If the caller is unauthenticated.
  */
 export const unsubscribeFromPush = mutation({
     args: {
@@ -212,9 +217,7 @@ export const unsubscribeFromPush = mutation({
 // INTERNAL HELPERS
 // ============================================
 
-/**
- * Fetch all active push subscriptions for a user
- */
+/** Return all stored push subscriptions for a user. */
 export const getSubscriptionsForUserInternal = internalQuery({
     args: { userId: v.string() },
     handler: async (ctx, args) => {
@@ -225,9 +228,7 @@ export const getSubscriptionsForUserInternal = internalQuery({
     },
 });
 
-/**
- * Remove dead/invalid push subscription
- */
+/** Delete every stored push subscription matching an endpoint. */
 export const removePushSubscriptionInternal = internalMutation({
     args: { endpoint: v.string() },
     handler: async (ctx, args) => {
@@ -242,9 +243,7 @@ export const removePushSubscriptionInternal = internalMutation({
     },
 });
 
-/**
- * Create a notification (internal helper)
- */
+/** Create an in-app notification and schedule a matching push notification. */
 export const create = internalMutation({
     args: {
         userId: v.string(),
