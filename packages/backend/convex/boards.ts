@@ -733,6 +733,14 @@ export const addMemberByEmail = mutation({
                 createdAt: now,
             });
 
+            // Send push notification
+            await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                userId: targetUser._id,
+                title: "Board Invitation",
+                body: `You've been invited to join "${boardTitle}"`,
+                url: `/boards/${args.boardId}`,
+            });
+
             // Schedule the invite email
             await ctx.scheduler.runAfter(0, internal.emails.sendBoardInviteEmail, {
                 to: targetUser.email ?? normalizedEmail,
@@ -1041,9 +1049,7 @@ export const getPendingInvites = query({
             )
             .collect();
 
-        const activeInvites = invites.filter(
-            (inv) => !inv.expiresAt || inv.expiresAt > Date.now(),
-        );
+        const activeInvites = invites.filter((inv) => !inv.expiresAt || inv.expiresAt > Date.now());
 
         // Enrich with board details
         const enriched = await Promise.all(

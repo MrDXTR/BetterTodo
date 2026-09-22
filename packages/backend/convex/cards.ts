@@ -456,6 +456,14 @@ export const assignUser = mutation({
                     createdAt: now,
                 });
 
+                // Web push notification
+                await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                    userId: args.userId,
+                    title: "New Assignment",
+                    body: `${assignerName} assigned you to "${card.title}"`,
+                    url: `/boards/${card.boardId}?card=${args.cardId}`,
+                });
+
                 // Email notification
                 if (assignedUser.email) {
                     await ctx.scheduler.runAfter(0, internal.emails.sendCardAssignmentEmail, {
