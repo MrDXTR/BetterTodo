@@ -35,6 +35,17 @@ npx convex env set GOOGLE_CLIENT_ID "your-google-client-id"
 npx convex env set GOOGLE_CLIENT_SECRET "your-google-client-secret"
 npx convex env set RESEND_API_KEY "re_your_resend_api_key"
 npx convex env set FROM_EMAIL "noreply@yourdomain.com"
+
+# Web Push Notifications (generate with: bunx web-push generate-vapid-keys)
+npx convex env set VAPID_PUBLIC_KEY "your-vapid-public-key"
+npx convex env set VAPID_PRIVATE_KEY "your-vapid-private-key"
+npx convex env set VAPID_SUBJECT "mailto:support@yourdomain.com"
+```
+
+In `apps/web/.env`:
+
+```bash
+VITE_VAPID_PUBLIC_KEY="your-vapid-public-key"
 ```
 
 Copy other environment variables from `packages/backend/.env.local` to `apps/web/.env` if needed.
@@ -64,7 +75,7 @@ BetterTodo/
 │   ├── web/           # React frontend (Vite + TanStack Router)
 │   └── fumadocs/      # Documentation (this site)
 ├── packages/
-│   ├── backend/       # Convex backend (boards, cards, auth, emails, etc.)
+│   ├── backend/       # Convex backend (boards, cards, auth, emails, push, etc.)
 │   ├── config/        # Shared TypeScript config
 │   └── env/           # Environment schema
 └── task.md            # Development task tracker

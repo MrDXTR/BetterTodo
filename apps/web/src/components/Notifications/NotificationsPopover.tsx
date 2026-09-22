@@ -1,11 +1,13 @@
-import { Bell, Check, Inbox } from "lucide-react";
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import { Bell, BellRing, Check, Inbox, Loader2 } from "lucide-react";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { NotificationItem } from "./NotificationItem";
-import { useState } from "react";
 
 export function NotificationsPopover() {
     const [open, setOpen] = useState(false);
@@ -13,9 +15,24 @@ export function NotificationsPopover() {
     const unreadCount = useQuery(api.notifications.getUnreadCount);
     const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
+    const {
+        isSupported,
+        permission,
+        isSubscribed,
+        isLoading: isPushLoading,
+        subscribe: enablePush,
+        unsubscribe: disablePush,
+    } = usePushNotifications();
+
     const handleMarkAllAsRead = async () => {
         await markAllAsRead();
     };
+
+    const needsPushPrompt =
+        isSupported &&
+        !isSubscribed &&
+        permission !== "denied" &&
+        Boolean(import.meta.env.VITE_VAPID_PUBLIC_KEY);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -54,6 +71,32 @@ export function NotificationsPopover() {
                     )}
                 </div>
 
+                {needsPushPrompt && (
+                    <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-3.5 py-2.5">
+                        <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground">
+                                Desktop notifications
+                            </p>
+                            <p className="text-[11px] text-muted-foreground leading-tight">
+                                Get alerted for card dues and updates
+                            </p>
+                        </div>
+                        <Button
+                            size="xs"
+                            variant="outline"
+                            className="h-7 text-xs shrink-0 font-medium"
+                            onClick={enablePush}
+                            disabled={isPushLoading}
+                        >
+                            {isPushLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                "Enable"
+                            )}
+                        </Button>
+                    </div>
+                )}
+
                 <ScrollArea className="h-[360px]">
                     {notifications === undefined ? (
                         <div className="flex items-center justify-center py-12">
@@ -81,6 +124,23 @@ export function NotificationsPopover() {
                         </div>
                     )}
                 </ScrollArea>
+
+                {isSupported && isSubscribed && (
+                    <div className="flex items-center justify-between border-t border-border/60 bg-muted/10 px-3.5 py-1.5 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                            <BellRing className="h-3 w-3" />
+                            <span>Push alerts active</span>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={disablePush}
+                            disabled={isPushLoading}
+                            className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        >
+                            Disable
+                        </button>
+                    </div>
+                )}
             </PopoverContent>
         </Popover>
     );

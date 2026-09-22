@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 
+import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { ensureBoardReadAccess, ensureBoardWriteAccess } from "./permissions";
 
@@ -122,15 +123,24 @@ export const processDueDateReminders = internalMutation({
 
                     if (existingNotification) continue;
 
+                    const cardUrl = `/boards/${card.boardId}?card=${card._id}`;
+
                     await ctx.db.insert("notifications", {
                         userId: assignment.userId,
                         type: "due_date_reminder",
                         title: "Card due soon",
                         message: `\"${card.title}\" is due soon`,
-                        linkUrl: `/boards/${card.boardId}`,
+                        linkUrl: cardUrl,
                         read: false,
                         dedupeKey,
                         createdAt: now,
+                    });
+
+                    await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                        userId: assignment.userId,
+                        title: "Card due soon",
+                        body: `\"${card.title}\" is due soon`,
+                        url: cardUrl,
                     });
 
                     notificationsCreated += 1;

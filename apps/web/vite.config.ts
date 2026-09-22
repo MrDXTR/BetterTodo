@@ -41,6 +41,7 @@ export default defineConfig({
             },
             includeAssets: ["favicon.ico", "logo.svg"],
             workbox: {
+                importScripts: ["/sw-push.js"],
                 navigateFallback: "/index.html",
                 globPatterns: ["**/*.{js,css,html,png,svg,ico,woff2}"],
                 runtimeCaching: [
