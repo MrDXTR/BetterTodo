@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import {
-    AlignLeft,
     Archive,
     Calendar as CalendarIcon,
     CheckCircle2,
@@ -21,7 +20,6 @@ import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialo
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -41,7 +39,7 @@ import { CardChecklists } from "./CardChecklists";
 import { CardAttachments } from "./CardAttachments";
 import { CardComments } from "./CardComments";
 import { CardCustomFields } from "./CardCustomFields";
-import { TextWithLinkPreviews } from "@/components/ui/text-with-link-previews";
+import { CardDescription } from "./CardDescription";
 import { toast } from "sonner";
 
 interface CardModalProps {
@@ -125,9 +123,11 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
         try {
             await updateCard({ cardId: card._id, description: description.trim() });
             setIsEditingDescription(false);
+            toast.success("Description updated");
         } catch (error) {
             console.error("Error updating description:", error);
             toast.error("Failed to update description");
+            throw error;
         }
     };
 
@@ -363,103 +363,16 @@ export function CardModal({ cardId, isOpen, onClose, isReadOnly = false }: CardM
                                 <div className="grid grid-cols-1 md:grid-cols-[1fr_290px] lg:grid-cols-[1fr_310px] gap-6 items-start">
                                     {/* Left Column: Description, Checklists, Activity */}
                                     <div className="space-y-6 min-w-0">
-                                        {/* Description Section */}
-                                        <section className="space-y-2 rounded-xl border border-border/60 bg-card/40 p-4 shadow-2xs">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                                                    <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
-                                                    <span>Description</span>
-                                                </div>
-                                                {!isReadOnly && !isEditingDescription && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            setIsEditingDescription(true)
-                                                        }
-                                                        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {isEditingDescription && !isReadOnly ? (
-                                                <div className="space-y-2 pt-1">
-                                                    <Textarea
-                                                        autoFocus
-                                                        value={description}
-                                                        onChange={(e) =>
-                                                            setDescription(e.target.value)
-                                                        }
-                                                        onKeyDown={(e) => {
-                                                            if (
-                                                                (e.metaKey || e.ctrlKey) &&
-                                                                e.key === "Enter"
-                                                            ) {
-                                                                e.preventDefault();
-                                                                handleSaveDescription();
-                                                            }
-                                                            if (e.key === "Escape") {
-                                                                setDescription(
-                                                                    card.description || "",
-                                                                );
-                                                                setIsEditingDescription(false);
-                                                            }
-                                                        }}
-                                                        placeholder="Add a detailed description... (⌘↵ to save)"
-                                                        className="min-h-[100px] text-xs bg-background"
-                                                    />
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            size="xs"
-                                                            onClick={handleSaveDescription}
-                                                            className="h-7 text-xs px-3"
-                                                        >
-                                                            Save
-                                                        </Button>
-                                                        <Button
-                                                            size="xs"
-                                                            variant="ghost"
-                                                            onClick={() => {
-                                                                setDescription(
-                                                                    card.description || "",
-                                                                );
-                                                                setIsEditingDescription(false);
-                                                            }}
-                                                            className="h-7 text-xs px-2"
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : card.description ? (
-                                                <div
-                                                    onClick={() => {
-                                                        if (!isReadOnly)
-                                                            setIsEditingDescription(true);
-                                                    }}
-                                                    className={cn(
-                                                        "text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap [word-break:break-word] rounded-md p-1 -m-1 transition-colors",
-                                                        !isReadOnly &&
-                                                            "hover:bg-muted/40 cursor-pointer",
-                                                    )}
-                                                >
-                                                    <TextWithLinkPreviews text={card.description} />
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (!isReadOnly)
-                                                            setIsEditingDescription(true);
-                                                    }}
-                                                    disabled={isReadOnly}
-                                                    className="w-full text-left rounded-md p-2 border border-dashed border-border/70 text-xs text-muted-foreground hover:bg-muted/30 transition-colors cursor-pointer"
-                                                >
-                                                    Add a more detailed description...
-                                                </button>
-                                            )}
-                                        </section>
+                                        {/* Description Section with MD Editor and Streamdown Markdown View */}
+                                        <CardDescription
+                                            cardDescription={card.description || ""}
+                                            description={description}
+                                            setDescription={setDescription}
+                                            isEditing={isEditingDescription}
+                                            setIsEditing={setIsEditingDescription}
+                                            onSave={handleSaveDescription}
+                                            isReadOnly={isReadOnly}
+                                        />
 
                                         {/* Checklists Section */}
                                         <section className="space-y-3">
