@@ -3,6 +3,7 @@ import { useConvex, useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+/** Convert a URL-safe base64 VAPID public key into bytes for the Push API. */
 function decodeVapidKey(value: string) {
     const padding = "=".repeat((4 - (value.length % 4)) % 4);
     const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -10,6 +11,7 @@ function decodeVapidKey(value: string) {
     return Uint8Array.from(rawData, (character) => character.charCodeAt(0));
 }
 
+/** Manage browser push permission, subscription state, and backend synchronization. */
 export function usePushNotifications() {
     const convex = useConvex();
     const currentUser = useQuery(api.auth.getCurrentUser);
@@ -40,6 +42,7 @@ export function usePushNotifications() {
         "serviceWorker" in navigator &&
         "PushManager" in window;
 
+    /** Reconcile the browser's active subscription with the signed-in backend user. */
     const syncSubscription = useCallback(async () => {
         const currentSyncId = ++syncId.current;
 
@@ -105,6 +108,7 @@ export function usePushNotifications() {
         void syncSubscription();
     }, [currentUserId, syncSubscription]);
 
+    /** Request permission and create a browser push subscription for the current user. */
     const subscribe = async () => {
         if (isIosPromptNeeded) {
             toast.info(
@@ -184,6 +188,7 @@ export function usePushNotifications() {
         }
     };
 
+    /** Remove the current browser subscription locally and from the backend. */
     const unsubscribe = async ({ silent = false }: { silent?: boolean } = {}) => {
         if (!isSupported) return;
 

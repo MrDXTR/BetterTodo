@@ -8,6 +8,7 @@ import { internalAction } from "./_generated/server";
 
 let configured = false;
 
+/** Configure the web-push client once when all required VAPID credentials are available. */
 function configurePush(): boolean {
     if (configured) return true;
     const publicKey = process.env.VAPID_PUBLIC_KEY;
@@ -23,6 +24,7 @@ function configurePush(): boolean {
     return true;
 }
 
+/** Deliver a push payload to each active subscription registered for a user. */
 export const sendPushToUser = internalAction({
     args: {
         userId: v.string(),

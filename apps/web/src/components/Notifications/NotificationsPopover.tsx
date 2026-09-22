@@ -24,6 +24,7 @@ type NotificationsPopoverProps = {
     pushNotifications: ReturnType<typeof usePushNotifications>;
 };
 
+/** Render in-app notifications and controls for notification sound and web push. */
 export function NotificationsPopover({ pushNotifications }: NotificationsPopoverProps) {
     const [open, setOpen] = useState(false);
     const notifications = useQuery(api.notifications.getAll);
@@ -48,6 +49,7 @@ export function NotificationsPopover({ pushNotifications }: NotificationsPopover
         previousNewestId.current = newest._id;
     }, [notifications, soundEnabled]);
 
+    /** Toggle the notification chime preference and preview it when enabled. */
     const toggleSound = () => {
         setSoundEnabled((enabled) => {
             const next = !enabled;

@@ -20,6 +20,7 @@ type UserMenuProps = {
     onBeforeSignOut?: () => Promise<void>;
 };
 
+/** Render the signed-in user's account menu and run optional cleanup before sign-out. */
 export function UserMenu({ onBeforeSignOut }: UserMenuProps) {
     const navigate = useNavigate();
     const user = useQuery(api.auth.getCurrentUser);

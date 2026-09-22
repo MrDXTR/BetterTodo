@@ -1,3 +1,4 @@
+/** Display an incoming push message as a system notification. */
 self.addEventListener("push", (event) => {
     if (!event.data) return;
 
@@ -37,6 +38,7 @@ self.addEventListener("push", (event) => {
     );
 });
 
+/** Focus an existing application window or open the notification's target URL. */
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
     const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin).href;

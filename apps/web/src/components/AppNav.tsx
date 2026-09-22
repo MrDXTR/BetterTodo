@@ -104,9 +104,12 @@ function MobileWorkspacesList({ onNavigate }: { onNavigate?: () => void }) {
     );
 }
 
+/** Render the application navigation and coordinate the current user's push subscription. */
 export function AppNav() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const pushNotifications = usePushNotifications();
+
+    /** Remove this device's push subscription before ending the user session. */
     const unsubscribeFromPushBeforeSignOut = () => pushNotifications.unsubscribe({ silent: true });
 
     return (
