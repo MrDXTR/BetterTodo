@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Bell, BellRing, Check, Inbox, Loader2 } from "lucide-react";
+import { Bell, BellRing, Check, Inbox, Loader2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,32 +16,30 @@ export function NotificationsPopover() {
     const unreadCount = useQuery(api.notifications.getUnreadCount);
     const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
-    const initialRenderRef = useRef(true);
-    const prevCountRef = useRef<number | undefined>(undefined);
+    const [soundEnabled, setSoundEnabled] = useState(() => {
+        if (typeof window === "undefined") return true;
+        return window.localStorage.getItem("notification-sound") !== "off";
+    });
+    const previousNewestId = useRef<string | null>(null);
 
-    // Play subtle audio chime when unread count increases in real-time
+    // Play chime when a new notification arrives in real-time (matching aluxbound-web)
     useEffect(() => {
-        if (unreadCount === undefined) return;
+        const newest = notifications?.[0];
+        if (!newest) return;
 
-        if (initialRenderRef.current) {
-            initialRenderRef.current = false;
-            prevCountRef.current = unreadCount;
-            return;
-        }
-
-        if (prevCountRef.current !== undefined && unreadCount > prevCountRef.current) {
+        if (previousNewestId.current && previousNewestId.current !== newest._id && soundEnabled) {
             playNotificationChime();
         }
 
-        prevCountRef.current = unreadCount;
-    }, [unreadCount]);
+        previousNewestId.current = newest._id;
+    }, [notifications, soundEnabled]);
 
     // Also trigger chime when service worker broadcasts push event to open tab
     useEffect(() => {
         if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
         const handleMessage = (event: MessageEvent) => {
-            if (event.data?.type === "PUSH_RECEIVED") {
+            if (event.data?.type === "PUSH_RECEIVED" && soundEnabled) {
                 playNotificationChime();
             }
         };
@@ -50,7 +48,18 @@ export function NotificationsPopover() {
         return () => {
             navigator.serviceWorker.removeEventListener("message", handleMessage);
         };
-    }, []);
+    }, [soundEnabled]);
+
+    const toggleSound = () => {
+        setSoundEnabled((enabled) => {
+            const next = !enabled;
+            if (next) {
+                playNotificationChime();
+            }
+            window.localStorage.setItem("notification-sound", next ? "on" : "off");
+            return next;
+        });
+    };
 
     const {
         isSupported,
@@ -94,7 +103,30 @@ export function NotificationsPopover() {
                 sideOffset={6}
             >
                 <div className="flex items-center justify-between border-b border-border/60 px-3.5 py-2.5 bg-muted/20">
-                    <h3 className="font-semibold text-xs text-foreground">Notifications</h3>
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-xs text-foreground">Notifications</h3>
+                        <button
+                            type="button"
+                            aria-label={
+                                soundEnabled
+                                    ? "Mute notification chime"
+                                    : "Enable notification chime"
+                            }
+                            onClick={toggleSound}
+                            title={
+                                soundEnabled
+                                    ? "Sound enabled (click to mute)"
+                                    : "Sound muted (click to unmute)"
+                            }
+                            className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+                        >
+                            {soundEnabled ? (
+                                <Volume2 className="h-3.5 w-3.5" />
+                            ) : (
+                                <VolumeX className="h-3.5 w-3.5 text-muted-foreground/50" />
+                            )}
+                        </button>
+                    </div>
                     {unreadCount !== undefined && unreadCount > 0 && (
                         <Button
                             variant="ghost"
