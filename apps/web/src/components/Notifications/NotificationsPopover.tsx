@@ -1,6 +1,16 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Bell, BellRing, Check, Inbox, Loader2, Volume2, VolumeX } from "lucide-react";
+import {
+    Bell,
+    BellRing,
+    Check,
+    Inbox,
+    Loader2,
+    Share,
+    Smartphone,
+    Volume2,
+    VolumeX,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -63,6 +73,7 @@ export function NotificationsPopover() {
 
     const {
         isSupported,
+        isIosPromptNeeded,
         permission,
         isSubscribed,
         isLoading: isPushLoading,
@@ -75,6 +86,7 @@ export function NotificationsPopover() {
     };
 
     const needsPushPrompt =
+        !isIosPromptNeeded &&
         isSupported &&
         !isSubscribed &&
         permission !== "denied" &&
@@ -139,6 +151,26 @@ export function NotificationsPopover() {
                         </Button>
                     )}
                 </div>
+
+                {isIosPromptNeeded && !isSubscribed && (
+                    <div className="flex flex-col gap-1.5 border-b border-border/60 bg-amber-500/10 dark:bg-amber-500/5 px-3.5 py-2.5">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                            <Smartphone className="h-3.5 w-3.5 text-amber-500" />
+                            <span>iOS Notifications</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            To receive notifications on iOS, tap{" "}
+                            <span className="inline-flex items-center gap-0.5 font-medium text-foreground bg-muted px-1 py-0.5 rounded text-[10px]">
+                                <Share className="h-3 w-3" /> Share
+                            </span>{" "}
+                            in Safari and select{" "}
+                            <strong className="text-foreground font-medium">
+                                "Add to Home Screen"
+                            </strong>
+                            .
+                        </p>
+                    </div>
+                )}
 
                 {needsPushPrompt && (
                     <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-3.5 py-2.5">

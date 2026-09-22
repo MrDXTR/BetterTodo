@@ -18,6 +18,18 @@ export function usePushNotifications() {
     const subscribeMutation = useMutation(api.notifications.subscribeToPush);
     const unsubscribeMutation = useMutation(api.notifications.unsubscribeFromPush);
 
+    const isIos =
+        typeof navigator !== "undefined" &&
+        (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1));
+
+    const isStandalone =
+        typeof window !== "undefined" &&
+        (window.matchMedia("(display-mode: standalone)").matches ||
+            Boolean((navigator as unknown as { standalone?: boolean }).standalone));
+
+    const isIosPromptNeeded = isIos && !isStandalone;
+
     const isSupported =
         typeof window !== "undefined" &&
         "Notification" in window &&
@@ -26,7 +38,7 @@ export function usePushNotifications() {
 
     const syncSubscription = useCallback(async () => {
         if (!isSupported) {
-            setPermission("unsupported");
+            setPermission(isIosPromptNeeded ? "default" : "unsupported");
             setIsSubscribed(false);
             return;
         }
@@ -41,13 +53,20 @@ export function usePushNotifications() {
             console.error("Failed to check push subscription:", error);
             setIsSubscribed(false);
         }
-    }, [isSupported]);
+    }, [isSupported, isIosPromptNeeded]);
 
     useEffect(() => {
         void syncSubscription();
     }, [syncSubscription]);
 
     const subscribe = async () => {
+        if (isIosPromptNeeded) {
+            toast.info(
+                "To receive push notifications on iOS, tap the Share button in Safari and choose 'Add to Home Screen'.",
+            );
+            return;
+        }
+
         if (!isSupported) {
             toast.error("Push notifications are not supported by your browser.");
             return;
@@ -144,6 +163,9 @@ export function usePushNotifications() {
 
     return {
         isSupported,
+        isIos,
+        isStandalone,
+        isIosPromptNeeded,
         permission,
         isSubscribed,
         isLoading,
