@@ -14,6 +14,7 @@ interface DatePickerProps {
     formatStr?: string;
     className?: string;
     disabled?: boolean;
+    align?: "start" | "center" | "end";
 }
 
 export function DatePicker({
@@ -23,6 +24,7 @@ export function DatePicker({
     formatStr = "MMM d, yyyy",
     className,
     disabled = false,
+    align = "start",
 }: DatePickerProps) {
     return (
         <Popover>
@@ -43,7 +45,7 @@ export function DatePicker({
                     </span>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 z-50" align="start">
+            <PopoverContent className="w-auto p-0 z-50" align={align}>
                 <Calendar mode="single" selected={date} onSelect={onDateChange} initialFocus />
             </PopoverContent>
         </Popover>

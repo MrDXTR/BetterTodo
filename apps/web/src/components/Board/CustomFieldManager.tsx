@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const CUSTOM_FIELD_TYPES = ["text", "number", "date", "select", "checkbox"] as const;
 
@@ -143,39 +144,58 @@ export function CustomFieldManager({ boardId }: CustomFieldManagerProps) {
                 </Button>
             </div>
 
-            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-                {(fields ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground py-2 text-center">
-                        No custom fields yet.
-                    </p>
-                ) : (
-                    fields!.map((field) => (
-                        <div
-                            key={field._id}
-                            className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 shadow-2xs"
-                        >
-                            <div className="min-w-0">
-                                <p className="truncate text-xs font-medium text-foreground">
-                                    {field.name}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground capitalize">
-                                    {field.type}
-                                    {field.required ? " · required" : ""}
-                                </p>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDelete(field._id)}
-                                aria-label={`Delete ${field.name}`}
+            <TooltipProvider delayDuration={150}>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                    {(fields ?? []).length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2 text-center">
+                            No custom fields yet.
+                        </p>
+                    ) : (
+                        fields!.map((field) => (
+                            <div
+                                key={field._id}
+                                className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 shadow-2xs"
                             >
-                                <Trash2 className="h-3 w-3" />
-                            </Button>
-                        </div>
-                    ))
-                )}
-            </div>
+                                <div className="min-w-0">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="truncate text-xs font-medium text-foreground cursor-default">
+                                                {field.name}
+                                            </p>
+                                        </TooltipTrigger>
+                                        <TooltipContent
+                                            side="top"
+                                            className="text-xs max-w-[200px] break-words"
+                                        >
+                                            {field.name}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <p className="text-[10px] text-muted-foreground capitalize">
+                                        {field.type}
+                                        {field.required ? " · required" : ""}
+                                    </p>
+                                </div>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                            onClick={() => handleDelete(field._id)}
+                                            aria-label={`Delete ${field.name}`}
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                        Delete field
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </TooltipProvider>
         </section>
     );
 }
