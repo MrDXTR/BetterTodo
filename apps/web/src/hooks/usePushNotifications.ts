@@ -39,7 +39,9 @@ export function usePushNotifications() {
         setPermission(window.Notification.permission);
 
         try {
-            const registration = await navigator.serviceWorker.getRegistration("/");
+            const registration =
+                (await navigator.serviceWorker.getRegistration("/")) ||
+                (await navigator.serviceWorker.getRegistration());
             const subscription = await registration?.pushManager.getSubscription();
             setIsSubscribed(Boolean(subscription));
         } catch (error) {
@@ -58,9 +60,21 @@ export function usePushNotifications() {
             return;
         }
 
+        if (typeof window !== "undefined" && !window.isSecureContext) {
+            toast.error("Push notifications require a secure context (HTTPS or http://localhost).");
+            return;
+        }
+
+        if (typeof window !== "undefined" && window.self !== window.top) {
+            toast.error(
+                "Push notifications cannot be enabled inside an embedded preview. Please open the app in a new browser tab.",
+            );
+            return;
+        }
+
         const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
-            toast.error("Web Push is not configured yet (missing VAPID public key).");
+            toast.error("Web Push is not configured yet (missing VAPID public key in environment).");
             return;
         }
 
@@ -74,12 +88,29 @@ export function usePushNotifications() {
                 return;
             }
 
-            // Register service worker if not already active
-            await navigator.serviceWorker.register("/sw.js", {
-                updateViaCache: "none",
-            });
+            // Find existing registration or register service worker
+            let registration =
+                (await navigator.serviceWorker.getRegistration("/")) ||
+                (await navigator.serviceWorker.getRegistration());
 
-            const activeRegistration = await navigator.serviceWorker.ready;
+            if (!registration) {
+                try {
+                    registration = await navigator.serviceWorker.register("/sw.js", {
+                        updateViaCache: "none",
+                    });
+                } catch (regErr) {
+                    // In dev mode with VitePWA, the worker may be served under /dev-dist/sw.js
+                    try {
+                        registration = await navigator.serviceWorker.register("/dev-dist/sw.js", {
+                            updateViaCache: "none",
+                        });
+                    } catch {
+                        throw regErr;
+                    }
+                }
+            }
+
+            const activeRegistration = registration || (await navigator.serviceWorker.ready);
             let subscription = await activeRegistration.pushManager.getSubscription();
 
             if (!subscription) {
@@ -105,9 +136,21 @@ export function usePushNotifications() {
 
             setIsSubscribed(true);
             toast.success("Desktop notifications enabled.");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to enable push notifications:", error);
-            toast.error("Could not enable desktop notifications. Please try again.");
+
+            if (
+                error?.name === "SecurityError" ||
+                error?.message?.toLowerCase().includes("insecure")
+            ) {
+                toast.error(
+                    "Push notifications are blocked in private browsing or embedded frames. Please open directly in a regular browser window.",
+                );
+            } else {
+                toast.error(
+                    error?.message || "Could not enable desktop notifications. Please try again.",
+                );
+            }
         } finally {
             setIsLoading(false);
         }
@@ -118,7 +161,9 @@ export function usePushNotifications() {
 
         setIsLoading(true);
         try {
-            const registration = await navigator.serviceWorker.getRegistration("/");
+            const registration =
+                (await navigator.serviceWorker.getRegistration("/")) ||
+                (await navigator.serviceWorker.getRegistration());
             const subscription = await registration?.pushManager.getSubscription();
 
             if (subscription) {
