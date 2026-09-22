@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ensureCardReadAccess, ensureCardWriteAccess } from "./permissions";
@@ -96,6 +97,14 @@ export const create = mutation({
                             linkUrl: `/boards/${card.boardId}?card=${args.cardId}`,
                             read: false,
                             createdAt: now,
+                        });
+
+                        // Send push notification
+                        await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                            userId: member.userId,
+                            title: "You were mentioned",
+                            body: `${commenterName} mentioned you in "${card.title}"`,
+                            url: `/boards/${card.boardId}?card=${args.cardId}`,
                         });
                     }
                 }

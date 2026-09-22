@@ -19,12 +19,22 @@ self.addEventListener("push", (event) => {
         icon: "/android-chrome-192x192.png",
         badge: "/android-chrome-192x192.png",
         tag: payload.url || "bettertodo-notification",
+        vibrate: [100, 50, 100],
         data: {
             url: payload.url || "/",
         },
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        Promise.all([
+            self.registration.showNotification(title, options),
+            self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+                for (const client of clients) {
+                    client.postMessage({ type: "PUSH_RECEIVED", payload });
+                }
+            }),
+        ]),
+    );
 });
 
 self.addEventListener("notificationclick", (event) => {

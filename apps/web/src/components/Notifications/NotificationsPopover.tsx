@@ -1,12 +1,13 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { Bell, BellRing, Check, Inbox, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { playNotificationChime } from "@/lib/notificationSound";
 import { NotificationItem } from "./NotificationItem";
 
 export function NotificationsPopover() {
@@ -14,6 +15,42 @@ export function NotificationsPopover() {
     const notifications = useQuery(api.notifications.getAll);
     const unreadCount = useQuery(api.notifications.getUnreadCount);
     const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+
+    const initialRenderRef = useRef(true);
+    const prevCountRef = useRef<number | undefined>(undefined);
+
+    // Play subtle audio chime when unread count increases in real-time
+    useEffect(() => {
+        if (unreadCount === undefined) return;
+
+        if (initialRenderRef.current) {
+            initialRenderRef.current = false;
+            prevCountRef.current = unreadCount;
+            return;
+        }
+
+        if (prevCountRef.current !== undefined && unreadCount > prevCountRef.current) {
+            playNotificationChime();
+        }
+
+        prevCountRef.current = unreadCount;
+    }, [unreadCount]);
+
+    // Also trigger chime when service worker broadcasts push event to open tab
+    useEffect(() => {
+        if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === "PUSH_RECEIVED") {
+                playNotificationChime();
+            }
+        };
+
+        navigator.serviceWorker.addEventListener("message", handleMessage);
+        return () => {
+            navigator.serviceWorker.removeEventListener("message", handleMessage);
+        };
+    }, []);
 
     const {
         isSupported,
