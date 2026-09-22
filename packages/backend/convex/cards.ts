@@ -464,18 +464,18 @@ export const assignUser = mutation({
                     url: `/boards/${card.boardId}?card=${args.cardId}`,
                 });
 
-                // Email notification
-                if (assignedUser.email) {
-                    await ctx.scheduler.runAfter(0, internal.emails.sendCardAssignmentEmail, {
-                        to: assignedUser.email,
-                        recipientName: assignedUser.name ?? undefined,
-                        assignerName,
-                        cardTitle: card.title,
-                        boardTitle: board.title,
-                        boardId: card.boardId,
-                        cardId: args.cardId,
-                    });
-                }
+                // Email notification (disabled - assignments use in-app and web push)
+                // if (assignedUser.email) {
+                //     await ctx.scheduler.runAfter(0, internal.emails.sendCardAssignmentEmail, {
+                //         to: assignedUser.email,
+                //         recipientName: assignedUser.name ?? undefined,
+                //         assignerName,
+                //         cardTitle: card.title,
+                //         boardTitle: board.title,
+                //         boardId: card.boardId,
+                //         cardId: args.cardId,
+                //     });
+                // }
             }
         }
 
