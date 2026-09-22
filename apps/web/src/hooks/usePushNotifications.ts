@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
-import { useCallback, useEffect, useState } from "react";
+import { useConvex, useMutation, useQuery } from "convex/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 function decodeVapidKey(value: string) {
@@ -11,9 +11,13 @@ function decodeVapidKey(value: string) {
 }
 
 export function usePushNotifications() {
+    const convex = useConvex();
+    const currentUser = useQuery(api.auth.getCurrentUser);
+    const currentUserId = currentUser === undefined ? undefined : (currentUser?._id ?? null);
     const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
     const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const syncId = useRef(0);
 
     const subscribeMutation = useMutation(api.notifications.subscribeToPush);
     const unsubscribeMutation = useMutation(api.notifications.unsubscribeFromPush);
@@ -37,6 +41,8 @@ export function usePushNotifications() {
         "PushManager" in window;
 
     const syncSubscription = useCallback(async () => {
+        const currentSyncId = ++syncId.current;
+
         if (!isSupported) {
             setPermission(isIosPromptNeeded ? "default" : "unsupported");
             setIsSubscribed(false);
@@ -48,16 +54,56 @@ export function usePushNotifications() {
         try {
             const registration = await navigator.serviceWorker.getRegistration("/");
             const subscription = await registration?.pushManager.getSubscription();
-            setIsSubscribed(Boolean(subscription));
+
+            if (!subscription || !currentUserId) {
+                if (currentSyncId === syncId.current) {
+                    setIsSubscribed(false);
+                }
+                return;
+            }
+
+            const status = await convex.query(api.notifications.getPushSubscriptionStatus, {
+                endpoint: subscription.endpoint,
+            });
+
+            if (status.isSubscribed) {
+                if (currentSyncId === syncId.current) {
+                    setIsSubscribed(true);
+                }
+                return;
+            }
+
+            if (currentSyncId !== syncId.current) return;
+
+            const json = subscription.toJSON();
+            if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+                throw new Error("Push subscription did not return required keys.");
+            }
+
+            await subscribeMutation({
+                endpoint: json.endpoint,
+                keys: {
+                    p256dh: json.keys.p256dh,
+                    auth: json.keys.auth,
+                },
+                userAgent: navigator.userAgent,
+            });
+
+            if (currentSyncId === syncId.current) {
+                setIsSubscribed(true);
+            }
         } catch (error) {
             console.error("Failed to check push subscription:", error);
-            setIsSubscribed(false);
+            if (currentSyncId === syncId.current) {
+                setIsSubscribed(false);
+            }
         }
-    }, [isSupported, isIosPromptNeeded]);
+    }, [convex, currentUserId, isSupported, isIosPromptNeeded, subscribeMutation]);
 
     useEffect(() => {
+        if (currentUserId === undefined) return;
         void syncSubscription();
-    }, [syncSubscription]);
+    }, [currentUserId, syncSubscription]);
 
     const subscribe = async () => {
         if (isIosPromptNeeded) {
@@ -80,6 +126,7 @@ export function usePushNotifications() {
             return;
         }
 
+        ++syncId.current;
         setIsLoading(true);
         try {
             const requestedPermission = await window.Notification.requestPermission();
@@ -137,9 +184,10 @@ export function usePushNotifications() {
         }
     };
 
-    const unsubscribe = async () => {
+    const unsubscribe = async ({ silent = false }: { silent?: boolean } = {}) => {
         if (!isSupported) return;
 
+        ++syncId.current;
         setIsLoading(true);
         try {
             const registration = await navigator.serviceWorker.getRegistration("/");
@@ -147,15 +195,29 @@ export function usePushNotifications() {
 
             if (subscription) {
                 const endpoint = subscription.endpoint;
-                await subscription.unsubscribe();
                 await unsubscribeMutation({ endpoint });
+                const didUnsubscribe = await subscription.unsubscribe();
+                if (!didUnsubscribe) {
+                    throw new Error("Browser push subscription could not be removed.");
+                }
             }
 
             setIsSubscribed(false);
-            toast.success("Desktop notifications disabled.");
+            if (!silent) {
+                toast.success("Desktop notifications disabled.");
+            }
         } catch (error) {
             console.error("Failed to disable push notifications:", error);
-            toast.error("Could not disable desktop notifications.");
+            try {
+                const registration = await navigator.serviceWorker.getRegistration("/");
+                const subscription = await registration?.pushManager.getSubscription();
+                setIsSubscribed(Boolean(subscription));
+            } catch {
+                // Preserve the last known state when the browser cannot report it.
+            }
+            if (!silent) {
+                toast.error("Could not disable desktop notifications.");
+            }
         } finally {
             setIsLoading(false);
         }

@@ -16,11 +16,15 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
+import type { usePushNotifications } from "@/hooks/usePushNotifications";
 import { playNotificationChime } from "@/lib/notificationSound";
 import { NotificationItem } from "./NotificationItem";
 
-export function NotificationsPopover() {
+type NotificationsPopoverProps = {
+    pushNotifications: ReturnType<typeof usePushNotifications>;
+};
+
+export function NotificationsPopover({ pushNotifications }: NotificationsPopoverProps) {
     const [open, setOpen] = useState(false);
     const notifications = useQuery(api.notifications.getAll);
     const unreadCount = useQuery(api.notifications.getUnreadCount);
@@ -44,22 +48,6 @@ export function NotificationsPopover() {
         previousNewestId.current = newest._id;
     }, [notifications, soundEnabled]);
 
-    // Also trigger chime when service worker broadcasts push event to open tab
-    useEffect(() => {
-        if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-
-        const handleMessage = (event: MessageEvent) => {
-            if (event.data?.type === "PUSH_RECEIVED" && soundEnabled) {
-                playNotificationChime();
-            }
-        };
-
-        navigator.serviceWorker.addEventListener("message", handleMessage);
-        return () => {
-            navigator.serviceWorker.removeEventListener("message", handleMessage);
-        };
-    }, [soundEnabled]);
-
     const toggleSound = () => {
         setSoundEnabled((enabled) => {
             const next = !enabled;
@@ -79,7 +67,7 @@ export function NotificationsPopover() {
         isLoading: isPushLoading,
         subscribe: enablePush,
         unsubscribe: disablePush,
-    } = usePushNotifications();
+    } = pushNotifications;
 
     const handleMarkAllAsRead = async () => {
         await markAllAsRead();
@@ -234,7 +222,7 @@ export function NotificationsPopover() {
                         </span>
                         <button
                             type="button"
-                            onClick={disablePush}
+                            onClick={() => void disablePush()}
                             disabled={isPushLoading}
                             className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                         >

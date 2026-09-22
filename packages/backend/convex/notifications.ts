@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { validatePushEndpoint } from "./lib/pushEndpoints";
 
 // ============================================
 // QUERIES
@@ -153,6 +154,8 @@ export const subscribeToPush = mutation({
     handler: async (ctx, args) => {
         const user = await authComponent.safeGetAuthUser(ctx);
         if (!user) throw new Error("Unauthorized");
+
+        validatePushEndpoint(args.endpoint);
 
         const existing = await ctx.db
             .query("pushSubscriptions")

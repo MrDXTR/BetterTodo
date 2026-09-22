@@ -67,6 +67,7 @@ export const sendPushToUser = internalAction({
                         },
                     },
                     payload,
+                    { timeout: 10_000 },
                 );
                 sentCount++;
             } catch (err: any) {
