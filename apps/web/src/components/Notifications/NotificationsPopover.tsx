@@ -1,21 +1,86 @@
-import { Bell, Check, Inbox } from "lucide-react";
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@BetterTodo/backend/convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import {
+    Bell,
+    BellRing,
+    Check,
+    Inbox,
+    Loader2,
+    Share,
+    Smartphone,
+    Volume2,
+    VolumeX,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { usePushNotifications } from "@/hooks/usePushNotifications";
+import { playNotificationChime } from "@/lib/notificationSound";
 import { NotificationItem } from "./NotificationItem";
-import { useState } from "react";
 
-export function NotificationsPopover() {
+type NotificationsPopoverProps = {
+    pushNotifications: ReturnType<typeof usePushNotifications>;
+};
+
+/** Render in-app notifications and controls for notification sound and web push. */
+export function NotificationsPopover({ pushNotifications }: NotificationsPopoverProps) {
     const [open, setOpen] = useState(false);
     const notifications = useQuery(api.notifications.getAll);
     const unreadCount = useQuery(api.notifications.getUnreadCount);
     const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
+    const [soundEnabled, setSoundEnabled] = useState(() => {
+        if (typeof window === "undefined") return true;
+        return window.localStorage.getItem("notification-sound") !== "off";
+    });
+    const previousNewestId = useRef<string | null>(null);
+
+    // Play chime when a new notification arrives in real-time (matching aluxbound-web)
+    useEffect(() => {
+        const newest = notifications?.[0];
+        if (!newest) return;
+
+        if (previousNewestId.current && previousNewestId.current !== newest._id && soundEnabled) {
+            playNotificationChime();
+        }
+
+        previousNewestId.current = newest._id;
+    }, [notifications, soundEnabled]);
+
+    /** Toggle the notification chime preference and preview it when enabled. */
+    const toggleSound = () => {
+        setSoundEnabled((enabled) => {
+            const next = !enabled;
+            if (next) {
+                playNotificationChime();
+            }
+            window.localStorage.setItem("notification-sound", next ? "on" : "off");
+            return next;
+        });
+    };
+
+    const {
+        isSupported,
+        isIosPromptNeeded,
+        permission,
+        isSubscribed,
+        isLoading: isPushLoading,
+        subscribe: enablePush,
+        unsubscribe: disablePush,
+    } = pushNotifications;
+
     const handleMarkAllAsRead = async () => {
         await markAllAsRead();
     };
+
+    const needsPushPrompt =
+        !isIosPromptNeeded &&
+        isSupported &&
+        !isSubscribed &&
+        permission !== "denied" &&
+        Boolean(import.meta.env.VITE_VAPID_PUBLIC_KEY);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -40,7 +105,30 @@ export function NotificationsPopover() {
                 sideOffset={6}
             >
                 <div className="flex items-center justify-between border-b border-border/60 px-3.5 py-2.5 bg-muted/20">
-                    <h3 className="font-semibold text-xs text-foreground">Notifications</h3>
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-xs text-foreground">Notifications</h3>
+                        <button
+                            type="button"
+                            aria-label={
+                                soundEnabled
+                                    ? "Mute notification chime"
+                                    : "Enable notification chime"
+                            }
+                            onClick={toggleSound}
+                            title={
+                                soundEnabled
+                                    ? "Sound enabled (click to mute)"
+                                    : "Sound muted (click to unmute)"
+                            }
+                            className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+                        >
+                            {soundEnabled ? (
+                                <Volume2 className="h-3.5 w-3.5" />
+                            ) : (
+                                <VolumeX className="h-3.5 w-3.5 text-muted-foreground/50" />
+                            )}
+                        </button>
+                    </div>
                     {unreadCount !== undefined && unreadCount > 0 && (
                         <Button
                             variant="ghost"
@@ -53,6 +141,52 @@ export function NotificationsPopover() {
                         </Button>
                     )}
                 </div>
+
+                {isIosPromptNeeded && !isSubscribed && (
+                    <div className="flex flex-col gap-1.5 border-b border-border/60 bg-amber-500/10 dark:bg-amber-500/5 px-3.5 py-2.5">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                            <Smartphone className="h-3.5 w-3.5 text-amber-500" />
+                            <span>iOS Notifications</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            To receive notifications on iOS, tap{" "}
+                            <span className="inline-flex items-center gap-0.5 font-medium text-foreground bg-muted px-1 py-0.5 rounded text-[10px]">
+                                <Share className="h-3 w-3" /> Share
+                            </span>{" "}
+                            in Safari and select{" "}
+                            <strong className="text-foreground font-medium">
+                                "Add to Home Screen"
+                            </strong>
+                            .
+                        </p>
+                    </div>
+                )}
+
+                {needsPushPrompt && (
+                    <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-3.5 py-2.5">
+                        <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground">
+                                Desktop notifications
+                            </p>
+                            <p className="text-[11px] text-muted-foreground leading-tight">
+                                Get alerted for card dues and updates
+                            </p>
+                        </div>
+                        <Button
+                            size="xs"
+                            variant="outline"
+                            className="h-7 text-xs shrink-0 font-medium"
+                            onClick={enablePush}
+                            disabled={isPushLoading}
+                        >
+                            {isPushLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                "Enable"
+                            )}
+                        </Button>
+                    </div>
+                )}
 
                 <ScrollArea className="h-[360px]">
                     {notifications === undefined ? (
@@ -81,6 +215,23 @@ export function NotificationsPopover() {
                         </div>
                     )}
                 </ScrollArea>
+
+                {isSupported && isSubscribed && (
+                    <div className="flex items-center justify-between border-t border-border/60 bg-muted/10 px-3.5 py-1.5 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                            <BellRing className="h-3 w-3" />
+                            <span>Push alerts active</span>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => void disablePush()}
+                            disabled={isPushLoading}
+                            className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        >
+                            Disable
+                        </button>
+                    </div>
+                )}
             </PopoverContent>
         </Popover>
     );

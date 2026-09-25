@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ensureCardReadAccess, ensureCardWriteAccess } from "./permissions";
@@ -31,9 +32,7 @@ export const getByCard = query({
 // MUTATIONS
 // ============================================
 
-/**
- * Add a comment to a card
- */
+/** Add a comment and notify distinct mentioned board members in-app and by push. */
 export const create = mutation({
     args: {
         cardId: v.id("cards"),
@@ -96,6 +95,14 @@ export const create = mutation({
                             linkUrl: `/boards/${card.boardId}?card=${args.cardId}`,
                             read: false,
                             createdAt: now,
+                        });
+
+                        // Send push notification
+                        await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                            userId: member.userId,
+                            title: "You were mentioned",
+                            body: `${commenterName} mentioned you in "${card.title}"`,
+                            url: `/boards/${card.boardId}?card=${args.cardId}`,
                         });
                     }
                 }

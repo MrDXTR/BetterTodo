@@ -393,9 +393,7 @@ export const deleteCard = mutation({
     },
 });
 
-/**
- * Assign a user to a card
- */
+/** Assign an eligible user to a card and notify them in-app and by push unless self-assigned. */
 export const assignUser = mutation({
     args: {
         cardId: v.id("cards"),
@@ -456,18 +454,26 @@ export const assignUser = mutation({
                     createdAt: now,
                 });
 
-                // Email notification
-                if (assignedUser.email) {
-                    await ctx.scheduler.runAfter(0, internal.emails.sendCardAssignmentEmail, {
-                        to: assignedUser.email,
-                        recipientName: assignedUser.name ?? undefined,
-                        assignerName,
-                        cardTitle: card.title,
-                        boardTitle: board.title,
-                        boardId: card.boardId,
-                        cardId: args.cardId,
-                    });
-                }
+                // Web push notification
+                await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                    userId: args.userId,
+                    title: "New Assignment",
+                    body: `${assignerName} assigned you to "${card.title}"`,
+                    url: `/boards/${card.boardId}?card=${args.cardId}`,
+                });
+
+                // Email notification (disabled - assignments use in-app and web push)
+                // if (assignedUser.email) {
+                //     await ctx.scheduler.runAfter(0, internal.emails.sendCardAssignmentEmail, {
+                //         to: assignedUser.email,
+                //         recipientName: assignedUser.name ?? undefined,
+                //         assignerName,
+                //         cardTitle: card.title,
+                //         boardTitle: board.title,
+                //         boardId: card.boardId,
+                //         cardId: args.cardId,
+                //     });
+                // }
             }
         }
 

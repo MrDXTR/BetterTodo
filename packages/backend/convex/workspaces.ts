@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ensureWorkspaceAccess, requireAuth } from "./permissions";
@@ -235,6 +235,7 @@ export const updateMemberRole = mutation({
     },
 });
 
+/** Add an existing account to a workspace and notify them in-app and by push. */
 export const addMemberByEmail = mutation({
     args: {
         workspaceId: v.id("workspaces"),
@@ -283,6 +284,14 @@ export const addMemberByEmail = mutation({
             linkUrl: `/workspaces/${args.workspaceId}`,
             read: false,
             createdAt: now,
+        });
+
+        // Send push notification
+        await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+            userId: targetUser._id,
+            title: "Workspace Invitation",
+            body: `You've been added to the workspace "${workspace?.name ?? "a workspace"}"`,
+            url: `/workspaces/${args.workspaceId}`,
         });
 
         return { success: true, userName: targetUser.name };

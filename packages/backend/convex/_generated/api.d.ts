@@ -29,6 +29,7 @@ import type * as lists from "../lists.js";
 import type * as notifications from "../notifications.js";
 import type * as permissions from "../permissions.js";
 import type * as privateData from "../privateData.js";
+import type * as push from "../push.js";
 import type * as search from "../search.js";
 import type * as workspaces from "../workspaces.js";
 
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   notifications: typeof notifications;
   permissions: typeof permissions;
   privateData: typeof privateData;
+  push: typeof push;
   search: typeof search;
   workspaces: typeof workspaces;
 }>;

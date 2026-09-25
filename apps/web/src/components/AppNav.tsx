@@ -22,6 +22,7 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { UserMenu } from "@/components/user-menu";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { cn } from "@/lib/utils";
 
 function NavLinks({
@@ -103,8 +104,13 @@ function MobileWorkspacesList({ onNavigate }: { onNavigate?: () => void }) {
     );
 }
 
+/** Render the application navigation and coordinate the current user's push subscription. */
 export function AppNav() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const pushNotifications = usePushNotifications();
+
+    /** Remove this device's push subscription before ending the user session. */
+    const unsubscribeFromPushBeforeSignOut = () => pushNotifications.unsubscribe({ silent: true });
 
     return (
         <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/90 backdrop-blur-md">
@@ -132,7 +138,7 @@ export function AppNav() {
                 <div className="flex items-center gap-2">
                     <Authenticated>
                         <SearchCommandPalette />
-                        <NotificationsPopover />
+                        <NotificationsPopover pushNotifications={pushNotifications} />
                     </Authenticated>
                     <AnimatedThemeToggler
                         variant="circle"
@@ -141,7 +147,7 @@ export function AppNav() {
                     />
                     <div className="hidden md:flex md:items-center md:gap-2">
                         <Authenticated>
-                            <UserMenu />
+                            <UserMenu onBeforeSignOut={unsubscribeFromPushBeforeSignOut} />
                         </Authenticated>
                         <Unauthenticated>
                             <Link to="/sign-in">
@@ -173,7 +179,9 @@ export function AppNav() {
                                 </Authenticated>
                                 <div className="mt-auto pt-4 border-t border-border/60">
                                     <Authenticated>
-                                        <UserMenu />
+                                        <UserMenu
+                                            onBeforeSignOut={unsubscribeFromPushBeforeSignOut}
+                                        />
                                     </Authenticated>
                                     <Unauthenticated>
                                         <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
