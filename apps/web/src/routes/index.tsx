@@ -210,7 +210,7 @@ function LandingContent() {
                         className="rounded-full px-6 text-base gap-2 group cursor-pointer border-border hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-200"
                     >
                         <Play className="w-4 h-4 text-violet-600 dark:text-violet-400 fill-current ml-0.5 transition-transform group-hover:scale-110" />
-                        Watch demo (1:44)
+                        Watch demo
                     </Button>
                     <Link to="/sign-in">
                         <Button size="lg" variant="ghost" className="rounded-full px-6 text-base text-muted-foreground hover:text-foreground">
