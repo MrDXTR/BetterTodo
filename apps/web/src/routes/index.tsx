@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "motion/react";
 import {
     LayoutGrid,
@@ -11,6 +11,7 @@ import {
     Sparkles,
     ArrowRight,
     CheckCircle2,
+    Play,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { HexagonPattern } from "@/components/ui/hexagon-pattern";
 import { HoverEffect } from "@/components/ui/card-hover-effect";
 import { NeonGradientCard } from "@/components/ui/neon-gradient-card";
 import { ShineBorder } from "@/components/ui/shine-border";
+import { HeroVideoDialog } from "@/components/ui/hero-video-dialog";
 
 export const Route = createFileRoute("/")({
     component: LandingPage,
@@ -120,9 +122,11 @@ const perks = [
 ];
 
 function LandingContent() {
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
     return (
         <div className="min-h-[calc(100vh-3rem)] bg-background text-foreground overflow-x-hidden">
-            {/* ── HERO ── */}
+            {/* ─── HERO ─── */}
             <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-3rem)] px-4 pt-8 pb-16 text-center overflow-hidden">
                 {/* Background hexagon grid — adapts to theme via fill/stroke */}
                 <HexagonPattern
@@ -181,7 +185,7 @@ function LandingContent() {
                 {/* CTAs */}
                 <FadeUp
                     delay={0.26}
-                    className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+                    className="mt-10 flex flex-col sm:flex-row items-center gap-4 justify-center"
                 >
                     <Link to="/sign-in">
                         <div className="relative rounded-full overflow-hidden">
@@ -192,15 +196,24 @@ function LandingContent() {
                             />
                             <Button
                                 size="lg"
-                                className="relative bg-violet-600 hover:bg-violet-500 text-white rounded-full px-8 text-base font-semibold gap-2 transition-all duration-200 group"
+                                className="relative bg-violet-600 hover:bg-violet-500 text-white rounded-full px-8 text-base font-semibold gap-2 transition-all duration-200 group cursor-pointer"
                             >
                                 Start for free
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                             </Button>
                         </div>
                     </Link>
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => setIsVideoModalOpen(true)}
+                        className="rounded-full px-6 text-base gap-2 group cursor-pointer border-border hover:bg-violet-500/10 hover:border-violet-500/30 transition-all duration-200"
+                    >
+                        <Play className="w-4 h-4 text-violet-600 dark:text-violet-400 fill-current ml-0.5 transition-transform group-hover:scale-110" />
+                        Watch demo (1:44)
+                    </Button>
                     <Link to="/sign-in">
-                        <Button size="lg" variant="outline" className="rounded-full px-8 text-base">
+                        <Button size="lg" variant="ghost" className="rounded-full px-6 text-base text-muted-foreground hover:text-foreground">
                             Sign in
                         </Button>
                     </Link>
@@ -219,66 +232,21 @@ function LandingContent() {
                     ))}
                 </FadeUp>
 
-                {/* Hero visual — glowing board mockup */}
-                <FadeUp delay={0.42} className="mt-20 w-full max-w-4xl mx-auto">
-                    <div className="relative rounded-2xl overflow-hidden border border-border bg-card shadow-2xl shadow-violet-500/10 dark:shadow-violet-900/30">
-                        <ShineBorder
-                            shineColor={["#7c3aed", "#4f46e5", "#db2777"]}
-                            duration={8}
-                            borderWidth={1}
-                        />
-                        {/* Fake board UI */}
-                        <div className="p-3 sm:p-6">
-                            <div className="flex items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-5">
-                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-400/70" />
-                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-400/70" />
-                                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-400/70" />
-                                <div className="ml-2.5 sm:ml-4 h-4 sm:h-5 w-24 sm:w-40 rounded bg-muted" />
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                                {[
-                                    { title: "Backlog", count: 4, colClass: "bg-muted/50" },
-                                    {
-                                        title: "In Progress",
-                                        count: 2,
-                                        colClass: "bg-violet-500/10 dark:bg-violet-500/20",
-                                    },
-                                    { title: "Done", count: 6, colClass: "bg-emerald-500/10" },
-                                ].map((col) => (
-                                    <div
-                                        key={col.title}
-                                        className={`rounded-xl p-2 sm:p-3 ${col.colClass} border border-border overflow-hidden min-w-0`}
-                                    >
-                                        <div className="flex items-center justify-between gap-1 mb-2 sm:mb-3 min-w-0">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-normal sm:tracking-wider truncate min-w-0">
-                                                {col.title}
-                                            </span>
-                                            <span className="text-[10px] sm:text-xs bg-muted rounded-full px-1.5 sm:px-2 py-0.5 text-muted-foreground shrink-0 font-mono">
-                                                {col.count}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            {Array.from({
-                                                length: col.count > 2 ? 2 : col.count,
-                                            }).map((_, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="rounded-lg bg-card border border-border p-2 sm:p-2.5 overflow-hidden"
-                                                >
-                                                    <div className="h-1.5 sm:h-2 w-3/4 rounded bg-muted mb-1 sm:mb-1.5" />
-                                                    <div className="h-1 sm:h-1.5 w-1/2 rounded bg-muted/60" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                {/* Hero visual — interactive video showcase */}
+                <FadeUp delay={0.42} className="mt-16 sm:mt-20 w-full max-w-5xl mx-auto">
+                    <HeroVideoDialog
+                        videoSrc="https://res.cloudinary.com/i27d0xpa/video/upload/v1790017848/BetterToDo_rzdv4y.webm"
+                        videoMp4Src="https://res.cloudinary.com/i27d0xpa/video/upload/v1790017848/BetterToDo_rzdv4y.mp4"
+                        thumbnailSrc="https://res.cloudinary.com/i27d0xpa/video/upload/v1790017848/BetterToDo_rzdv4y.webp"
+                        thumbnailAlt="BetterTodo app walkthrough demo"
+                        title="BetterTodo in Action • Real-time Collaboration & Kanban"
+                        isModalOpen={isVideoModalOpen}
+                        onModalOpenChange={setIsVideoModalOpen}
+                    />
                 </FadeUp>
             </section>
 
-            {/* ── FEATURES ── */}
+            {/* ─── FEATURES ─── */}
             <section className="py-24 px-4 border-t border-border">
                 <div className="max-w-6xl mx-auto">
                     <FadeUp className="text-center mb-4">
@@ -312,7 +280,7 @@ function LandingContent() {
                 </div>
             </section>
 
-            {/* ── ICON STATS ── */}
+            {/* ─── ICON STATS ─── */}
             <section className="py-20 px-4 border-t border-border">
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
@@ -334,7 +302,7 @@ function LandingContent() {
                 </div>
             </section>
 
-            {/* ── CTA ── */}
+            {/* ─── CTA ─── */}
             <section className="py-28 px-4 border-t border-border">
                 <FadeUp className="max-w-lg mx-auto">
                     <NeonGradientCard
@@ -374,7 +342,7 @@ function LandingContent() {
                 </FadeUp>
             </section>
 
-            {/* ── FOOTER ── */}
+            {/* ─── FOOTER ─── */}
             <footer className="border-t border-border py-8 px-6 text-center text-muted-foreground text-sm">
                 © {new Date().getFullYear()} BetterTodo. Built with ❤️ and Convex.
             </footer>
