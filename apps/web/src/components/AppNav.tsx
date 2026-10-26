@@ -158,10 +158,14 @@ export function AppNav() {
                                 size="icon"
                                 className="md:hidden h-8 w-8"
                                 aria-label="Open menu"
+                                data-ui-tooltip="mobile-menu-tooltip"
                             >
                                 <Menu className="h-4 w-4" />
                             </Button>
                         </SheetTrigger>
+                        <span id="mobile-menu-tooltip" role="tooltip" className="hidden">
+                            Open menu
+                        </span>
                         <SheetContent side="right" className="w-[280px] p-4 flex flex-col">
                             <SheetHeader>
                                 <SheetTitle className="text-left text-base">Navigation</SheetTitle>

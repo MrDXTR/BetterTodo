@@ -1,47 +1,49 @@
 {
-    "name": "BetterTodo",
-    "private": true,
-    "workspaces": {
-        "packages": [
-            "apps/*",
-            "packages/*"
-        ],
-        "catalog": {
-            "dotenv": "^17.4.2",
-            "zod": "^4.6.5",
-            "typescript": "^5.9.3",
-            "convex": "^1.32.0",
-            "better-auth": "1.4.9",
-            "@convex-dev/better-auth": "^0.10.9"
-        }
-    },
-    "type": "module",
-    "scripts": {
-        "dev": "turbo dev",
-        "build": "turbo build",
-        "start": "turbo start",
-        "check-types": "turbo check-types",
-        "dev:native": "turbo -F native dev",
-        "dev:web": "turbo -F web dev",
-        "dev:server": "turbo -F @BetterTodo/backend dev",
-        "dev:setup": "turbo -F @BetterTodo/backend dev:setup",
-        "test": "bun test",
-        "test:unit": "bun test tests/unit",
-        "test:integration": "bun test tests/integration",
-        "test:e2e": "bun test tests/e2e",
-        "format": "prettier --write .",
-        "format:check": "prettier --check ."
-    },
-    "dependencies": {
-        "@BetterTodo/env": "workspace:*",
-        "dotenv": "^17.4.2",
-        "zod": "^4.6.5"
-    },
-    "devDependencies": {
-        "@BetterTodo/config": "workspace:*",
-        "prettier": "^3.9.7",
-        "turbo": "^2.10.13",
-        "typescript": "^5.9.3"
-    },
-    "packageManager": "bun@1.2.21"
+  "name": "BetterTodo",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "dotenv": "^17.4.2",
+      "zod": "^4.6.5",
+      "typescript": "^5.9.3",
+      "convex": "^1.32.0",
+      "better-auth": "1.4.9",
+      "@convex-dev/better-auth": "^0.10.9"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F @BetterTodo/backend dev",
+    "dev:setup": "turbo -F @BetterTodo/backend dev:setup",
+    "test": "bun test",
+    "test:unit": "bun test tests/unit",
+    "test:integration": "bun test tests/integration",
+    "test:e2e": "bun test tests/e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:ui": "lintapple http://localhost:3001"
+  },
+  "dependencies": {
+    "@BetterTodo/env": "workspace:*",
+    "dotenv": "^17.4.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@BetterTodo/config": "workspace:*",
+    "lintapple": "^0.1.19",
+    "prettier": "^3.9.7",
+    "turbo": "^2.10.13",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "bun@1.2.21"
 }

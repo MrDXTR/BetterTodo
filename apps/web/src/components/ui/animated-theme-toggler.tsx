@@ -53,54 +53,39 @@ function getThemeTransitionClipPaths(
             return [polygonCollapsed(cx, cy, 3), `polygon(${verts})`];
         }
         case "diamond": {
-            const R = maxRadius * Math.SQRT2;
-            const end = [
-                `${cx}px ${cy - R}px`,
-                `${cx + R}px ${cy}px`,
-                `${cx}px ${cy + R}px`,
-                `${cx - R}px ${cy}px`,
+            const verts = [
+                `${cx}px ${cy - maxRadius}px`,
+                `${cx + maxRadius}px ${cy}px`,
+                `${cx}px ${cy + maxRadius}px`,
+                `${cx - maxRadius}px ${cy}px`,
             ].join(", ");
-            return [polygonCollapsed(cx, cy, 4), `polygon(${end})`];
+            return [polygonCollapsed(cx, cy, 4), `polygon(${verts})`];
         }
         case "hexagon": {
-            const R = maxRadius * Math.SQRT2;
-            const verts: string[] = [];
-            for (let i = 0; i < 6; i++) {
-                const a = -Math.PI / 2 + (i * Math.PI) / 3;
-                verts.push(`${cx + R * Math.cos(a)}px ${cy + R * Math.sin(a)}px`);
-            }
-            return [polygonCollapsed(cx, cy, 6), `polygon(${verts.join(", ")})`];
+            const verts = Array.from({ length: 6 }, (_, i) => {
+                const angle = (Math.PI / 3) * i - Math.PI / 2;
+                return `${cx + maxRadius * Math.cos(angle)}px ${cy + maxRadius * Math.sin(angle)}px`;
+            }).join(", ");
+            return [polygonCollapsed(cx, cy, 6), `polygon(${verts})`];
         }
         case "rectangle": {
-            const halfW = Math.max(cx, viewportWidth - cx);
-            const halfH = Math.max(cy, viewportHeight - cy);
             const end = [
-                `${cx - halfW}px ${cy - halfH}px`,
-                `${cx + halfW}px ${cy - halfH}px`,
-                `${cx + halfW}px ${cy + halfH}px`,
-                `${cx - halfW}px ${cy + halfH}px`,
+                `0px 0px`,
+                `${viewportWidth}px 0px`,
+                `${viewportWidth}px ${viewportHeight}px`,
+                `0px ${viewportHeight}px`,
             ].join(", ");
             return [polygonCollapsed(cx, cy, 4), `polygon(${end})`];
         }
         case "star": {
-            const R = maxRadius * Math.SQRT2 * 1.03;
-            const innerRatio = 0.42;
-            const starPolygon = (radius: number) => {
-                const verts: string[] = [];
-                for (let i = 0; i < 5; i++) {
-                    const outerA = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-                    verts.push(
-                        `${cx + radius * Math.cos(outerA)}px ${cy + radius * Math.sin(outerA)}px`,
-                    );
-                    const innerA = outerA + Math.PI / 5;
-                    verts.push(
-                        `${cx + radius * innerRatio * Math.cos(innerA)}px ${cy + radius * innerRatio * Math.sin(innerA)}px`,
-                    );
-                }
-                return `polygon(${verts.join(", ")})`;
-            };
-            const startR = Math.max(2, R * 0.025);
-            return [starPolygon(startR), starPolygon(R)];
+            const points = 5;
+            const innerRadius = maxRadius * 0.45;
+            const verts = Array.from({ length: points * 2 }, (_, i) => {
+                const r = i % 2 === 0 ? maxRadius : innerRadius;
+                const angle = (Math.PI / points) * i - Math.PI / 2;
+                return `${cx + r * Math.cos(angle)}px ${cy + r * Math.sin(angle)}px`;
+            }).join(", ");
+            return [polygonCollapsed(cx, cy, points * 2), `polygon(${verts})`];
         }
         default:
             return [`circle(0px at ${cx}px ${cy}px)`, `circle(${maxRadius}px at ${cx}px ${cy}px)`];
@@ -220,6 +205,8 @@ export const AnimatedThemeToggler = ({
             type="button"
             ref={buttonRef}
             onClick={toggleTheme}
+            aria-label="Toggle theme"
+            data-ui-tooltip="theme-toggle-tooltip"
             className={cn(className)}
             {...props}
         >
@@ -228,7 +215,9 @@ export const AnimatedThemeToggler = ({
             ) : (
                 <Moon className="h-4 w-4 shrink-0 transition-transform duration-200" />
             )}
-            <span className="sr-only">Toggle theme</span>
+            <span id="theme-toggle-tooltip" role="tooltip" className="hidden">
+                Toggle theme
+            </span>
         </button>
     );
 };
