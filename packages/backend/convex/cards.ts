@@ -1,7 +1,9 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { deleteStorageIfUnreferenced } from "./files";
 import { ensureCardReadAccess, ensureCardWriteAccess, ensureListWriteAccess } from "./permissions";
 
 // ============================================
@@ -363,31 +365,28 @@ export const deleteCard = mutation({
     handler: async (ctx, args) => {
         const { card } = await ensureCardWriteAccess(ctx, args.cardId, "member");
 
-        // Delete all attachments and their storage files
+        // Collect all attachments and their storage files
         const attachments = await ctx.db
             .query("attachments")
             .withIndex("by_card", (q) => q.eq("cardId", args.cardId))
             .collect();
 
+        const storageIdsToClean = new Set<Id<"_storage">>();
+        if (card.coverStorageId) {
+            storageIdsToClean.add(card.coverStorageId);
+        }
+
         for (const attachment of attachments) {
-            await ctx.storage.delete(attachment.storageId);
+            storageIdsToClean.add(attachment.storageId);
             await ctx.db.delete(attachment._id);
         }
 
-        // Delete the cover image storage if it exists and isn't from an attachment
-        if (card.coverStorageId) {
-            // Only delete if not already deleted as part of attachments
-            const stillExists = attachments.every((a) => a.storageId !== card.coverStorageId);
-            if (stillExists) {
-                try {
-                    await ctx.storage.delete(card.coverStorageId);
-                } catch {
-                    // Storage file may already be deleted
-                }
-            }
-        }
-
         await ctx.db.delete(args.cardId);
+
+        // Delete storage files only if unreferenced by any remaining cards or attachments
+        for (const storageId of storageIdsToClean) {
+            await deleteStorageIfUnreferenced(ctx, storageId);
+        }
 
         return { success: true };
     },

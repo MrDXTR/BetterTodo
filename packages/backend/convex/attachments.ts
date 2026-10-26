@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import { deleteStorageIfUnreferenced } from "./files";
 import { ensureBoardReadAccessForQuery } from "./permissions";
 
 // ============================================
@@ -115,11 +116,13 @@ export const deleteAttachment = mutation({
             });
         }
 
-        // Delete from storage
-        await ctx.storage.delete(attachment.storageId);
+        const storageId = attachment.storageId;
 
-        // Delete the DB record
+        // Delete the DB record first so unreferenced check sees it removed
         await ctx.db.delete(args.attachmentId);
+
+        // Safely delete from storage only if no other card or attachment references it
+        await deleteStorageIfUnreferenced(ctx, storageId);
 
         return { success: true };
     },

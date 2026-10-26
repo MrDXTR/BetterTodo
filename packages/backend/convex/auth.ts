@@ -8,6 +8,7 @@ import type { DataModel } from "./_generated/dataModel";
 import { components } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import authConfig from "./auth.config";
+import { deleteStorageIfUnreferenced } from "./files";
 
 const siteUrl = process.env.SITE_URL!;
 const convexSiteUrl = process.env.CONVEX_SITE_URL!;
@@ -72,6 +73,12 @@ async function requireAdmin(ctx: any) {
 }
 
 async function deleteCardWithRelations(ctx: any, cardId: string) {
+    const card = await ctx.db.get(cardId);
+    const storageIdsToClean = new Set<any>();
+    if (card?.coverStorageId) {
+        storageIdsToClean.add(card.coverStorageId);
+    }
+
     const checklists = await ctx.db
         .query("checklists")
         .withIndex("by_card", (q: any) => q.eq("cardId", cardId))
@@ -100,11 +107,7 @@ async function deleteCardWithRelations(ctx: any, cardId: string) {
         .withIndex("by_card", (q: any) => q.eq("cardId", cardId))
         .collect();
     for (const attachment of attachments) {
-        try {
-            await ctx.storage.delete(attachment.storageId);
-        } catch {
-            // file may already be gone
-        }
+        storageIdsToClean.add(attachment.storageId);
         await ctx.db.delete(attachment._id);
     }
 
@@ -125,6 +128,11 @@ async function deleteCardWithRelations(ctx: any, cardId: string) {
     }
 
     await ctx.db.delete(cardId);
+
+    // Safely delete storage files if no other card or attachment references them
+    for (const storageId of storageIdsToClean) {
+        await deleteStorageIfUnreferenced(ctx, storageId);
+    }
 }
 
 async function deleteBoardWithRelations(ctx: any, boardId: string) {
@@ -396,12 +404,8 @@ export const deleteUserAndAllData = mutation({
             .withIndex("by_uploader", (q) => q.eq("uploadedBy", args.userId))
             .collect();
         for (const attachment of attachments) {
-            try {
-                await ctx.storage.delete(attachment.storageId);
-            } catch {
-                // file may already be gone
-            }
             await ctx.db.delete(attachment._id);
+            await deleteStorageIfUnreferenced(ctx, attachment.storageId);
         }
 
         const notes = await ctx.db

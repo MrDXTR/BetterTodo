@@ -57,7 +57,8 @@ export default defineSchema({
         .index("by_board", ["boardId"])
         .index("by_list_position", ["listId", "position"])
         .index("by_creator", ["createdBy"])
-        .index("by_due_date", ["dueDate"]),
+        .index("by_due_date", ["dueDate"])
+        .index("by_cover_storage", ["coverStorageId"]),
 
     // ============================================
     // COLLABORATION & PERMISSIONS
@@ -147,7 +148,8 @@ export default defineSchema({
         createdAt: v.number(),
     })
         .index("by_card", ["cardId"])
-        .index("by_uploader", ["uploadedBy"]),
+        .index("by_uploader", ["uploadedBy"])
+        .index("by_storage", ["storageId"]),
 
     // ============================================
     // NOTIFICATIONS & INVITES

@@ -11,6 +11,7 @@ import {
     MoreVertical,
     Trash2,
     Archive,
+    Copy,
 } from "lucide-react";
 import type { Board } from "@/types/board";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ export interface BoardCardProps {
     onToggleSelect?: (boardId: Id<"boards">) => void;
     onDeleteSingle?: (board: Board) => void;
     onArchive?: (board: Board) => void;
+    onCopy?: (board: Board) => void;
 }
 
 export function BoardCard({
@@ -39,6 +41,7 @@ export function BoardCard({
     onToggleSelect,
     onDeleteSingle,
     onArchive,
+    onCopy,
 }: BoardCardProps) {
     const color = board.color || "#0079BF";
     const role = board.role || "member";
@@ -125,7 +128,7 @@ export function BoardCard({
                             </div>
                         ) : (
                             <>
-                                {isOwner && onDeleteSingle && (
+                                {(onCopy || (isOwner && (onDeleteSingle || onArchive))) && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <button
@@ -144,7 +147,19 @@ export function BoardCard({
                                             align="end"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            {onArchive && (
+                                            {onCopy && (
+                                                <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onCopy(board);
+                                                    }}
+                                                    className="text-xs cursor-pointer gap-2"
+                                                >
+                                                    <Copy className="h-3.5 w-3.5" />
+                                                    <span>Copy Board</span>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {isOwner && onArchive && (
                                                 <DropdownMenuItem
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -156,7 +171,7 @@ export function BoardCard({
                                                     <span>Archive</span>
                                                 </DropdownMenuItem>
                                             )}
-                                            {onDeleteSingle && (
+                                            {isOwner && onDeleteSingle && (
                                                 <DropdownMenuItem
                                                     onClick={(e) => {
                                                         e.stopPropagation();

@@ -98,3 +98,79 @@ export function normalizeExportFileName(boardTitle: string) {
             .replace(/^-+|-+$/g, "") || "board"
     }-export.json`;
 }
+
+/**
+ * Strips copy suffix from title to get the original base title.
+ * Handles "Title copy", "Title copy 1", "Title copy 2", "Title (copy)", "Title (copy 1)"
+ */
+export function getBaseBoardTitle(title: string): string {
+    const trimmed = title.trim();
+    const match = trimmed.match(
+        /^(.*?)(?: \((?:copy|Copy)(?: (\d+))?\)| (?:copy|Copy)(?: (\d+))?)$/,
+    );
+    if (match && match[1].trim().length > 0) {
+        return match[1].trim();
+    }
+    return trimmed;
+}
+
+/**
+ * Extracts the copy number from a title if present:
+ * "Board" -> null
+ * "Board copy" / "Board (copy)" -> 0
+ * "Board copy 1" / "Board (copy 1)" -> 1
+ * "Board copy 2" -> 2
+ */
+export function getCopyNumber(title: string): number | null {
+    const trimmed = title.trim();
+    const match = trimmed.match(
+        /^(?:.*?)(?: \((?:copy|Copy)(?: (\d+))?\)| (?:copy|Copy)(?: (\d+))?)$/,
+    );
+    if (!match) return null;
+    const numStr = match[1] !== undefined ? match[1] : match[2];
+    if (numStr === undefined) return 0;
+    const parsed = parseInt(numStr, 10);
+    return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Formats a copy title given base title and copy index.
+ * index 0: `${base} copy`
+ * index 1: `${base} copy 1`
+ * index 2: `${base} copy 2`
+ * index 3: `${base} copy 3`
+ */
+export function formatCopyTitle(baseTitle: string, index: number): string {
+    if (index <= 0) {
+        return `${baseTitle} copy`;
+    }
+    return `${baseTitle} copy ${index}`;
+}
+
+/**
+ * Generates the next copy title following the sequence:
+ * 1st copy: "<title> copy"
+ * 2nd copy: "<title> copy 1"
+ * 3rd copy: "<title> copy 2"
+ * ...
+ */
+export function generateCopyBoardTitle(sourceTitle: string, existingTitles: string[] = []): string {
+    const base = getBaseBoardTitle(sourceTitle);
+    const currentCopyNum = getCopyNumber(sourceTitle);
+
+    let startIndex = 0;
+    if (currentCopyNum !== null) {
+        startIndex = currentCopyNum + 1;
+    }
+
+    const lowerExisting = new Set(existingTitles.map((t) => t.trim().toLowerCase()));
+
+    let index = startIndex;
+    while (true) {
+        const candidate = formatCopyTitle(base, index);
+        if (!lowerExisting.has(candidate.toLowerCase())) {
+            return candidate;
+        }
+        index++;
+    }
+}

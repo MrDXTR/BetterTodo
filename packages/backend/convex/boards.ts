@@ -1,9 +1,13 @@
+import type { Id } from "./_generated/dataModel";
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { authComponent } from "./auth";
+import { deleteStorageIfUnreferenced } from "./files";
+import { generateCopyBoardTitle } from "./lib/boardTransfer";
 import {
     assertNotRateLimited,
+    ensureBoardReadAccess,
     ensureBoardReadAccessForQuery,
     ensureBoardRole,
     ensureWorkspaceAccess,
@@ -380,6 +384,324 @@ export const create = mutation({
 });
 
 /**
+ * Copy a board with all lists, cards, labels, checklists, and custom fields
+ */
+export const copyBoard = mutation({
+    args: {
+        boardId: v.id("boards"),
+        title: v.optional(v.string()),
+        copyLists: v.optional(v.boolean()),
+        copyCards: v.optional(v.boolean()),
+        copyCardData: v.optional(v.boolean()),
+        copyCustomTags: v.optional(v.boolean()),
+    },
+    handler: async (ctx, args) => {
+        const { user, board: sourceBoard } = await ensureBoardReadAccess(ctx, args.boardId);
+
+        const shouldCopyLists = args.copyLists !== false;
+        const shouldCopyCards = shouldCopyLists && args.copyCards !== false;
+        const shouldCopyCardData = shouldCopyCards && args.copyCardData !== false;
+        const shouldCopyCustomTags = args.copyCustomTags !== false;
+
+        // Determine title
+        let newTitle: string;
+        if (args.title && args.title.trim().length > 0) {
+            newTitle = args.title.trim();
+        } else {
+            // Get all user's existing board titles to determine next copy name in sequence
+            const memberships = await ctx.db
+                .query("boardMembers")
+                .withIndex("by_user", (q) => q.eq("userId", user._id))
+                .collect();
+            const userBoards = await Promise.all(memberships.map((m) => ctx.db.get(m.boardId)));
+            const existingTitles = userBoards
+                .filter((b): b is NonNullable<typeof b> => b !== null)
+                .map((b) => b.title);
+
+            newTitle = generateCopyBoardTitle(sourceBoard.title, existingTitles);
+        }
+
+        // Verify workspace access if copying with workspace
+        let workspaceId = sourceBoard.workspaceId;
+        if (workspaceId) {
+            const hasWorkspaceAccess = await ctx.db
+                .query("workspaceMembers")
+                .withIndex("by_workspace_user", (q) =>
+                    q.eq("workspaceId", workspaceId!).eq("userId", user._id),
+                )
+                .first();
+            if (!hasWorkspaceAccess) {
+                workspaceId = undefined;
+            }
+        }
+
+        const now = Date.now();
+
+        // 1. Create the new board
+        const newBoardId = await ctx.db.insert("boards", {
+            title: newTitle,
+            description: sourceBoard.description,
+            color: sourceBoard.color,
+            backgroundUrl: sourceBoard.backgroundUrl,
+            visibility: workspaceId ? sourceBoard.visibility : "private",
+            workspaceId,
+            createdBy: user._id,
+            archived: false,
+            createdAt: now,
+            updatedAt: now,
+        });
+
+        // 2. Add current user as owner
+        await ctx.db.insert("boardMembers", {
+            boardId: newBoardId,
+            userId: user._id,
+            role: "owner",
+            addedBy: user._id,
+            addedAt: now,
+        });
+
+        // 3. Duplicate labels (custom tags)
+        const labelMap = new Map<string, any>();
+        if (shouldCopyCustomTags) {
+            const sourceLabels = await ctx.db
+                .query("labels")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect();
+            for (const label of sourceLabels) {
+                const newLabelId = await ctx.db.insert("labels", {
+                    boardId: newBoardId,
+                    name: label.name,
+                    color: label.color,
+                });
+                labelMap.set(label._id, newLabelId);
+            }
+        }
+
+        // 4. Duplicate custom fields (custom tags)
+        const customFieldMap = new Map<string, any>();
+        if (shouldCopyCustomTags) {
+            const sourceCustomFields = await ctx.db
+                .query("customFields")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect();
+            for (const field of sourceCustomFields) {
+                const newFieldId = await ctx.db.insert("customFields", {
+                    boardId: newBoardId,
+                    name: field.name,
+                    type: field.type,
+                    required: field.required,
+                    options: field.options,
+                    position: field.position,
+                    createdBy: user._id,
+                    createdAt: now,
+                    updatedAt: now,
+                });
+                customFieldMap.set(field._id, newFieldId);
+            }
+        }
+
+        // 5. Duplicate automation rules
+        const sourceAutomations = await ctx.db
+            .query("automationRules")
+            .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+            .collect();
+        for (const rule of sourceAutomations) {
+            await ctx.db.insert("automationRules", {
+                boardId: newBoardId,
+                name: rule.name,
+                trigger: rule.trigger,
+                enabled: rule.enabled,
+                config: rule.config,
+                createdBy: user._id,
+                createdAt: now,
+                updatedAt: now,
+            });
+        }
+
+        // 6. Duplicate lists and their cards
+        if (shouldCopyLists) {
+            const sourceLists = await ctx.db
+                .query("lists")
+                .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+                .collect();
+            sourceLists.sort((a, b) => a.position - b.position);
+
+            for (const list of sourceLists) {
+                const newListId = await ctx.db.insert("lists", {
+                    boardId: newBoardId,
+                    title: list.title,
+                    position: list.position,
+                    cardLimit: list.cardLimit,
+                    archived: list.archived,
+                    createdAt: now,
+                });
+
+                if (shouldCopyCards) {
+                    // Get cards for this list
+                    const sourceCards = await ctx.db
+                        .query("cards")
+                        .withIndex("by_list", (q) => q.eq("listId", list._id))
+                        .collect();
+                    sourceCards.sort((a, b) => a.position - b.position);
+
+                    for (const card of sourceCards) {
+                        const newCardId = await ctx.db.insert("cards", {
+                            listId: newListId,
+                            boardId: newBoardId,
+                            title: card.title,
+                            description: shouldCopyCardData ? card.description : undefined,
+                            position: card.position,
+                            coverImage: shouldCopyCardData ? card.coverImage : undefined,
+                            coverStorageId: shouldCopyCardData ? card.coverStorageId : undefined,
+                            dueDate: shouldCopyCardData ? card.dueDate : undefined,
+                            priority: card.priority,
+                            estimatedHours: shouldCopyCardData ? card.estimatedHours : undefined,
+                            actualHours: shouldCopyCardData ? card.actualHours : undefined,
+                            createdBy: user._id,
+                            archived: card.archived,
+                            completed: card.completed,
+                            createdAt: now,
+                            updatedAt: now,
+                        });
+
+                        // Duplicate card labels (if custom tags copied)
+                        if (shouldCopyCustomTags) {
+                            const cardLabelLinks = await ctx.db
+                                .query("cardLabels")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            for (const link of cardLabelLinks) {
+                                const newLabelId = labelMap.get(link.labelId);
+                                if (newLabelId) {
+                                    await ctx.db.insert("cardLabels", {
+                                        cardId: newCardId,
+                                        labelId: newLabelId,
+                                    });
+                                }
+                            }
+                        }
+
+                        // Duplicate card data (custom field values & checklists)
+                        if (shouldCopyCardData) {
+                            if (shouldCopyCustomTags) {
+                                const fieldValues = await ctx.db
+                                    .query("cardCustomFieldValues")
+                                    .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                    .collect();
+                                for (const val of fieldValues) {
+                                    const newFieldId = customFieldMap.get(val.fieldId);
+                                    if (newFieldId) {
+                                        await ctx.db.insert("cardCustomFieldValues", {
+                                            cardId: newCardId,
+                                            fieldId: newFieldId,
+                                            textValue: val.textValue,
+                                            numberValue: val.numberValue,
+                                            dateValue: val.dateValue,
+                                            checkboxValue: val.checkboxValue,
+                                            selectValue: val.selectValue,
+                                            updatedBy: user._id,
+                                            updatedAt: now,
+                                        });
+                                    }
+                                }
+                            }
+
+                            const checklists = await ctx.db
+                                .query("checklists")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            checklists.sort((a, b) => a.position - b.position);
+
+                            for (const cl of checklists) {
+                                const newClId = await ctx.db.insert("checklists", {
+                                    cardId: newCardId,
+                                    title: cl.title,
+                                    position: cl.position,
+                                });
+
+                                const items = await ctx.db
+                                    .query("checklistItems")
+                                    .withIndex("by_checklist", (q) => q.eq("checklistId", cl._id))
+                                    .collect();
+                                items.sort((a, b) => a.position - b.position);
+
+                                for (const item of items) {
+                                    await ctx.db.insert("checklistItems", {
+                                        checklistId: newClId,
+                                        title: item.title,
+                                        completed: item.completed,
+                                        assignedTo: item.assignedTo,
+                                        dueDate: item.dueDate,
+                                        position: item.position,
+                                    });
+                                }
+                            }
+
+                            // Duplicate card assignments
+                            const cardAssignments = await ctx.db
+                                .query("cardAssignments")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            for (const assignment of cardAssignments) {
+                                await ctx.db.insert("cardAssignments", {
+                                    cardId: newCardId,
+                                    userId: assignment.userId,
+                                    assignedAt: assignment.assignedAt,
+                                    assignedBy: user._id,
+                                });
+                            }
+
+                            // Duplicate attachments
+                            const attachments = await ctx.db
+                                .query("attachments")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            for (const attachment of attachments) {
+                                await ctx.db.insert("attachments", {
+                                    cardId: newCardId,
+                                    uploadedBy: user._id,
+                                    fileName: attachment.fileName,
+                                    storageId: attachment.storageId,
+                                    fileSize: attachment.fileSize,
+                                    mimeType: attachment.mimeType,
+                                    createdAt: now,
+                                });
+                            }
+
+                            // Duplicate comments with threaded parentCommentId remapping
+                            const comments = await ctx.db
+                                .query("comments")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            comments.sort((a, b) => a.createdAt - b.createdAt);
+
+                            const commentMap = new Map<string, Id<"comments">>();
+                            for (const comment of comments) {
+                                const parentId = comment.parentCommentId
+                                    ? commentMap.get(comment.parentCommentId)
+                                    : undefined;
+                                const newCommentId = await ctx.db.insert("comments", {
+                                    cardId: newCardId,
+                                    userId: comment.userId,
+                                    content: comment.content,
+                                    parentCommentId: parentId,
+                                    edited: comment.edited,
+                                    createdAt: comment.createdAt,
+                                    updatedAt: comment.updatedAt,
+                                });
+                                commentMap.set(comment._id, newCommentId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return await ctx.db.get(newBoardId);
+    },
+});
+
+/**
  * Update board details
  */
 export const update = mutation({
@@ -492,6 +814,8 @@ export const deleteBoard = mutation({
         // Delete all related data
         // Note: In production, consider soft delete or archiving instead
 
+        const storageIdsToClean = new Set<Id<"_storage">>();
+
         // Delete lists, cards, and card-scoped relations
         const lists = await ctx.db
             .query("lists")
@@ -536,7 +860,13 @@ export const deleteBoard = mutation({
                 for (const link of cardLabels) await ctx.db.delete(link._id);
                 for (const assignment of assignments) await ctx.db.delete(assignment._id);
                 for (const comment of comments) await ctx.db.delete(comment._id);
-                for (const attachment of attachments) await ctx.db.delete(attachment._id);
+                if (card.coverStorageId) {
+                    storageIdsToClean.add(card.coverStorageId);
+                }
+                for (const attachment of attachments) {
+                    storageIdsToClean.add(attachment.storageId);
+                    await ctx.db.delete(attachment._id);
+                }
                 for (const value of customValues) await ctx.db.delete(value._id);
 
                 for (const checklist of checklists) {
@@ -589,6 +919,10 @@ export const deleteBoard = mutation({
 
         // Delete the board
         await ctx.db.delete(args.boardId);
+
+        for (const storageId of storageIdsToClean) {
+            await deleteStorageIfUnreferenced(ctx, storageId);
+        }
 
         return { success: true };
     },
@@ -1041,9 +1375,7 @@ export const getPendingInvites = query({
             )
             .collect();
 
-        const activeInvites = invites.filter(
-            (inv) => !inv.expiresAt || inv.expiresAt > Date.now(),
-        );
+        const activeInvites = invites.filter((inv) => !inv.expiresAt || inv.expiresAt > Date.now());
 
         // Enrich with board details
         const enriched = await Promise.all(

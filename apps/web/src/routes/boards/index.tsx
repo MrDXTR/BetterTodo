@@ -1,6 +1,6 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
     Archive,
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { BoardCard } from "@/components/Board/BoardCard";
 import { CreateBoardModal } from "@/components/Board/CreateBoardModal";
+import { CopyBoardModal } from "@/components/Board/CopyBoardModal";
 import { WorkspaceMobileStrip, WorkspaceSidebar } from "@/components/Board/WorkspacePanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,8 @@ function BoardsRoute() {
     const [isManageMode, setIsManageMode] = useState(false);
     const [selectedBoardIds, setSelectedBoardIds] = useState<Id<"boards">[]>([]);
     const [boardToDelete, setBoardToDelete] = useState<Board | null>(null);
+    const [boardToCopy, setBoardToCopy] = useState<Board | null>(null);
+    const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
     const [isDeletingSingle, setIsDeletingSingle] = useState(false);
     const [isBatchDeleting, setIsBatchDeleting] = useState(false);
     const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
@@ -60,6 +63,8 @@ function BoardsRoute() {
     const archiveBoard = useMutation(api.boards.archive);
     const restoreBoard = useMutation(api.boards.restore);
     const deleteBoard = useMutation(api.boards.deleteBoard);
+    const copyBoard = useMutation(api.boards.copyBoard);
+    const navigate = useNavigate();
 
     const isLoading = boards === undefined || archived === undefined;
     const archivedBoards = archived?.boards ?? [];
@@ -123,6 +128,11 @@ function BoardsRoute() {
         } finally {
             setRestoringBoardId(null);
         }
+    };
+
+    const handleOpenCopyModal = (board: Board) => {
+        setBoardToCopy(board);
+        setIsCopyModalOpen(true);
     };
 
     const toggleSelectBoard = (boardId: Id<"boards">) => {
@@ -427,6 +437,7 @@ function BoardsRoute() {
                                             )}
                                             onToggleSelect={toggleSelectBoard}
                                             onArchive={handleArchiveBoard}
+                                            onCopy={handleOpenCopyModal}
                                             onDeleteSingle={(b) => setBoardToDelete(b)}
                                         />
                                     ))}
@@ -504,6 +515,15 @@ function BoardsRoute() {
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
                 defaultWorkspaceId={selectedWorkspaceId ?? undefined}
+            />
+
+            <CopyBoardModal
+                open={isCopyModalOpen}
+                onOpenChange={setIsCopyModalOpen}
+                board={boardToCopy}
+                onCopied={(newBoardId) =>
+                    navigate({ to: "/boards/$boardId", params: { boardId: newBoardId } })
+                }
             />
 
             {/* Single Board Delete Confirmation */}
