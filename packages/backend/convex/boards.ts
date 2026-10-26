@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { authComponent } from "./auth";
+import { deleteStorageIfUnreferenced } from "./files";
 import { generateCopyBoardTitle } from "./lib/boardTransfer";
 import {
     assertNotRateLimited,
@@ -813,6 +814,8 @@ export const deleteBoard = mutation({
         // Delete all related data
         // Note: In production, consider soft delete or archiving instead
 
+        const storageIdsToClean = new Set<Id<"_storage">>();
+
         // Delete lists, cards, and card-scoped relations
         const lists = await ctx.db
             .query("lists")
@@ -857,7 +860,13 @@ export const deleteBoard = mutation({
                 for (const link of cardLabels) await ctx.db.delete(link._id);
                 for (const assignment of assignments) await ctx.db.delete(assignment._id);
                 for (const comment of comments) await ctx.db.delete(comment._id);
-                for (const attachment of attachments) await ctx.db.delete(attachment._id);
+                if (card.coverStorageId) {
+                    storageIdsToClean.add(card.coverStorageId);
+                }
+                for (const attachment of attachments) {
+                    storageIdsToClean.add(attachment.storageId);
+                    await ctx.db.delete(attachment._id);
+                }
                 for (const value of customValues) await ctx.db.delete(value._id);
 
                 for (const checklist of checklists) {
@@ -910,6 +919,10 @@ export const deleteBoard = mutation({
 
         // Delete the board
         await ctx.db.delete(args.boardId);
+
+        for (const storageId of storageIdsToClean) {
+            await deleteStorageIfUnreferenced(ctx, storageId);
+        }
 
         return { success: true };
     },
