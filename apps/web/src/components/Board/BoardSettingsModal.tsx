@@ -1,7 +1,7 @@
 import { api } from "@BetterTodo/backend/convex/_generated/api";
 import type { Id } from "@BetterTodo/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { Archive, Trash2, Check, Loader2 } from "lucide-react";
+import { Archive, Trash2, Check, Loader2, Copy } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ import { LabelManager } from "@/components/Board/LabelManager";
 import { CustomFieldManager } from "@/components/Board/CustomFieldManager";
 import { AutomationSettings } from "@/components/Board/AutomationSettings";
 import { ImportExportPanel } from "@/components/Board/ImportExportPanel";
+import { CopyBoardModal } from "@/components/Board/CopyBoardModal";
 import { cn } from "@/lib/utils";
 
 interface BoardSettingsModalProps {
@@ -50,6 +51,7 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
     const [workspaceId, setWorkspaceId] = useState<string>(board.workspaceId ?? "none");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showCopyModal, setShowCopyModal] = useState(false);
 
     const updateBoard = useMutation(api.boards.update);
     const archiveBoard = useMutation(api.boards.archive);
@@ -386,6 +388,18 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                         )}
 
                         <div className="flex items-center gap-2 sm:order-1">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCopyModal(true)}
+                                disabled={isSubmitting}
+                                className="flex-1 sm:flex-none text-xs h-9 gap-1.5"
+                            >
+                                <Copy className="h-3.5 w-3.5" />
+                                <span>Copy board</span>
+                            </Button>
+
                             {isOwner && (
                                 <>
                                     {board.archived ? (
@@ -430,6 +444,16 @@ export function BoardSettingsModal({ open, onOpenChange, board }: BoardSettingsM
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <CopyBoardModal
+                open={showCopyModal}
+                onOpenChange={setShowCopyModal}
+                board={board}
+                onCopied={(newBoardId) => {
+                    onOpenChange(false);
+                    navigate({ to: "/boards/$boardId", params: { boardId: newBoardId } });
+                }}
+            />
 
             <DeleteConfirmationDialog
                 open={showDeleteConfirm}

@@ -3,6 +3,8 @@ import { useMutation } from "convex/react";
 import {
     ArrowLeft,
     Archive,
+    Copy,
+    Loader2,
     Check,
     CheckSquare,
     Layers3,
@@ -13,7 +15,7 @@ import {
     X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import type { Board, CardPriority } from "@/types/board";
@@ -21,6 +23,7 @@ import { BoardAvatars } from "@/components/Board/BoardAvatars";
 import { BoardMembersPanel } from "@/components/Board/BoardMembersPanel";
 import { ArchivedItemsPanel } from "@/components/Board/ArchivedItemsPanel";
 import { BoardSettingsModal } from "@/components/Board/BoardSettingsModal";
+import { CopyBoardModal } from "@/components/Board/CopyBoardModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -71,6 +74,8 @@ export function BoardHeader({
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [title, setTitle] = useState(board.title);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [copyModalOpen, setCopyModalOpen] = useState(false);
+    const navigate = useNavigate();
     const [membersOpen, setMembersOpen] = useState(false);
     const [archivedOpen, setArchivedOpen] = useState(false);
 
@@ -174,6 +179,17 @@ export function BoardHeader({
                         >
                             <Archive className="h-3.5 w-3.5" />
                             <span className="hidden md:inline ml-1.5">Archived</span>
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className={controlButtonClass}
+                            onClick={() => setCopyModalOpen(true)}
+                            title="Copy this board"
+                        >
+                            <Copy className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline ml-1.5">Copy</span>
                         </Button>
 
                         {/* Filter Popover */}
@@ -405,6 +421,14 @@ export function BoardHeader({
             />
 
             <BoardSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} board={board} />
+            <CopyBoardModal
+                open={copyModalOpen}
+                onOpenChange={setCopyModalOpen}
+                board={board}
+                onCopied={(newBoardId) =>
+                    navigate({ to: "/boards/$boardId", params: { boardId: newBoardId } })
+                }
+            />
         </header>
     );
 }
