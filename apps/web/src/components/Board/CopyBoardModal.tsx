@@ -316,7 +316,7 @@ function MiniBoardPreview({
                 </div>
 
                 {/* Canvas */}
-                <div className="relative flex min-h-[170px] flex-1 flex-col justify-center overflow-hidden rounded-xl bg-muted/40 p-2 dark:bg-muted/20">
+                <div className="relative flex min-h-[170px] flex-1 flex-col overflow-hidden rounded-xl bg-muted/40 p-2 dark:bg-muted/20">
                     <AnimatePresence mode="wait" initial={false}>
                         {!includeLists ? (
                             <motion.div
@@ -464,7 +464,7 @@ function OptionRow({
                 checked && !disabled && "bg-primary/[0.05]",
                 // elbow connector to the parent rail
                 nested &&
-                    "before:absolute before:-left-3.5 before:top-[18px] before:h-px before:w-3 before:bg-border/70",
+                "before:absolute before:-left-3.5 before:top-[18px] before:h-px before:w-3 before:bg-border/70",
             )}
         >
             <Checkbox
