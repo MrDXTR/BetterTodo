@@ -29,7 +29,7 @@ Board Admins and Owners can generate shareable invite links directly from the **
 - When generating a link, choose the target role:
     - **Member Share Link** – Grants write permissions upon joining.
     - **Viewer Share Link** – Grants read-only access upon joining.
-- A secure, unique token is generated and attached to a shareable link: `/invite/:token`.
+- A secure, unique token is generated and attached to a shareable link: `/invite/:token` .
 
 ### Public Invite Acceptance Flow (`/invite/$token`)
 
@@ -61,4 +61,5 @@ In addition to universal share links, board owners can send direct email invitat
 - **Reactive State Sync** – All board modifications (card moves, title edits, comments, checklist updates) update instantly across all active clients via Convex live subscriptions.
 - **Card Assignments** – Assign active board members to specific cards. Only authorized board members can be assigned.
 - **In-App Notifications** – Notification center popover tracks card assignments, due date reminders, and board invitations with unread counters and safe relative links.
+- **Web Push Notifications** – Standards-compliant VAPID push notifications alert users even when the app tab is closed (for upcoming card dues, assignments, and updates).
 - **Threaded Comments** – Team members can leave timestamped comments and discussion notes inside any card's inspector modal.

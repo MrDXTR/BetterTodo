@@ -185,6 +185,19 @@ export default defineSchema({
         .index("by_user_time", ["userId", "createdAt"])
         .index("by_dedupe", ["dedupeKey"]),
 
+    pushSubscriptions: defineTable({
+        userId: v.string(), // Recipient user ID
+        endpoint: v.string(),
+        keys: v.object({
+            p256dh: v.string(),
+            auth: v.string(),
+        }),
+        userAgent: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index("by_user", ["userId"])
+        .index("by_endpoint", ["endpoint"]),
+
     // ============================================
     // PRESENCE & SYNC
     // ============================================

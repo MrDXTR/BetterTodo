@@ -639,7 +639,8 @@ export const addMember = mutation({
 
 /**
  * Invite a member by email address.
- * - If the email belongs to an existing user: creates an in-app invite + notification + sends invite email.
+ * - If the email belongs to an existing user: creates an invite, sends in-app and push
+ *   notifications, and sends an invite email.
  * - If the email is unregistered: creates a token-based invite and sends an external signup email.
  */
 export const addMemberByEmail = mutation({
@@ -731,6 +732,14 @@ export const addMemberByEmail = mutation({
                 linkUrl: `/boards/${args.boardId}`,
                 read: false,
                 createdAt: now,
+            });
+
+            // Send push notification
+            await ctx.scheduler.runAfter(0, internal.push.sendPushToUser, {
+                userId: targetUser._id,
+                title: "Board Invitation",
+                body: `You've been invited to join "${boardTitle}"`,
+                url: `/boards/${args.boardId}`,
             });
 
             // Schedule the invite email
@@ -1041,9 +1050,7 @@ export const getPendingInvites = query({
             )
             .collect();
 
-        const activeInvites = invites.filter(
-            (inv) => !inv.expiresAt || inv.expiresAt > Date.now(),
-        );
+        const activeInvites = invites.filter((inv) => !inv.expiresAt || inv.expiresAt > Date.now());
 
         // Enrich with board details
         const enriched = await Promise.all(

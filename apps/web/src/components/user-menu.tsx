@@ -16,7 +16,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "./ui/button";
 
-export function UserMenu() {
+type UserMenuProps = {
+    onBeforeSignOut?: () => Promise<void>;
+};
+
+/** Render the signed-in user's account menu and run optional cleanup before sign-out. */
+export function UserMenu({ onBeforeSignOut }: UserMenuProps) {
     const navigate = useNavigate();
     const user = useQuery(api.auth.getCurrentUser);
     const role = useQuery(api.auth.getMyRole);
@@ -72,6 +77,7 @@ export function UserMenu() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                     onClick={async () => {
+                        await onBeforeSignOut?.();
                         await authClient.signOut();
                         navigate({ to: "/sign-in" });
                     }}
