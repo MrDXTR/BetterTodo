@@ -340,7 +340,9 @@ function MiniBoardPreview({
                                     {includeCustomTags && (
                                         <motion.span
                                             key="tags-chip"
-                                            initial={reduce ? false : { opacity: 0, y: 6, scale: 0.9 }}
+                                            initial={
+                                                reduce ? false : { opacity: 0, y: 6, scale: 0.9 }
+                                            }
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={reduce ? undefined : { opacity: 0, scale: 0.9 }}
                                             transition={spring}
@@ -359,7 +361,7 @@ function MiniBoardPreview({
                                 animate={{ opacity: 1 }}
                                 exit={reduce ? undefined : { opacity: 0 }}
                                 transition={{ duration: reduce ? 0 : 0.15 }}
-                                className="grid grid-cols-2 items-stretch gap-2"
+                                className="grid grid-cols-2 items-stretch gap-2 "
                             >
                                 {SAMPLE_COLUMNS.map((column, colIndex) => (
                                     <motion.div
@@ -462,7 +464,7 @@ function OptionRow({
                 checked && !disabled && "bg-primary/[0.05]",
                 // elbow connector to the parent rail
                 nested &&
-                "before:absolute before:-left-4 before:top-[22px] before:h-px before:w-3 before:bg-border",
+                    "before:absolute before:-left-3.5 before:top-[18px] before:h-px before:w-3 before:bg-border/70",
             )}
         >
             <Checkbox
@@ -630,7 +632,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
                         </div>
                     </DialogHeader>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4.5">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4.5 pb-2">
                         {/* Preview: on top for mobile so live updates stay visible */}
                         <div className="order-first flex flex-col md:order-last">
                             <Label className="mb-1.5 hidden text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:block">
@@ -714,7 +716,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
                                 </label>
 
                                 {/* Granular options */}
-                                <div className="rounded-xl border border-border/60 bg-muted/20 p-1.5">
+                                <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5">
                                     <OptionRow
                                         id="copy-option-lists"
                                         icon={Columns3}
@@ -724,7 +726,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
                                         onCheckedChange={handleToggleLists}
                                     />
 
-                                    <div className="ml-[22px] border-l border-border/70 pl-4">
+                                    <div className="ml-[21px] border-l border-border/70 pl-3.5 space-y-1.5">
                                         <OptionRow
                                             id="copy-option-cards"
                                             icon={Layers}
@@ -737,7 +739,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
                                             onCheckedChange={handleToggleCards}
                                         />
 
-                                        <div className="ml-[22px] border-l border-border/70 pl-4">
+                                        <div className="ml-[21px] border-l border-border/70 pl-3.5">
                                             <OptionRow
                                                 id="copy-option-card-data"
                                                 icon={CheckSquare}
@@ -752,7 +754,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
                                         </div>
                                     </div>
 
-                                    <div className="mx-2 my-1.5 h-px bg-border/60" />
+                                    <div className="mx-2 my-1 h-px bg-border/60" />
 
                                     <OptionRow
                                         id="copy-option-tags"
@@ -767,7 +769,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
                         </div>
                     </div>
 
-                    <DialogFooter className="sticky bottom-0 -mx-5 -mb-5 flex flex-row items-center justify-end gap-2 border-t border-border/60 bg-background/85 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:-mx-6 sm:-mb-6 sm:px-6">
+                    <DialogFooter className="sticky bottom-0 -mx-5 -mb-5 mt-6 flex flex-row items-center justify-end gap-2.5 border-t border-border/60 bg-background/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:-mb-6 sm:px-6">
                         <Button
                             type="button"
                             variant="outline"
