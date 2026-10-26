@@ -1,3 +1,4 @@
+import type { Id } from "./_generated/dataModel";
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -628,10 +629,66 @@ export const copyBoard = mutation({
                                         checklistId: newClId,
                                         title: item.title,
                                         completed: item.completed,
+                                        assignedTo: item.assignedTo,
                                         dueDate: item.dueDate,
                                         position: item.position,
                                     });
                                 }
+                            }
+
+                            // Duplicate card assignments
+                            const cardAssignments = await ctx.db
+                                .query("cardAssignments")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            for (const assignment of cardAssignments) {
+                                await ctx.db.insert("cardAssignments", {
+                                    cardId: newCardId,
+                                    userId: assignment.userId,
+                                    assignedAt: assignment.assignedAt,
+                                    assignedBy: user._id,
+                                });
+                            }
+
+                            // Duplicate attachments
+                            const attachments = await ctx.db
+                                .query("attachments")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            for (const attachment of attachments) {
+                                await ctx.db.insert("attachments", {
+                                    cardId: newCardId,
+                                    uploadedBy: user._id,
+                                    fileName: attachment.fileName,
+                                    storageId: attachment.storageId,
+                                    fileSize: attachment.fileSize,
+                                    mimeType: attachment.mimeType,
+                                    createdAt: now,
+                                });
+                            }
+
+                            // Duplicate comments with threaded parentCommentId remapping
+                            const comments = await ctx.db
+                                .query("comments")
+                                .withIndex("by_card", (q) => q.eq("cardId", card._id))
+                                .collect();
+                            comments.sort((a, b) => a.createdAt - b.createdAt);
+
+                            const commentMap = new Map<string, Id<"comments">>();
+                            for (const comment of comments) {
+                                const parentId = comment.parentCommentId
+                                    ? commentMap.get(comment.parentCommentId)
+                                    : undefined;
+                                const newCommentId = await ctx.db.insert("comments", {
+                                    cardId: newCardId,
+                                    userId: comment.userId,
+                                    content: comment.content,
+                                    parentCommentId: parentId,
+                                    edited: comment.edited,
+                                    createdAt: comment.createdAt,
+                                    updatedAt: comment.updatedAt,
+                                });
+                                commentMap.set(comment._id, newCommentId);
                             }
                         }
                     }

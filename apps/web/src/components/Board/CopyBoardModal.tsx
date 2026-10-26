@@ -13,7 +13,7 @@ import {
     Tag,
     type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Board } from "@/types/board";
@@ -464,7 +464,7 @@ function OptionRow({
                 checked && !disabled && "bg-primary/[0.05]",
                 // elbow connector to the parent rail
                 nested &&
-                "before:absolute before:-left-3.5 before:top-[18px] before:h-px before:w-3 before:bg-border/70",
+                    "before:absolute before:-left-3.5 before:top-[18px] before:h-px before:w-3 before:bg-border/70",
             )}
         >
             <Checkbox
@@ -517,10 +517,12 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
 
     const allBoards = useQuery(api.boards.getAll);
     const copyBoard = useMutation(api.boards.copyBoard);
+    const allBoardsRef = useRef(allBoards);
+    allBoardsRef.current = allBoards;
 
     useEffect(() => {
         if (open && board) {
-            const existingTitles = (allBoards ?? []).map((b) => b.title);
+            const existingTitles = (allBoardsRef.current ?? []).map((b) => b.title);
             const suggested = generateCopyBoardTitle(board.title, existingTitles);
             setTitle(suggested);
             setIncludeLists(true);
@@ -528,7 +530,7 @@ export function CopyBoardModal({ open, onOpenChange, board, onCopied }: CopyBoar
             setIncludeCardData(true);
             setIncludeCustomTags(true);
         }
-    }, [open, board, allBoards]);
+    }, [open, board?._id]);
 
     if (!board) return null;
 
